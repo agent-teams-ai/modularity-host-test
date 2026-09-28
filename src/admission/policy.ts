@@ -1,4 +1,4 @@
-import { candidates, grants, target, type Candidate } from '../inventory/trusted.ts';
+import { candidates, grants, target, type Candidate, type Grant } from '../inventory/trusted.ts';
 
 export type Injection = Readonly<{
   slot: string;
@@ -29,9 +29,9 @@ const namespaceContains = (namespace: string, value: string): boolean =>
 
 // Copy every request field before the first await. This parser accepts JSON data,
 // not executable object graphs or proxies; its exact keys bound what can be kept.
-function parseRequest(input: unknown): Request | undefined {
+function parseRequest(input: unknown, maxSelections: number): Request | undefined {
   if (!record(input) || !keys(input, ['selections']) || !Array.isArray(input.selections) ||
-      input.selections.length < 1 || input.selections.length > candidates.length) return;
+      input.selections.length < 1 || input.selections.length > maxSelections) return;
   const selections: Selection[] = [];
   for (const raw of input.selections) {
     if (!record(raw) || !keys(raw, ['moduleId', 'implementationId', 'ownerLabel', 'target', 'injections']) ||
@@ -51,7 +51,12 @@ function parseRequest(input: unknown): Request | undefined {
 }
 
 export function admit(input: unknown): Decision {
-  const request = parseRequest(input);
+  return admitTrusted(input, candidates, grants);
+}
+
+// Trusted inputs stay separate from request JSON; tests can audit malformed trust tables.
+export function admitTrusted(input: unknown, inventoryRows: readonly Candidate[], grantTable: readonly Grant[]): Decision {
+  const request = parseRequest(input, inventoryRows.length);
   if (!request) return refuse('malformed-request');
   const modules = new Set<string>();
   const implementations = new Set<string>();
@@ -63,13 +68,14 @@ export function admit(input: unknown): Decision {
   }
   // Inspect the arrays before indexing. Map construction would hide ambiguity.
   for (const selected of request.selections) {
-    const matches = candidates.filter(candidate => candidate.implementationId === selected.implementationId &&
+    const matches = inventoryRows.filter(candidate => candidate.implementationId === selected.implementationId &&
       candidate.moduleId === selected.moduleId);
-    if (matches.length !== 1) return refuse(matches.length ? 'ambiguous-inventory' : 'unknown-selection');
+    if (matches.length !== 1 || inventoryRows.filter(candidate => candidate.implementationId === selected.implementationId).length !== 1)
+      return refuse(matches.length ? 'ambiguous-inventory' : 'unknown-selection');
     const candidate = matches[0]!;
     if (selected.target !== target) return refuse('wrong-target');
     if (selected.ownerLabel !== candidate.subject) return refuse('forged-owner');
-    const grantRows = grants.filter(grant => grant.subject === candidate.subject && grant.target === target);
+    const grantRows = grantTable.filter(grant => grant.subject === candidate.subject && grant.target === target);
     if (grantRows.length !== 1) return refuse('subject-grant');
     const grant = grantRows[0]!;
     if (!namespaceContains(grant.namespace, selected.moduleId) ||
@@ -79,15 +85,15 @@ export function admit(input: unknown): Decision {
     }
   }
   for (const selected of request.selections) {
-    const consumer = candidates.find(candidate => candidate.implementationId === selected.implementationId)!;
-    const grant = grants.find(row => row.subject === consumer.subject && row.target === target)!;
+    const consumer = inventoryRows.find(candidate => candidate.implementationId === selected.implementationId)!;
+    const grant = grantTable.find(row => row.subject === consumer.subject && row.target === target)!;
     const edges = new Set<string>();
     for (const edge of selected.injections) {
       const edgeKey = `${edge.slot}|${edge.providerImplementationId}`;
       if (edges.has(edgeKey)) return refuse('duplicate-injection');
       edges.add(edgeKey);
       if (!implementations.has(edge.providerImplementationId)) return refuse('unselected-provider');
-      const provider = candidates.find(candidate => candidate.implementationId === edge.providerImplementationId)!;
+      const provider = inventoryRows.find(candidate => candidate.implementationId === edge.providerImplementationId)!;
       if (!provider.provides.some(capability => capability.id === edge.capabilityId && capability.token === edge.token))
         return refuse('provider-capability');
       if (!grant.receives.includes(`${provider.subject}|${edge.capabilityId}|${edge.token}`))
@@ -95,6 +101,6 @@ export function admit(input: unknown): Decision {
     }
   }
   const inventory = Object.freeze(request.selections.map(selected =>
-    candidates.find(candidate => candidate.implementationId === selected.implementationId)!));
+    inventoryRows.find(candidate => candidate.implementationId === selected.implementationId)!));
   return Object.freeze({ ok: true, snapshot: Object.freeze({ target, selections: request.selections, inventory }) });
 }

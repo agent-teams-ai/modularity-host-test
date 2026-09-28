@@ -8,14 +8,14 @@ function request() {
       target: 'test-host/local', injections: [] },
     { moduleId: 'test/writer', implementationId: 'test/writer/main', ownerLabel: 'fixture/writer',
       target: 'test-host/local', injections: [{ slot: 'resource', providerImplementationId: 'test/provider/a',
-        capabilityId: 'test/resource/write', token: 'test/resource/write@1' }] },
+        capabilityId: 'test/resource/write', token: 'test/resource/write/v1' }] },
     { moduleId: 'test/reader', implementationId: 'test/reader/main', ownerLabel: 'fixture/reader',
       target: 'test-host/local', injections: [{ slot: 'resource', providerImplementationId: 'test/provider/a',
-        capabilityId: 'test/resource/read', token: 'test/resource/read@1' }] },
-    { moduleId: 'test/root', implementationId: 'test/root/main', ownerLabel: 'fixture/root',
+        capabilityId: 'test/resource/read', token: 'test/resource/read/v1' }] },
+    { moduleId: 'test/root/main', implementationId: 'test/root/main', ownerLabel: 'fixture/root',
       target: 'test-host/local', injections: [
-        { slot: 'actions', providerImplementationId: 'test/writer/main', capabilityId: 'test/action', token: 'test/action@1' },
-        { slot: 'actions', providerImplementationId: 'test/reader/main', capabilityId: 'test/action', token: 'test/action@1' },
+        { slot: 'actions', providerImplementationId: 'test/writer/main', capabilityId: 'test/action', token: 'test/action/v1' },
+        { slot: 'actions', providerImplementationId: 'test/reader/main', capabilityId: 'test/action', token: 'test/action/v1' },
       ] },
   ] };
 }
@@ -50,7 +50,7 @@ test('forged owner label is refused', () => {
 test('unauthorized injection is refused', () => {
   const input = request();
   input.selections[2].injections[0].capabilityId = 'test/resource/write';
-  input.selections[2].injections[0].token = 'test/resource/write@1';
+  input.selections[2].injections[0].token = 'test/resource/write/v1';
   assert.equal(admit(input).reason, 'injection-grant');
 });
 
@@ -69,4 +69,37 @@ test('malformed records are rejected exactly', () => {
   const input = request();
   input.selections[3].loader = './untrusted.mjs';
   assert.equal(admit(input).reason, 'malformed-request');
+});
+
+// Regression: a path-prefix lookalike gains a grant for a different namespace.
+test('trusted namespace comparison requires a path segment', async () => {
+  const { admitTrusted } = await import('../../src/admission/policy.ts');
+  const { candidates, grants } = await import('../../src/inventory/trusted.ts');
+  const inventory = candidates.map(candidate => candidate.implementationId === 'test/root/main'
+    ? { ...candidate, moduleId: 'test/rootlike' } : candidate);
+  const input = request(); input.selections[3].moduleId = 'test/rootlike';
+  assert.equal(admitTrusted(input, inventory, grants).reason, 'namespace');
+});
+// Regression: a forged owner label is accepted as a trusted inventory subject.
+test('unknown trusted subject has no grant', async () => {
+  const { admitTrusted } = await import('../../src/admission/policy.ts');
+  const { candidates, grants } = await import('../../src/inventory/trusted.ts');
+  const inventory = candidates.map(candidate => candidate.implementationId === 'test/root/main'
+    ? { ...candidate, subject: 'fixture/unknown' } : candidate);
+  const input = request(); input.selections[3].ownerLabel = 'fixture/unknown';
+  assert.equal(admitTrusted(input, inventory, grants).reason, 'subject-grant');
+});
+// Regression: a product-owned capability is provided without its exact grant.
+test('ungranted provision is refused', async () => {
+  const { admitTrusted } = await import('../../src/admission/policy.ts');
+  const { candidates, grants } = await import('../../src/inventory/trusted.ts');
+  const inventory = candidates.map(candidate => candidate.implementationId === 'test/root/main'
+    ? { ...candidate, provides: [{ id: 'test/action', token: 'test/action/v1' }] } : candidate);
+  assert.equal(admitTrusted(request(), inventory, grants).reason, 'provision-grant');
+});
+// Regression: Map indexing erases a duplicate trusted implementation association.
+test('ambiguous trusted inventory is refused', async () => {
+  const { admitTrusted } = await import('../../src/admission/policy.ts');
+  const { candidates, grants } = await import('../../src/inventory/trusted.ts');
+  assert.equal(admitTrusted(request(), [...candidates, candidates[3]], grants).reason, 'ambiguous-inventory');
 });
