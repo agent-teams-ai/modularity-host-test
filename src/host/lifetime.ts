@@ -21,6 +21,8 @@ const clock: Clock = {
   cancel: handle => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 const MAX_TIMER_DELAY = 2 ** 31 - 1;
+// Default AbortError captures the caller stack and can retain a closed sibling.
+const RETIRE_REASON = 'host-retired';
 const observeNativePromise = Promise.prototype.then;
 type Ticket = { settled: boolean; promise: Promise<unknown> };
 type Waiter = { wake(): void; remove(): void };
@@ -121,6 +123,7 @@ export type Construction<R, O> = Readonly<
   | { status: 'failed'; raw?: O; cause?: unknown }
 >;
 type CohortBinding = Readonly<{
+  operationId: string;
   request(): RetirementReceipt;
   read(operationId: string): RetirementReadReceipt;
   observe(operationId: string, options: { signal?: AbortSignal; deadlineAt?: number }): Promise<CloseReceipt | Readonly<{ status: 'unknown-or-expired' }>>;
@@ -132,9 +135,10 @@ export class TestHost<R, O extends { readonly status: string }> {
   private readonly kernel = createLifecycleKernel();
   // This attempt owner is created before Assembly may load any executable module.
   private readonly generation: Generation = this.kernel.stage();
-  private readonly controller = new AbortController();
+  private controller: AbortController | undefined = new AbortController();
   private construction: Ticket | undefined;
   private constructionResult: Promise<Construction<R, O>> | undefined;
+  private constructionCode: 'not-started' | 'published' | 'cancelled' | 'failed' = 'not-started';
   private readonly operations = new Set<Ticket>();
   private readonly streams = new Set<StreamRecord>();
   private readonly terminalStreams = new Set<TerminalStreamRecord>();
@@ -155,6 +159,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   private readonly waiters = new Set<Waiter>();
   private readonly timer: Clock;
   private cohortOwner: CohortBinding | undefined;
+  private readonly physicalCompletion = new Set<() => void>();
 
   constructor(timer: Clock = clock) { this.timer = timer; }
 
@@ -164,6 +169,33 @@ export class TestHost<R, O extends { readonly status: string }> {
   attachCohort(binding: CohortBinding): void {
     if (!this.canAttachCohort()) throw new Error('cohort-member-unavailable');
     this.cohortOwner = binding;
+  }
+
+  /** Host-owned completion signal; observer timeouts and cleanup debt never fire it. */
+  onPhysicalCompletion(notify: () => void): void {
+    if (this.terminal?.status === 'closed') { notify(); return; }
+    this.physicalCompletion.add(notify);
+  }
+  safeConstructionCode(): 'not-started' | 'published' | 'cancelled' | 'failed' {
+    return this.constructionCode;
+  }
+  currentRetirementId(): string { return this.cohortOwner?.operationId ?? this.retirementId; }
+
+  /** Called only by a retaining owner after a closed terminal has been recorded. */
+  compactClosed(): void {
+    if (this.terminal?.status !== 'closed') throw new Error('physical-completion-unproven');
+    this.resource = undefined;
+    this.controller = undefined;
+    this.construction = undefined;
+    this.constructionResult = undefined;
+    this.custody = undefined;
+    this.resolveRetirement = undefined;
+    this.retirement = Promise.resolve(Object.freeze({ status: 'closed' }));
+    this.operations.clear();
+    this.streams.clear();
+    this.terminalStreams.clear();
+    this.cleanupScopes.clear();
+    this.physicalCompletion.clear();
   }
 
   private lifecycle(): GenerationSnapshot {
@@ -541,6 +573,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     const result = new Promise<Construction<R, O>>(resolve => { resolveResult = resolve; });
     this.constructionResult = result;
     const settle = (value: Construction<R, O>) => {
+      this.constructionCode = value.status;
       resolveResult(value);
       ticket.settled = true;
       if (!this.resource && this.custody) {
@@ -550,7 +583,7 @@ export class TestHost<R, O extends { readonly status: string }> {
       resolveTicket(undefined);
     };
     let raw: Promise<O>;
-    try { raw = Promise.resolve(run(this.controller.signal)); }
+    try { raw = Promise.resolve(run(this.controller!.signal)); }
     catch (cause) { raw = Promise.reject(cause); }
     raw.then(outcome => {
       if (outcome.status === 'cancelled') return settle({ status: 'cancelled', raw: outcome });
@@ -599,7 +632,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     if (!this.retirementPrepared) throw new Error('retirement-not-prepared');
     if (this.retirementAborted) return;
     this.retirementAborted = true;
-    this.controller.abort();
+    this.controller?.abort(RETIRE_REASON);
   }
 
   driveRetirement(): void {
@@ -654,6 +687,10 @@ export class TestHost<R, O extends { readonly status: string }> {
       this.terminal = terminal;
       for (const waiter of [...this.waiters]) waiter.wake();
       this.resolveRetirement!(terminal);
+      if (terminal.status === 'closed') {
+        for (const notify of [...this.physicalCompletion]) notify();
+        this.physicalCompletion.clear();
+      }
     })();
   }
 
@@ -719,7 +756,7 @@ type CohortMember = TestHost<any, any>;
 
 /** One fixed set of TEST generation owners; no replacement or dynamic membership. */
 export class TestCohortRetirement {
-  private readonly members: readonly CohortMember[];
+  private readonly members: (CohortMember | undefined)[];
   private readonly generations: ReadonlySet<Generation>;
   private readonly operation: RetirementOperation = {};
   private readonly operationId: string;
@@ -733,16 +770,20 @@ export class TestCohortRetirement {
     if (members.length < 2 || new Set(members).size !== members.length)
       throw new Error('invalid-fixed-cohort');
     if (members.some(member => !member.canAttachCohort())) throw new Error('cohort-member-unavailable');
-    this.members = Object.freeze([...members]);
+    this.members = [...members];
     this.generations = new Set(members.map(member => member.cohortGeneration()));
     this.timer = timer;
     this.operationId = operationId;
     const binding: CohortBinding = Object.freeze({
+      operationId,
       request: () => this.requestRetirement(),
       read: operationId => this.readRetirement(operationId),
       observe: (operationId, options) => this.observeRetirement(operationId, options),
     });
-    for (const member of members) member.attachCohort(binding);
+    for (const [index, member] of members.entries()) {
+      member.attachCohort(binding);
+      member.onPhysicalCompletion(() => { this.members[index] = undefined; });
+    }
   }
 
   /** The plugin receives only this request surface. Observe/read remain trusted Host APIs. */
@@ -765,9 +806,10 @@ export class TestCohortRetirement {
     this.flight = new Promise(resolve => { resolveFlight = resolve; });
     // Publish the exact raw flight, then revoke every route before notifying
     // any abort listener. Reentrant callbacks can only join the same flight.
-    const flights = this.members.map(member => member.revokeForCohort(this.operation));
-    for (const member of this.members) member.signalRetirement();
-    for (const member of this.members) member.driveRetirement();
+    const members = this.members.filter((member): member is CohortMember => member !== undefined);
+    const flights = members.map(member => member.revokeForCohort(this.operation));
+    for (const member of members) member.signalRetirement();
+    for (const member of members) member.driveRetirement();
     void Promise.all(flights).then(results => {
       const terminal: CohortTerminal = Object.freeze({
         status: results.every(result => result.status === 'closed') ? 'closed' : 'cleanup-incomplete',
