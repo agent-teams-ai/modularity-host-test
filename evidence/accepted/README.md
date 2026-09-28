@@ -101,6 +101,17 @@ These L2b1 archives exclude macOS AppleDouble sidecars and extended attributes.
 Their manifest bytes are unchanged. On macOS, create retained archives with
 `COPYFILE_DISABLE=1 tar --no-xattrs` to keep the payload portable.
 
+`32a0ff1-h04-final-run.tar.gz` retains the accepted H04 terminal stream replay
+for clean TEST source commit `32a0ff1c846a6ffc000a7665af8e2e25594bb692`
+(tree `53fc5c8ab165ecdf08e17d127b3d380fdba7fe44`). Both exact package pairs
+passed frozen offline install, typecheck, 96 tests, 23 admission cases and 58
+focused lifecycle cases on Node 24.18.0. Nested ordinary and terminal consumer
+obligations are retained until raw settlement. The manifest SHA-256 is
+`6f98ed87a9b5f9f241a69303d096f93b7250c6c3949b6ac6687dfd1795267272`;
+the archive SHA-256 is
+`38e857c704701b0e9b38e346a30f0643361e0fab73a4d3e02a6cb4d672c00b76`.
+This archive has no AppleDouble entries or PAX metadata.
+
 Inspect the accepted manifest without extracting the archive:
 
 ```sh
@@ -130,6 +141,9 @@ tar -xOzf evidence/accepted/5f78cf5-l2b1-current-pin-run.tar.gz \
 
 tar -xOzf evidence/accepted/0dea754-l2b1-review-run.tar.gz \
   evidence/runs/2026-09-28T22-05-43-826Z-82924/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/32a0ff1-h04-final-run.tar.gz \
+  evidence/runs/2026-09-28T22-31-59-174Z-20639/evidence.json | shasum -a 256
 ```
 
 These archives preserve evidence for the exact TEST subjects. They do not
