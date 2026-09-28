@@ -49,17 +49,37 @@ type TerminalStreamRecord = Omit<StreamRecord, 'runs'> & {
   closing: boolean;
   tickets: Set<Ticket>;
 };
-type CallContext = { kind: 'call'; generation: Generation; lease: CallLease;
-  stream?: TerminalStreamRecord; ordinaryStream?: StreamRecord; parent?: CallContext };
-type CleanupContext = { kind: 'cleanup'; operationId: string; active: boolean };
+type RetirementOperation = object;
+type CallContext = { kind: 'call'; generation: Generation; lease: CallLease; active: boolean;
+  stream?: TerminalStreamRecord; ordinaryStream?: StreamRecord; parent?: Context };
+type CleanupContext = { kind: 'cleanup'; operation: RetirementOperation; active: boolean; parent?: Context };
+type Context = CallContext | CleanupContext;
+// A single context links nested calls across distinct TEST generation owners.
+const callContext = new AsyncLocalStorage<Context>();
+function activeCallIn(context: Context | undefined, generations: ReadonlySet<Generation>): boolean {
+  for (let frame = context; frame; frame = frame.parent)
+    if (frame.kind === 'call' && frame.active && generations.has(frame.generation)) return true;
+  return false;
+}
+function activeCleanupIn(context: Context | undefined, operation: RetirementOperation): boolean {
+  for (let frame = context; frame; frame = frame.parent)
+    if (frame.kind === 'cleanup' && frame.active && frame.operation === operation) return true;
+  return false;
+}
+function hasActiveCleanup(context: Context | undefined): boolean {
+  for (let frame = context; frame; frame = frame.parent)
+    if (frame.kind === 'cleanup' && frame.active) return true;
+  return false;
+}
 type ConsumerTickets = { ordinary: readonly StreamRecord[]; terminal: readonly TerminalStreamRecord[] };
-function consumerTickets(context: CallContext | CleanupContext | undefined,
+function consumerTickets(context: Context | undefined,
     ordinary?: StreamRecord, terminal?: TerminalStreamRecord): ConsumerTickets {
   const ordinaryOwners = new Set<StreamRecord>(ordinary ? [ordinary] : []);
   const terminalOwners = new Set<TerminalStreamRecord>(terminal ? [terminal] : []);
-  for (let call = context?.kind === 'call' ? context : undefined; call; call = call.parent) {
-    if (call.ordinaryStream) ordinaryOwners.add(call.ordinaryStream);
-    if (call.stream) terminalOwners.add(call.stream);
+  for (let frame = context; frame; frame = frame.parent) {
+    if (frame.kind !== 'call' || !frame.active) continue;
+    if (frame.ordinaryStream) ordinaryOwners.add(frame.ordinaryStream);
+    if (frame.stream) terminalOwners.add(frame.stream);
   }
   return { ordinary: [...ordinaryOwners], terminal: [...terminalOwners] };
 }
@@ -71,9 +91,9 @@ function releaseConsumerTicket(owners: ConsumerTickets, ticket: Ticket): void {
   for (const stream of owners.ordinary) stream.runs.delete(ticket);
   for (const stream of owners.terminal) stream.tickets.delete(ticket);
 }
-function hasClosingStream(context: CallContext | CleanupContext | undefined): boolean {
-  for (let call = context?.kind === 'call' ? context : undefined; call; call = call.parent)
-    if (call.stream?.closing) return true;
+function hasClosingStream(context: Context | undefined): boolean {
+  for (let frame = context; frame; frame = frame.parent)
+    if (frame.kind === 'call' && frame.active && frame.stream?.closing) return true;
   return false;
 }
 function ownMethod(resource: object, name: 'next' | 'result' | 'return' | 'close', required: boolean): (() => unknown) | undefined {
@@ -100,6 +120,11 @@ export type Construction<R, O> = Readonly<
   | { status: 'cancelled'; raw: O }
   | { status: 'failed'; raw?: O; cause?: unknown }
 >;
+type CohortBinding = Readonly<{
+  request(): RetirementReceipt;
+  read(operationId: string): RetirementReadReceipt;
+  observe(operationId: string, options: { signal?: AbortSignal; deadlineAt?: number }): Promise<CloseReceipt | Readonly<{ status: 'unknown-or-expired' }>>;
+}>;
 
 /** The only lifetime owner in this stand. It never interprets Assembly's journals as disposers. */
 export class TestHost<R, O extends { readonly status: string }> {
@@ -113,18 +138,33 @@ export class TestHost<R, O extends { readonly status: string }> {
   private readonly operations = new Set<Ticket>();
   private readonly streams = new Set<StreamRecord>();
   private readonly terminalStreams = new Set<TerminalStreamRecord>();
-  private readonly context = new AsyncLocalStorage<CallContext | CleanupContext>();
+  private readonly context = callContext;
+  private readonly cleanupScopes = new Set<CleanupContext>();
   private resource: OwnedResource | undefined;
   private custody: CustodyLease | undefined;
   private reserved = false;
   private retirement: Promise<CloseTerminal> | undefined;
   private readonly retirementId = 'retirement-1';
+  private readonly ownRetirementOperation: RetirementOperation = {};
+  private retirementOperation: RetirementOperation = this.ownRetirementOperation;
+  private retirementPrepared = false;
+  private retirementAborted = false;
+  private retirementCleanupStarted = false;
   private resolveRetirement: ((result: CloseTerminal) => void) | undefined;
   private terminal: CloseTerminal | undefined;
   private readonly waiters = new Set<Waiter>();
   private readonly timer: Clock;
+  private cohortOwner: CohortBinding | undefined;
 
   constructor(timer: Clock = clock) { this.timer = timer; }
+
+  /** Opaque generation identity for the fixed TEST cohort owner. */
+  cohortGeneration(): Generation { return this.generation; }
+  canAttachCohort(): boolean { return !this.cohortOwner && !this.retirementPrepared; }
+  attachCohort(binding: CohortBinding): void {
+    if (!this.canAttachCohort()) throw new Error('cohort-member-unavailable');
+    this.cohortOwner = binding;
+  }
 
   private lifecycle(): GenerationSnapshot {
     const result = this.kernel.snapshot(this.generation);
@@ -168,7 +208,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   }
   private withCall<T>(generation: Generation, action: (lease: CallLease) => T): T {
     const current = this.context.getStore();
-    if (current?.kind === 'cleanup' || hasClosingStream(current)) throw new Error('host-revoked');
+    if (hasActiveCleanup(current) || hasClosingStream(current)) throw new Error('host-revoked');
     this.assertReady(generation);
     const admitted = this.kernel.beginCall(generation);
     if (!admitted.ok) throw new Error('host-revoked');
@@ -181,7 +221,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   /** The check and sink write are one synchronous block. */
   effect(value: string): void {
     const current = this.context.getStore();
-    if (current?.kind === 'cleanup' || hasClosingStream(current)) throw new Error('host-revoked');
+    if (hasActiveCleanup(current) || hasClosingStream(current)) throw new Error('host-revoked');
     if (current?.kind === 'call' && current.generation === this.generation) {
       if (!this.kernel.checkCall(current.lease).ok) throw new Error('host-revoked');
       this.effects.push(value);
@@ -196,17 +236,20 @@ export class TestHost<R, O extends { readonly status: string }> {
   }
   read<T>(read: () => T): T {
     const parent = this.context.getStore();
-    if (parent?.kind === 'cleanup' || hasClosingStream(parent)) throw new Error('host-revoked');
+    if (hasActiveCleanup(parent) || hasClosingStream(parent)) throw new Error('host-revoked');
     const consumers = consumerTickets(parent);
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
     if (!admitted.ok) throw new Error('host-revoked');
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
+    const frame: CallContext = { kind: 'call', generation: this.generation, lease: admitted.value,
+      active: true, stream: parent?.kind === 'call' && parent.active ? parent.stream : undefined, parent };
     this.operations.add(ticket);
     retainConsumerTicket(consumers, ticket);
     const settle = () => {
       if (ticket.settled) return;
+      frame.active = false;
       this.kernel.release(admitted.value);
       ticket.settled = true;
       this.operations.delete(ticket);
@@ -216,9 +259,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     let result: T;
     try {
       if (!this.kernel.checkCall(admitted.value).ok) throw new Error('host-revoked');
-      result = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value,
-        stream: parent?.kind === 'call' ? parent.stream : undefined,
-        parent: parent?.kind === 'call' ? parent : undefined }, read);
+      result = this.context.run(frame, read);
     } catch (cause) {
       settle();
       throw cause;
@@ -243,21 +284,21 @@ export class TestHost<R, O extends { readonly status: string }> {
   }
   private operateTracked<T>(work: () => T | Promise<T>, stream?: StreamRecord): Promise<T> {
     const parent = this.context.getStore();
-    if (parent?.kind === 'cleanup' || hasClosingStream(parent)) throw new Error('host-revoked');
+    if (hasActiveCleanup(parent) || hasClosingStream(parent)) throw new Error('host-revoked');
     const consumers = consumerTickets(parent, stream);
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
     if (!admitted.ok) throw new Error('host-revoked');
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
+    const frame: CallContext = { kind: 'call', generation: this.generation, lease: admitted.value,
+      active: true, stream: parent?.kind === 'call' && parent.active ? parent.stream : undefined,
+      ordinaryStream: stream, parent };
     this.operations.add(ticket);
     retainConsumerTicket(consumers, ticket);
     let result: Promise<T>;
     try {
-      const raw = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value,
-        stream: parent?.kind === 'call' ? parent.stream : undefined,
-        ordinaryStream: stream,
-        parent: parent?.kind === 'call' ? parent : undefined }, work);
+      const raw = this.context.run(frame, work);
       // Keep a native Promise as the raw work: Promise.resolve would consult a
       // hostile constructor and could turn a still-running call into a rejection.
       if (types.isPromise(raw)) result = raw as Promise<T>;
@@ -268,6 +309,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     catch (cause) { result = Promise.reject(cause); }
     const settle = () => {
       if (ticket.settled) return;
+      frame.active = false;
       this.kernel.release(admitted.value);
       ticket.settled = true;
       this.operations.delete(ticket);
@@ -294,23 +336,26 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   /** Observe only a native raw cleanup result, bypassing a replaceable `.then`. */
   private invokeCleanup(cleanup: () => void | Promise<void>): Promise<void> {
-    const scope: CleanupContext = { kind: 'cleanup', operationId: this.retirementId, active: true };
+    const scope: CleanupContext = { kind: 'cleanup', operation: this.retirementOperation,
+      active: true, parent: this.context.getStore() };
+    this.cleanupScopes.add(scope);
+    const finishScope = () => { scope.active = false; this.cleanupScopes.delete(scope); };
     let raw: void | Promise<void>;
     try { raw = this.context.run(scope, cleanup); }
-    catch (cause) { scope.active = false; return Promise.reject(cause); }
-    if (raw === undefined) { scope.active = false; return Promise.resolve(); }
+    catch (cause) { finishScope(); return Promise.reject(cause); }
+    if (raw === undefined) { finishScope(); return Promise.resolve(); }
     if (!types.isPromise(raw)) {
-      scope.active = false;
+      finishScope();
       return Promise.reject(new Error('unsupported-cleanup-result'));
     }
     return new Promise<void>((resolve, reject) => {
       try {
         observeNativePromise.call(raw,
-          () => { scope.active = false; resolve(); },
-          cause => { scope.active = false; reject(cause); });
+          () => { finishScope(); resolve(); },
+          cause => { finishScope(); reject(cause); });
       } catch (cause) {
         // The physical action may still be running: retain its custody as debt.
-        scope.active = false;
+        finishScope();
         reject(new Error('cleanup-observer-refused', { cause }));
       }
     });
@@ -319,7 +364,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   /** A TEST-only retained consumer. Custody is independent of invocation authority. */
   retainStream(resource: StreamResource): Readonly<{ run<T>(work: () => T | Promise<T>): Promise<T> }> {
     const context = this.context.getStore();
-    if (context?.kind === 'cleanup' || hasClosingStream(context)) throw new Error('stream-admission-refused');
+    if (hasActiveCleanup(context) || hasClosingStream(context)) throw new Error('stream-admission-refused');
     if (!this.isOpen() || this.lifecycle().phase !== 'active') throw new Error('stream-admission-refused');
     const custody = this.kernel.retainCustody(this.generation);
     if (!custody.ok) throw new Error(`stream-custody:${custody.reason}`);
@@ -334,7 +379,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   /** Fixed TEST stream protocol. Callback references are captured before publication. */
   retainTerminalStream<T, U extends TerminalResultValue>(resource: TerminalStreamResource<T, U>): TerminalStreamView<T, U> {
     const context = this.context.getStore();
-    if (context?.kind === 'cleanup' || hasClosingStream(context)) throw new Error('stream-admission-refused');
+    if (hasActiveCleanup(context) || hasClosingStream(context)) throw new Error('stream-admission-refused');
     if (!this.isOpen() || this.lifecycle().phase !== 'active') throw new Error('stream-admission-refused');
     if (resource === null || typeof resource !== 'object') throw new Error('unsupported-stream-resource');
     const callbacks = {
@@ -384,7 +429,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   private streamCall<T>(record: TerminalStreamRecord, callback: () => unknown,
       validate: (value: unknown) => T, startsIteration = false): Promise<T> {
     const parent = this.context.getStore();
-    if (parent?.kind === 'cleanup' || hasClosingStream(parent)) return Promise.reject(new Error('host-revoked'));
+    if (hasActiveCleanup(parent) || hasClosingStream(parent)) return Promise.reject(new Error('host-revoked'));
     const consumers = consumerTickets(parent, undefined, record);
     if (record.closing || record.settled) return Promise.reject(new Error('stream-closed'));
     this.assertReady(this.generation);
@@ -392,10 +437,13 @@ export class TestHost<R, O extends { readonly status: string }> {
     if (!admitted.ok) throw new Error('host-revoked');
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
+    const frame: CallContext = { kind: 'call', generation: this.generation, lease: admitted.value,
+      active: true, stream: record, parent };
     this.operations.add(ticket);
     retainConsumerTicket(consumers, ticket);
     const settle = () => {
       if (ticket.settled) return;
+      frame.active = false;
       ticket.settled = true;
       this.kernel.release(admitted.value);
       this.operations.delete(ticket);
@@ -406,8 +454,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     try {
       if (!this.kernel.checkCall(admitted.value).ok) throw new Error('host-revoked');
       if (startsIteration) record.started = true;
-      raw = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value,
-        stream: record, parent: parent?.kind === 'call' ? parent : undefined }, callback);
+      raw = this.context.run(frame, callback);
       if (raw !== null && (typeof raw === 'object' || typeof raw === 'function') &&
           !types.isPromise(raw) && Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null)
         throw new Error('unsupported-stream-output');
@@ -464,16 +511,19 @@ export class TestHost<R, O extends { readonly status: string }> {
   }
 
   requestRetirement(): RetirementReceipt {
+    if (this.cohortOwner) return this.cohortOwner.request();
     this.close();
     return Object.freeze({ kind: 'requested', operationId: this.retirementId });
   }
 
   readRetirement(operationId: string): RetirementReadReceipt {
+    if (this.cohortOwner) return this.cohortOwner.read(operationId);
     if (operationId !== this.retirementId || !this.retirement) return Object.freeze({ status: 'unknown-or-expired' });
     return this.terminal ? Object.freeze({ status: this.terminal.status }) : Object.freeze({ status: 'pending' });
   }
 
   observeRetirement(operationId: string, options: { signal?: AbortSignal; deadlineAt?: number } = {}): Promise<CloseReceipt | Readonly<{ status: 'unknown-or-expired' }>> {
+    if (this.cohortOwner) return this.cohortOwner.observe(operationId, options);
     if (operationId !== this.retirementId || !this.retirement) return Promise.resolve(Object.freeze({ status: 'unknown-or-expired' }));
     return this.observeClose(options);
   }
@@ -520,11 +570,42 @@ export class TestHost<R, O extends { readonly status: string }> {
   }
 
   close(): Promise<CloseTerminal> {
-    if (this.retirement) return this.retirement;
+    if (this.cohortOwner && !this.retirementPrepared) {
+      this.cohortOwner.request();
+      return this.retirement!;
+    }
+    if (!this.retirementPrepared) this.revokeForCohort(this.ownRetirementOperation);
+    this.signalRetirement();
+    this.driveRetirement();
+    return this.retirement!;
+  }
+
+  /** Cohort owner calls this for every member before any abort callback. */
+  revokeForCohort(operation: RetirementOperation): Promise<CloseTerminal> {
+    if (this.retirementPrepared) {
+      if (this.retirementOperation !== operation) throw new Error('retirement-operation-mismatch');
+      return this.retirement!;
+    }
+    this.retirementOperation = operation;
+    for (const scope of this.cleanupScopes) scope.operation = operation;
     this.retirement = new Promise(resolve => { this.resolveRetirement = resolve; });
+    this.retirementPrepared = true;
     const revoked = this.kernel.retire(this.generation);
     if (!revoked.ok) throw new Error(`kernel-retire:${revoked.reason}`);
+    return this.retirement;
+  }
+
+  signalRetirement(): void {
+    if (!this.retirementPrepared) throw new Error('retirement-not-prepared');
+    if (this.retirementAborted) return;
+    this.retirementAborted = true;
     this.controller.abort();
+  }
+
+  driveRetirement(): void {
+    if (!this.retirementPrepared || !this.retirementAborted) throw new Error('retirement-not-signalled');
+    if (this.retirementCleanupStarted) return;
+    this.retirementCleanupStarted = true;
     // Idle consumer cleanup starts now. Busy consumers retain their physical
     // resource until their own accepted raw runs have settled.
     for (const stream of this.streams) {
@@ -574,7 +655,6 @@ export class TestHost<R, O extends { readonly status: string }> {
       for (const waiter of [...this.waiters]) waiter.wake();
       this.resolveRetirement!(terminal);
     })();
-    return this.retirement;
   }
 
   observeClose(options: { signal?: AbortSignal; deadlineAt?: number } = {}): Promise<CloseReceipt> {
@@ -586,10 +666,8 @@ export class TestHost<R, O extends { readonly status: string }> {
     if (deadlineAt !== undefined && !Number.isFinite(deadlineAt))
       return Promise.reject(new Error('invalid-deadline'));
     const current = this.context.getStore();
-    const currentCall = current?.kind === 'call' && current.generation === this.generation
-      ? this.kernel.checkCall(current.lease) : undefined;
-    if (current?.kind === 'cleanup' && current.operationId === this.retirementId && current.active ||
-        currentCall && !currentCall.ok && currentCall.reason === 'revoked')
+    if (activeCleanupIn(current, this.retirementOperation) ||
+        activeCallIn(current, new Set([this.generation])))
       return Promise.resolve(Object.freeze({ status: 'self-wait' }));
     if (signal?.aborted) return Promise.resolve(Object.freeze({ status: 'pending', reason: 'aborted' }));
     if (deadlineAt !== undefined && deadlineAt <= this.timer.now())
@@ -613,6 +691,162 @@ export class TestHost<R, O extends { readonly status: string }> {
       };
       const schedule = () => {
         if (deadlineAt !== undefined) handle = this.timer.schedule(Math.min(MAX_TIMER_DELAY, Math.max(0, deadlineAt - this.timer.now())), timeout);
+      };
+      const waiter: Waiter = {
+        wake: () => finish(),
+        remove: () => {
+          this.waiters.delete(waiter);
+          signal?.removeEventListener('abort', abort);
+          if (handle !== undefined) this.timer.cancel(handle);
+        },
+      };
+      this.waiters.add(waiter);
+      signal?.addEventListener('abort', abort, { once: true });
+      if (!done) schedule();
+      if (this.terminal) finish();
+      else if (signal?.aborted) finish('aborted');
+      else if (deadlineAt !== undefined && deadlineAt <= this.timer.now()) finish('deadline');
+    });
+  }
+}
+
+export type CohortTerminal = Readonly<{ status: 'closed' | 'cleanup-incomplete' }>;
+export type ObservationCohortView = Readonly<{
+  observe(options?: { signal?: AbortSignal }): Promise<CloseReceipt>;
+}>;
+type ObserverBudget = { deadlineAt: number; expired: boolean; view: ObservationCohortView };
+type CohortMember = TestHost<any, any>;
+
+/** One fixed set of TEST generation owners; no replacement or dynamic membership. */
+export class TestCohortRetirement {
+  private readonly members: readonly CohortMember[];
+  private readonly generations: ReadonlySet<Generation>;
+  private readonly operation: RetirementOperation = {};
+  private readonly operationId: string;
+  private readonly waiters = new Set<Waiter>();
+  private readonly timer: Clock;
+  private flight: Promise<CohortTerminal> | undefined;
+  private terminal: CohortTerminal | undefined;
+  private observerBudget: ObserverBudget | undefined;
+
+  constructor(members: readonly CohortMember[], timer: Clock = clock, operationId = 'cohort-retirement-1') {
+    if (members.length < 2 || new Set(members).size !== members.length)
+      throw new Error('invalid-fixed-cohort');
+    if (members.some(member => !member.canAttachCohort())) throw new Error('cohort-member-unavailable');
+    this.members = Object.freeze([...members]);
+    this.generations = new Set(members.map(member => member.cohortGeneration()));
+    this.timer = timer;
+    this.operationId = operationId;
+    const binding: CohortBinding = Object.freeze({
+      request: () => this.requestRetirement(),
+      read: operationId => this.readRetirement(operationId),
+      observe: (operationId, options) => this.observeRetirement(operationId, options),
+    });
+    for (const member of members) member.attachCohort(binding);
+  }
+
+  /** The plugin receives only this request surface. Observe/read remain trusted Host APIs. */
+  pluginView(member: CohortMember): Readonly<{ requestRetirement(): RetirementReceipt }> {
+    if (!this.members.includes(member)) throw new Error('foreign-cohort-member');
+    return Object.freeze({ requestRetirement: () => {
+      if (!activeCallIn(callContext.getStore(), this.generations)) throw new Error('retirement-request-refused');
+      return this.requestRetirement();
+    } });
+  }
+
+  requestRetirement(): RetirementReceipt {
+    this.close();
+    return Object.freeze({ kind: 'requested', operationId: this.operationId });
+  }
+
+  close(): Promise<CohortTerminal> {
+    if (this.flight) return this.flight;
+    let resolveFlight!: (value: CohortTerminal) => void;
+    this.flight = new Promise(resolve => { resolveFlight = resolve; });
+    // Publish the exact raw flight, then revoke every route before notifying
+    // any abort listener. Reentrant callbacks can only join the same flight.
+    const flights = this.members.map(member => member.revokeForCohort(this.operation));
+    for (const member of this.members) member.signalRetirement();
+    for (const member of this.members) member.driveRetirement();
+    void Promise.all(flights).then(results => {
+      const terminal: CohortTerminal = Object.freeze({
+        status: results.every(result => result.status === 'closed') ? 'closed' : 'cleanup-incomplete',
+      });
+      this.terminal = terminal;
+      for (const waiter of [...this.waiters]) waiter.wake();
+      resolveFlight(terminal);
+    });
+    return this.flight;
+  }
+
+  readRetirement(operationId: string): RetirementReadReceipt {
+    if (operationId !== this.operationId || !this.flight)
+      return Object.freeze({ status: 'unknown-or-expired' });
+    return Object.freeze({ status: this.terminal?.status ?? 'pending' });
+  }
+
+  /** A new explicit budget is available only after the prior cohort expires. */
+  beginObservationCohort(operationId: string, deadlineAt: number): ObservationCohortView {
+    if (operationId !== this.operationId || !this.flight) throw new Error('unknown-retirement');
+    if (!Number.isFinite(deadlineAt)) throw new Error('invalid-deadline');
+    const active = this.observerBudget;
+    if (active && !active.expired && (active.deadlineAt > this.timer.now() || this.terminal))
+      return active.view;
+    if (active && !this.terminal) active.expired = true;
+    let budget!: ObserverBudget;
+    const view: ObservationCohortView = Object.freeze({ observe: (options: { signal?: AbortSignal } = {}) =>
+      this.observeRetirementWithin(options.signal, budget) });
+    budget = { deadlineAt, expired: false, view };
+    this.observerBudget = budget;
+    return view;
+  }
+
+  observeRetirement(operationId: string, options: { signal?: AbortSignal; deadlineAt?: number } = {}): Promise<CloseReceipt | Readonly<{ status: 'unknown-or-expired' }>> {
+    if (operationId !== this.operationId || !this.flight)
+      return Promise.resolve(Object.freeze({ status: 'unknown-or-expired' }));
+    if (options.deadlineAt !== undefined && !Number.isFinite(options.deadlineAt))
+      return Promise.reject(new Error('invalid-deadline'));
+    if (activeCallIn(callContext.getStore(), this.generations) ||
+        activeCleanupIn(callContext.getStore(), this.operation))
+      return Promise.resolve(Object.freeze({ status: 'self-wait' }));
+    if (options.deadlineAt !== undefined) this.beginObservationCohort(operationId, options.deadlineAt);
+    return this.observeRetirementWithin(options.signal, this.observerBudget);
+  }
+
+  private observeRetirementWithin(signal: AbortSignal | undefined,
+      budget: ObserverBudget | undefined): Promise<CloseReceipt> {
+    const context = callContext.getStore();
+    if (activeCallIn(context, this.generations) || activeCleanupIn(context, this.operation))
+      return Promise.resolve(Object.freeze({ status: 'self-wait' }));
+    const receipt = (): CloseReceipt => Object.freeze({ status: this.terminal!.status });
+    if (this.terminal) return Promise.resolve(receipt());
+    const deadlineAt = budget?.deadlineAt;
+    if (signal?.aborted) return Promise.resolve(Object.freeze({ status: 'pending', reason: 'aborted' }));
+    if (deadlineAt !== undefined && deadlineAt <= this.timer.now()) {
+      if (budget) budget.expired = true;
+      return Promise.resolve(Object.freeze({ status: 'pending', reason: 'deadline' }));
+    }
+    return new Promise(resolve => {
+      let handle: unknown;
+      let done = false;
+      const finish = (reason?: 'aborted' | 'deadline') => {
+        if (done) return;
+        done = true;
+        waiter.remove();
+        if (!this.terminal && reason === 'deadline' && budget) budget.expired = true;
+        resolve(this.terminal ? receipt() : Object.freeze({ status: 'pending', reason: reason ?? (signal?.aborted ? 'aborted' : 'deadline') }));
+      };
+      const abort = () => finish('aborted');
+      const timeout = () => {
+        handle = undefined;
+        if (this.terminal) return finish();
+        if (signal?.aborted) return finish('aborted');
+        if (deadlineAt !== undefined && deadlineAt > this.timer.now()) return schedule();
+        finish('deadline');
+      };
+      const schedule = () => {
+        if (deadlineAt !== undefined)
+          handle = this.timer.schedule(Math.min(MAX_TIMER_DELAY, Math.max(0, deadlineAt - this.timer.now())), timeout);
       };
       const waiter: Waiter = {
         wake: () => finish(),

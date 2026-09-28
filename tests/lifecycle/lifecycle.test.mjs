@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fork } from 'node:child_process';
 import { deferred, fixture } from './fixture.mjs';
+import { TestHost, TestCohortRetirement } from '../../src/host/lifetime.ts';
 const markerRoot = mkdtempSync(join(tmpdir(), 'test-host-lifecycle-'));
 process.env.TEST_MARKERS = join(markerRoot, 'markers');
 after(() => {
@@ -998,4 +999,424 @@ test('detached cleanup continuation observes terminal receipt', async () => {
   } });
   assert.equal((await x.host.close()).status, 'closed');
   assert.deepEqual(await observed.promise, { status: 'closed' });
+});
+
+
+async function ready(dispose = () => {}) {
+  const host = new TestHost();
+  let signal;
+  const result = await host.construct(async current => {
+    signal = current;
+    host.reserve()({ dispose });
+    return { status: 'succeeded' };
+  }, outcome => outcome);
+  assert.equal(result.status, 'published');
+  return { host, signal };
+}
+
+function manualClock() {
+  let now = 0;
+  let next = 0;
+  const timers = new Map();
+  return { clock: {
+    now: () => now,
+    schedule: (_delay, wake) => { const id = ++next; timers.set(id, wake); return id; },
+    cancel: id => timers.delete(id),
+  }, timers, advance: value => { now = value; for (const [id, wake] of [...timers]) { timers.delete(id); wake(); } } };
+}
+
+// Red if abort runs before every sibling route is revoked or before the raw flight is published.
+test('cohort abort reentry finds sibling revoked and one published flight', async () => {
+  const a = await ready();
+  const b = await ready();
+  const cohort = new TestCohortRetirement([a.host, b.host]);
+  let reentered, memberFlight, denied, facts;
+  a.signal.addEventListener('abort', () => {
+    reentered = cohort.close();
+    memberFlight = b.host.close();
+    facts = cohort.readRetirement('cohort-retirement-1');
+    try { b.host.effect('leak'); } catch (cause) { denied = cause; }
+  });
+  const flight = cohort.close();
+  assert.strictEqual(reentered, flight);
+  assert.strictEqual(memberFlight, b.host.close());
+  assert.deepEqual(facts, { status: 'pending' });
+  assert.match(String(denied), /host-revoked/);
+  assert.deepEqual(b.host.effects, []);
+  assert.equal((await flight).status, 'closed');
+});
+
+// Red if provenance checks only the top ALS frame and misses active A behind unrelated B.
+test('nested A to unrelated B still cannot observe retirement of A', async () => {
+  const a = await ready();
+  const sibling = await ready();
+  const unrelated = await ready();
+  const cohort = new TestCohortRetirement([a.host, sibling.host]);
+  const view = cohort.pluginView(a.host);
+  const observed = await a.host.operate(() => unrelated.host.operate(async () => {
+    const request = view.requestRetirement();
+    return cohort.observeRetirement(request.operationId);
+  }));
+  assert.deepEqual(observed, { status: 'self-wait' });
+  assert.equal((await cohort.close()).status, 'closed');
+  assert.equal((await unrelated.host.close()).status, 'closed');
+});
+
+// Red if a caller in generation B cannot request through A's view, or can await its own cohort drain.
+test('active B requests through A view and receives only a request receipt', async () => {
+  const a = await ready();
+  const b = await ready();
+  const cohort = new TestCohortRetirement([a.host, b.host]);
+  const view = cohort.pluginView(a.host);
+  assert.deepEqual(Object.keys(view), ['requestRetirement']);
+  assert.throws(() => view.requestRetirement(), /retirement-request-refused/);
+  const result = await b.host.operate(async () => {
+    const request = view.requestRetirement();
+    assert.deepEqual(request, { kind: 'requested', operationId: 'cohort-retirement-1' });
+    assert.deepEqual(await cohort.observeRetirement(request.operationId), { status: 'self-wait' });
+    assert.throws(() => a.host.effect('leak'), /host-revoked/);
+    return request;
+  });
+  assert.equal(result.kind, 'requested');
+  assert.equal((await cohort.close()).status, 'closed');
+});
+
+// Red if a disposer can await its own operation, or request starts a second raw flight.
+test('disposer sees exact-operation self-wait and single flight', async () => {
+  let cohort, observed, reentered, calls = 0;
+  const a = await ready(() => {
+    calls++;
+    reentered = cohort.close();
+    observed = cohort.observeRetirement('cohort-retirement-1');
+  });
+  const b = await ready();
+  cohort = new TestCohortRetirement([a.host, b.host]);
+  const flight = cohort.close();
+  assert.equal((await flight).status, 'closed');
+  assert.strictEqual(reentered, flight);
+  assert.deepEqual(await observed, { status: 'self-wait' });
+  assert.equal(calls, 1);
+});
+
+// Red if completed, detached ALS ancestors keep a stale self-wait restriction.
+test('detached completed frame may observe the retained flight', async () => {
+  const hold = deferred();
+  const a = await ready(() => hold.promise);
+  const b = await ready();
+  const cohort = new TestCohortRetirement([a.host, b.host]);
+  const detached = deferred();
+  await a.host.operate(() => {
+    setImmediate(async () => detached.resolve(await cohort.observeRetirement('cohort-retirement-1')));
+  });
+  const request = cohort.requestRetirement();
+  assert.deepEqual(cohort.readRetirement(request.operationId), { status: 'pending' });
+  hold.resolve();
+  assert.equal((await detached.promise).status, 'closed');
+});
+
+// Red if a similarly named foreign operation is compared by ID instead of exact object/cohort generations.
+test('foreign cohort has no false self-wait', async () => {
+  const [a, b, c] = await Promise.all([ready(), ready(), ready()]);
+  const hold = deferred();
+  const d = await ready(() => hold.promise);
+  const own = new TestCohortRetirement([a.host, b.host], undefined, 'same-id');
+  const foreign = new TestCohortRetirement([c.host, d.host], undefined, 'same-id');
+  foreign.requestRetirement();
+  const observed = await a.host.operate(() => foreign.observeRetirement('same-id', { deadlineAt: 0 }));
+  assert.deepEqual(observed, { status: 'pending', reason: 'deadline' });
+  hold.resolve();
+  assert.equal((await foreign.close()).status, 'closed');
+  assert.equal((await own.close()).status, 'closed');
+});
+
+// Red if a cleanup frame from one operation is matched to another by their shared diagnostic ID.
+test('foreign operation with reused diagnostic ID is observable inside cleanup', async () => {
+  let foreign, inside;
+  const a = await ready(() => {
+    inside = foreign.observeRetirement('same-id', { deadlineAt: 0 });
+  });
+  const b = await ready();
+  const hold = deferred();
+  const c = await ready(() => hold.promise);
+  const d = await ready();
+  foreign = new TestCohortRetirement([c.host, d.host], undefined, 'same-id');
+  const own = new TestCohortRetirement([a.host, b.host], undefined, 'same-id');
+  foreign.requestRetirement();
+  assert.equal((await own.close()).status, 'closed');
+  assert.deepEqual(await inside, { status: 'pending', reason: 'deadline' });
+  hold.resolve();
+  assert.equal((await foreign.close()).status, 'closed');
+});
+
+// Red if direct retirement of one member bypasses fixed cohort membership.
+test('member close retires the whole fixed cohort', async () => {
+  const a = await ready();
+  const b = await ready();
+  const cohort = new TestCohortRetirement([a.host, b.host]);
+  assert.equal((await a.host.close()).status, 'closed');
+  assert.equal((await cohort.close()).status, 'closed');
+  assert.equal(b.host.isOpen(), false);
+  assert.throws(() => b.host.effect('leak'), /host-revoked/);
+});
+
+// Red if the member returns the cohort ID but routes its read/observe to its old per-member ID.
+test('member retirement receipt routes read and observe to the cohort flight', async () => {
+  const hold = deferred();
+  const a = await ready(() => hold.promise);
+  const b = await ready();
+  const cohort = new TestCohortRetirement([a.host, b.host]);
+  const request = a.host.requestRetirement();
+  assert.deepEqual(request, { kind: 'requested', operationId: 'cohort-retirement-1' });
+  assert.deepEqual(a.host.readRetirement(request.operationId), { status: 'pending' });
+  assert.deepEqual(await a.host.observeRetirement(request.operationId, { deadlineAt: 0 }),
+    { status: 'pending', reason: 'deadline' });
+  hold.resolve();
+  assert.equal((await cohort.close()).status, 'closed');
+  assert.deepEqual(a.host.readRetirement(request.operationId), { status: 'closed' });
+  assert.deepEqual(await a.host.observeRetirement(request.operationId), { status: 'closed' });
+});
+
+// Red if a completed terminal next leaves stale closing-stream authority in a detached ALS frame.
+test('completed detached terminal frame may enter unrelated generation after cancel', async () => {
+  const a = await ready();
+  const b = await ready();
+  const detached = deferred();
+  const view = a.host.retainTerminalStream({
+    next() {
+      setImmediate(() => {
+        try { b.host.effect('detached'); detached.resolve('entered'); }
+        catch (cause) { detached.resolve(cause); }
+      });
+      return { done: false, value: 'chunk' };
+    },
+    close() {},
+  });
+  assert.deepEqual(await view.next(), { done: false, value: 'chunk' });
+  await view.cancel();
+  assert.equal(await detached.promise, 'entered');
+  assert.deepEqual(b.host.effects, ['detached']);
+  assert.equal((await a.host.close()).status, 'closed');
+  assert.equal((await b.host.close()).status, 'closed');
+});
+
+// Red if B's new call copies a closing stream from a completed detached A frame.
+test('completed detached terminal frame cannot taint a fresh unrelated call', async () => {
+  const a = await ready();
+  const b = await ready();
+  const detached = deferred();
+  const view = a.host.retainTerminalStream({
+    next() {
+      setImmediate(async () => {
+        try { await b.host.operate(() => b.host.effect('detached')); detached.resolve('entered'); }
+        catch (cause) { detached.resolve(cause); }
+      });
+      return { done: false, value: 'chunk' };
+    },
+    close() {},
+  });
+  await view.next();
+  await view.cancel();
+  assert.equal(await detached.promise, 'entered');
+  assert.deepEqual(b.host.effects, ['detached']);
+  assert.equal((await a.host.close()).status, 'closed');
+  assert.equal((await b.host.close()).status, 'closed');
+});
+
+// Red if a completed cleanup frame keeps denying an independent generation.
+test('completed detached cleanup frame cannot revoke unrelated effects', async () => {
+  const a = await ready();
+  const b = await ready();
+  const detached = deferred();
+  const view = a.host.retainTerminalStream({
+    next: () => ({ done: true, value: undefined }),
+    close() {
+      assert.throws(() => b.host.effect('active-cleanup'), /host-revoked/);
+      assert.throws(() => b.host.read(() => 'active-cleanup'), /host-revoked/);
+      assert.throws(() => b.host.operate(() => 'active-cleanup'), /host-revoked/);
+      assert.throws(() => b.host.retainStream({ close() {} }), /stream-admission-refused/);
+      assert.throws(() => b.host.retainTerminalStream({ next: () => ({ done: true }), close() {} }),
+        /stream-admission-refused/);
+      setImmediate(async () => {
+        try {
+          b.host.effect('detached-cleanup');
+          await b.host.operate(() => b.host.effect('detached-call'));
+          assert.equal(b.host.read(() => 'detached-read'), 'detached-read');
+          detached.resolve('entered');
+        }
+        catch (cause) { detached.resolve(cause); }
+      });
+    },
+  });
+  await view.cancel();
+  assert.equal(await detached.promise, 'entered');
+  assert.deepEqual(b.host.effects, ['detached-cleanup', 'detached-call']);
+  assert.equal((await a.host.close()).status, 'closed');
+  assert.equal((await b.host.close()).status, 'closed');
+});
+
+// Red if an already active stream cleanup retains the old private operation after cohort adoption.
+test('pre-retirement stream cleanup adopts exact cohort operation provenance', async () => {
+  const entered = deferred();
+  const release = deferred();
+  const a = await ready();
+  const b = await ready();
+  let observed;
+  let cohort;
+  const view = a.host.retainTerminalStream({
+    next: () => ({ done: true, value: undefined }),
+    close: async () => {
+      entered.resolve();
+      await release.promise;
+      observed = await cohort.observeRetirement('cohort-retirement-1', { deadlineAt: 0 });
+    },
+  });
+  const cancel = view.cancel();
+  await entered.promise;
+  cohort = new TestCohortRetirement([a.host, b.host]);
+  const flight = cohort.close();
+  release.resolve();
+  await cancel;
+  await flight;
+  assert.deepEqual(observed, { status: 'self-wait' });
+});
+
+// Red if one member's failed disposer prevents an independent sibling from running.
+test('failed member leaves debt while independent sibling still disposes', async () => {
+  const cause = Error('physical-failure');
+  let siblingDisposals = 0;
+  const a = await ready(() => { throw cause; });
+  const b = await ready(() => { siblingDisposals++; });
+  const cohort = new TestCohortRetirement([a.host, b.host]);
+  const terminal = await cohort.close();
+  assert.equal(terminal.status, 'cleanup-incomplete');
+  const failed = await a.host.close();
+  const successful = await b.host.close();
+  assert.equal(failed.status, 'cleanup-incomplete');
+  assert.strictEqual(failed.cause, cause);
+  assert.equal(successful.status, 'closed');
+  assert.equal(siblingDisposals, 1);
+});
+
+// Red if cohort cleanup skips idle sibling close or disposes a busy stream owner before raw next settles.
+test('cohort preserves per-member stream close and raw-settlement prerequisites', async () => {
+  const events = [];
+  const next = deferred();
+  const a = await ready(() => { events.push('a-dispose'); });
+  const b = await ready(() => { events.push('b-dispose'); });
+  const aView = a.host.retainTerminalStream({
+    next: () => next.promise,
+    close: () => { events.push('a-close'); },
+  });
+  b.host.retainTerminalStream({
+    next: () => ({ done: true, value: undefined }),
+    close: () => { events.push('b-close'); },
+  });
+  const rawNext = aView.next();
+  const cohort = new TestCohortRetirement([a.host, b.host]);
+  const flight = cohort.close();
+  assert.deepEqual(events, ['a-close', 'b-close']);
+  assert.equal(events.includes('a-dispose'), false);
+  next.resolve({ done: true, value: undefined });
+  await assert.rejects(rawNext, /host-revoked/);
+  assert.equal((await flight).status, 'closed');
+  assert.equal(events.filter(event => event === 'a-dispose').length, 1);
+  assert.equal(events.filter(event => event === 'b-dispose').length, 1);
+});
+
+// Red if a deadline cancels raw cleanup or a later terminal rewrites the earlier observer receipt.
+test('deadline first stays pending while late terminal becomes readable', async () => {
+  const time = manualClock();
+  const hold = deferred();
+  const a = await ready(() => hold.promise);
+  const b = await ready();
+  const cohort = new TestCohortRetirement([a.host, b.host], time.clock);
+  const request = cohort.requestRetirement();
+  const observed = cohort.observeRetirement(request.operationId, { deadlineAt: 10 });
+  assert.equal(time.timers.size, 1);
+  time.advance(10);
+  const first = await observed;
+  assert.deepEqual(first, { status: 'pending', reason: 'deadline' });
+  hold.resolve();
+  assert.equal((await cohort.close()).status, 'closed');
+  assert.deepEqual(await cohort.observeRetirement(request.operationId, { deadlineAt: 0 }), { status: 'closed' });
+  assert.deepEqual(first, { status: 'pending', reason: 'deadline' });
+  assert.equal(time.timers.size, 0);
+});
+
+// Red if observer cancellation aborts raw cleanup, or a terminal read leaks member debt/payload.
+test('cohort observer cancellation detaches without changing raw retirement', async () => {
+  const hold = deferred();
+  const a = await ready(() => hold.promise);
+  const b = await ready();
+  const cohort = new TestCohortRetirement([a.host, b.host]);
+  const request = cohort.requestRetirement();
+  const controller = new AbortController();
+  const observed = cohort.observeRetirement(request.operationId, { signal: controller.signal });
+  controller.abort();
+  assert.deepEqual(await observed, { status: 'pending', reason: 'aborted' });
+  assert.deepEqual(cohort.readRetirement(request.operationId), { status: 'pending' });
+  hold.resolve();
+  assert.equal((await cohort.close()).status, 'closed');
+  assert.deepEqual(cohort.readRetirement(request.operationId), { status: 'closed' });
+  assert.deepEqual(await cohort.observeRetirement(request.operationId), { status: 'closed' });
+});
+
+// Red if a late join installs its own later deadline and extends the first observer cohort.
+test('late cohort observer joins the retained deadline and a new budget is explicit', async () => {
+  let now = 0;
+  let nextId = 0;
+  const timers = new Map();
+  const clock = {
+    now: () => now,
+    schedule: (delay, wake) => {
+      const id = ++nextId;
+      timers.set(id, { at: now + delay, wake });
+      return id;
+    },
+    cancel: id => timers.delete(id),
+  };
+  const advance = value => {
+    now = value;
+    for (const [id, timer] of [...timers]) if (timer.at <= now) {
+      timers.delete(id);
+      timer.wake();
+    }
+  };
+  const hold = deferred();
+  const a = await ready(() => hold.promise);
+  const b = await ready();
+  const cohort = new TestCohortRetirement([a.host, b.host], clock);
+  const request = cohort.requestRetirement();
+  const first = cohort.observeRetirement(request.operationId, { deadlineAt: 10 });
+  const originalBudget = cohort.beginObservationCohort(request.operationId, 20);
+  advance(5);
+  assert.strictEqual(cohort.beginObservationCohort(request.operationId, 20), originalBudget);
+  const late = cohort.observeRetirement(request.operationId, { deadlineAt: 20 });
+  advance(10);
+  assert.equal(timers.size, 0);
+  assert.deepEqual(await first, { status: 'pending', reason: 'deadline' });
+  assert.deepEqual(await late, { status: 'pending', reason: 'deadline' });
+  const renewed = cohort.beginObservationCohort(request.operationId, 30);
+  assert.notStrictEqual(renewed, originalBudget);
+  assert.deepEqual(await originalBudget.observe(), { status: 'pending', reason: 'deadline' });
+  const next = renewed.observe();
+  hold.resolve();
+  assert.equal((await cohort.close()).status, 'closed');
+  assert.deepEqual(await next, { status: 'closed' });
+});
+
+// Red if a coincident timer overrides an already recorded terminal result.
+test('terminal first wins a same-turn deadline and removes timer', async () => {
+  const time = manualClock();
+  const hold = deferred();
+  const a = await ready(() => hold.promise);
+  const b = await ready();
+  const cohort = new TestCohortRetirement([a.host, b.host], time.clock);
+  const request = cohort.requestRetirement();
+  const observed = cohort.observeRetirement(request.operationId, { deadlineAt: 10 });
+  hold.resolve();
+  assert.equal((await cohort.close()).status, 'closed');
+  time.advance(10);
+  assert.deepEqual(await observed, { status: 'closed' });
+  assert.equal(time.timers.size, 0);
 });
