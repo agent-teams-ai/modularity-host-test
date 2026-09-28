@@ -26,8 +26,8 @@ expected event sequence. Lifecycle and probe marker counts are labeled partial;
 an absent marker is never presented as a zero total. The cleanup probe separately
 records its fixture-owned disposer counter.
 `accepted` requires both frozen installs, package-root resolution, pinned compiler
-typechecks, all 98 named tests with no skipped or extra test, all 23 direct
-admission child scenarios with their expected ordered markers, 61 focused
+typechecks, all 118 named tests with no skipped or extra test, all 23 direct
+admission child scenarios with their expected ordered markers, 80 focused
 lifecycle executions with per-process marker logs, a retained import-fence
 marker from the child scenario, the 0.1.0 negative
 and 0.2.0 positive distinct-root preparation probe, and a real Assembly
@@ -38,8 +38,9 @@ failure is diagnostic and cannot change that status. Probe JSON uses fixture-own
 IDs and booleans; it does not export raw resource, product or error objects.
 The fifteen L2b lifecycle scenarios cover the bounded
 [L2b TEST checkpoint](lifecycle-kernel-l2b.md); twenty-three additional scenarios
-cover the [H04 stream terminal checkpoint](lifecycle-kernel-h04.md). They do
-not certify the pending multi-generation and inventory cases.
+cover the [H04 stream terminal checkpoint](lifecycle-kernel-h04.md). Nineteen
+additional scenarios cover the [H06/H09 fixed cohort checkpoint](lifecycle-kernel-h06-cohort.md).
+They do not certify H13 bounded inventory or replacement.
 
 The Core/Assembly 0.2.0 candidate archives were packed from clean Get Modular
 source commit `6b31f20fe3e5fb8324812aa2ee907905751cde71`. The separate

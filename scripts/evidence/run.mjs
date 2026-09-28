@@ -17,7 +17,8 @@ const git = (...args) => execFileSync('git', args, { cwd: source, encoding: 'utf
 const files = [];
 const sourcePaths = ['src', 'tests', 'scripts/evidence', 'evidence/candidate-0.2',
   'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'third_party',
-  'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md', 'docs/evidence-replay.md'];
+  'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
+  'docs/lifecycle-kernel-h06-cohort.md', 'docs/evidence-replay.md'];
 const commitCoversWorktree = git('status', '--porcelain', '--untracked-files=all', '--', ...sourcePaths) === '';
 function scan(path) {
   for (const entry of readdirSync(join(source, path), { withFileTypes: true })) {
@@ -29,7 +30,8 @@ function scan(path) {
 for (const path of ['src', 'tests', 'scripts/evidence', 'evidence/candidate-0.2']) scan(path);
 for (const path of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json',
   'third_party/pins.json', pins.consumerModuleStandard.path, pins.lifecycleKernel.path,
-  'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md', 'docs/evidence-replay.md'])
+  'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
+  'docs/lifecycle-kernel-h06-cohort.md', 'docs/evidence-replay.md'])
   files.push({ path, sha256: sha256(read(join(source, path))) });
 files.sort((a, b) => a.path.localeCompare(b.path));
 const report = {
