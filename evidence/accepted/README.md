@@ -101,6 +101,31 @@ These L2b1 archives exclude macOS AppleDouble sidecars and extended attributes.
 Their manifest bytes are unchanged. On macOS, create retained archives with
 `COPYFILE_DISABLE=1 tar --no-xattrs` to keep the payload portable.
 
+`bab6d15-h04-final-run.tar.gz` retains the accepted H04 terminal stream replay
+for clean TEST source commit `bab6d15888fb82ede02ef86ae8dbacd0883b94d2`
+(tree `72024ae6bf747b41a74dcb43eb5b3e05a1e4c2a9`). Both exact package pairs
+passed frozen offline install, typecheck, 96 tests, 23 admission cases and 58
+focused lifecycle cases on Node 24.18.0. Nested ordinary and terminal consumer
+obligations remain owned until raw settlement. The primitive result type and
+marker cleanup match the tested runtime/evidence path. The manifest SHA-256 is
+`c2a9342d2df643060d2f243b5d52268f0a8c968d4eef48cc140ffbf4bc2f5308`;
+the archive SHA-256 is
+`814b5720a43a6c9ad7e2a81f656fb55633fc3cd4120b4d64dbfae9cf2fdc60e1`.
+This archive has no AppleDouble entries or PAX metadata.
+
+`6c6740a-h04-review-run.tar.gz` retains the accepted replay after terminal
+close failure observation and the consistent closed `result()` gate for clean
+TEST source commit `6c6740acef3fc2798f72bb64f2047fbc62b7eff7`
+(tree `9b36fff263d2f3e364a6db5f575a8b03f3e2c50f`). Both exact package pairs
+passed frozen offline install, typecheck, 99 tests, 23 admission cases and 61
+focused lifecycle cases on Node 24.18.0. The manifest SHA-256 is
+`d28eb8146a379c1f0c45d121c6757eb585ceb47ecc6823cc8037b2a99c980030`;
+the archive SHA-256 is
+`a8a78e3bf33f3f4f29392e8a9878aef15cc5f8ec853791d3fe17af5061521d39`.
+The 376 archive entries contain no AppleDouble/PAX metadata, and the archived
+manifest bytes match the retained run exactly.
+
+
 Inspect the accepted manifest without extracting the archive:
 
 ```sh
@@ -130,6 +155,13 @@ tar -xOzf evidence/accepted/5f78cf5-l2b1-current-pin-run.tar.gz \
 
 tar -xOzf evidence/accepted/0dea754-l2b1-review-run.tar.gz \
   evidence/runs/2026-09-28T22-05-43-826Z-82924/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/bab6d15-h04-final-run.tar.gz \
+  evidence/runs/2026-09-28T22-38-26-266Z-28277/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/6c6740a-h04-review-run.tar.gz \
+  evidence/runs/2026-09-28T22-50-06-630Z-44098/evidence.json | shasum -a 256
+
 ```
 
 These archives preserve evidence for the exact TEST subjects. They do not

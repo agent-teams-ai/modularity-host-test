@@ -25,8 +25,76 @@ const observeNativePromise = Promise.prototype.then;
 type Ticket = { settled: boolean; promise: Promise<unknown> };
 type Waiter = { wake(): void; remove(): void };
 type StreamRecord = { resource: StreamResource; custody: CustodyLease; runs: Set<Ticket>; close?: Promise<void>; settled: boolean };
-type CallContext = { kind: 'call'; generation: Generation; lease: CallLease };
+type StreamNext<T> = () => IteratorResult<T> | Promise<IteratorResult<T>>;
+export type TerminalResultValue = string | number | boolean | bigint | symbol | null | undefined;
+type StreamResult<U extends TerminalResultValue> = () => U | Promise<U>;
+type StreamReturn<T> = () => IteratorResult<T> | Promise<IteratorResult<T>>;
+export type TerminalStreamResource<T, U extends TerminalResultValue> = {
+  next: StreamNext<T>;
+  result?: StreamResult<U>;
+  return?: StreamReturn<T>;
+  close(): void | Promise<void>;
+};
+export type TerminalStreamView<T, U extends TerminalResultValue> = Readonly<{
+  next(): Promise<IteratorResult<T>>;
+  result(): Promise<U>;
+  return(): Promise<IteratorResult<T>>;
+  cancel(): Promise<void>;
+  [Symbol.asyncIterator](): AsyncIterator<T>;
+}>;
+type TerminalStreamRecord = Omit<StreamRecord, 'runs'> & {
+  callbacks: { next: () => unknown; result?: () => unknown; return?: () => unknown; close: () => unknown };
+  started: boolean;
+  iterationEnded: boolean;
+  closing: boolean;
+  tickets: Set<Ticket>;
+};
+type CallContext = { kind: 'call'; generation: Generation; lease: CallLease;
+  stream?: TerminalStreamRecord; ordinaryStream?: StreamRecord; parent?: CallContext };
 type CleanupContext = { kind: 'cleanup'; operationId: string; active: boolean };
+type ConsumerTickets = { ordinary: readonly StreamRecord[]; terminal: readonly TerminalStreamRecord[] };
+function consumerTickets(context: CallContext | CleanupContext | undefined,
+    ordinary?: StreamRecord, terminal?: TerminalStreamRecord): ConsumerTickets {
+  const ordinaryOwners = new Set<StreamRecord>(ordinary ? [ordinary] : []);
+  const terminalOwners = new Set<TerminalStreamRecord>(terminal ? [terminal] : []);
+  for (let call = context?.kind === 'call' ? context : undefined; call; call = call.parent) {
+    if (call.ordinaryStream) ordinaryOwners.add(call.ordinaryStream);
+    if (call.stream) terminalOwners.add(call.stream);
+  }
+  return { ordinary: [...ordinaryOwners], terminal: [...terminalOwners] };
+}
+function retainConsumerTicket(owners: ConsumerTickets, ticket: Ticket): void {
+  for (const stream of owners.ordinary) stream.runs.add(ticket);
+  for (const stream of owners.terminal) stream.tickets.add(ticket);
+}
+function releaseConsumerTicket(owners: ConsumerTickets, ticket: Ticket): void {
+  for (const stream of owners.ordinary) stream.runs.delete(ticket);
+  for (const stream of owners.terminal) stream.tickets.delete(ticket);
+}
+function hasClosingStream(context: CallContext | CleanupContext | undefined): boolean {
+  for (let call = context?.kind === 'call' ? context : undefined; call; call = call.parent)
+    if (call.stream?.closing) return true;
+  return false;
+}
+function ownMethod(resource: object, name: 'next' | 'result' | 'return' | 'close', required: boolean): (() => unknown) | undefined {
+  const descriptor = Object.getOwnPropertyDescriptor(resource, name);
+  if (!descriptor && !required) return undefined;
+  if (!descriptor || !('value' in descriptor) || typeof descriptor.value !== 'function')
+    throw new Error(`unsupported-stream-${name}`);
+  return descriptor.value.bind(resource);
+}
+function iteratorResult<T>(value: unknown, requireDone = false): IteratorResult<T> {
+  if (value === null || typeof value !== 'object' || types.isPromise(value) ||
+      (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null))
+    throw new Error('unsupported-iterator-result');
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  if (Object.values(descriptors).some(descriptor => !('value' in descriptor)) ||
+      'then' in descriptors ||
+      !('done' in descriptors) || typeof descriptors.done?.value !== 'boolean' ||
+      (requireDone && descriptors.done.value !== true))
+    throw new Error('unsupported-iterator-result');
+  return value as IteratorResult<T>;
+}
 export type Construction<R, O> = Readonly<
   | { status: 'published'; root: R; raw: O }
   | { status: 'cancelled'; raw: O }
@@ -44,6 +112,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   private constructionResult: Promise<Construction<R, O>> | undefined;
   private readonly operations = new Set<Ticket>();
   private readonly streams = new Set<StreamRecord>();
+  private readonly terminalStreams = new Set<TerminalStreamRecord>();
   private readonly context = new AsyncLocalStorage<CallContext | CleanupContext>();
   private resource: OwnedResource | undefined;
   private custody: CustodyLease | undefined;
@@ -74,7 +143,7 @@ export class TestHost<R, O extends { readonly status: string }> {
       debt: this.terminal?.status === 'cleanup-incomplete' ? this.terminal.debt : undefined,
       cause: this.terminal?.status === 'cleanup-incomplete' ? this.terminal.cause : undefined,
       failures: this.terminal?.status === 'cleanup-incomplete' ? this.terminal.failures : undefined,
-      streams: this.streams.size, observers: this.waiters.size });
+      streams: this.streams.size + this.terminalStreams.size, observers: this.waiters.size });
   }
 
   /** Reservation happens before allocation; the returned registration remains valid after seal. */
@@ -98,6 +167,8 @@ export class TestHost<R, O extends { readonly status: string }> {
     if (generation !== this.generation || this.lifecycle().phase !== 'active') throw new Error('host-revoked');
   }
   private withCall<T>(generation: Generation, action: (lease: CallLease) => T): T {
+    const current = this.context.getStore();
+    if (current?.kind === 'cleanup' || hasClosingStream(current)) throw new Error('host-revoked');
     this.assertReady(generation);
     const admitted = this.kernel.beginCall(generation);
     if (!admitted.ok) throw new Error('host-revoked');
@@ -110,6 +181,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   /** The check and sink write are one synchronous block. */
   effect(value: string): void {
     const current = this.context.getStore();
+    if (current?.kind === 'cleanup' || hasClosingStream(current)) throw new Error('host-revoked');
     if (current?.kind === 'call' && current.generation === this.generation) {
       if (!this.kernel.checkCall(current.lease).ok) throw new Error('host-revoked');
       this.effects.push(value);
@@ -123,23 +195,30 @@ export class TestHost<R, O extends { readonly status: string }> {
     });
   }
   read<T>(read: () => T): T {
+    const parent = this.context.getStore();
+    if (parent?.kind === 'cleanup' || hasClosingStream(parent)) throw new Error('host-revoked');
+    const consumers = consumerTickets(parent);
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
     if (!admitted.ok) throw new Error('host-revoked');
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
     this.operations.add(ticket);
+    retainConsumerTicket(consumers, ticket);
     const settle = () => {
       if (ticket.settled) return;
       this.kernel.release(admitted.value);
       ticket.settled = true;
       this.operations.delete(ticket);
+      releaseConsumerTicket(consumers, ticket);
       resolveTicket(undefined);
     };
     let result: T;
     try {
       if (!this.kernel.checkCall(admitted.value).ok) throw new Error('host-revoked');
-      result = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value }, read);
+      result = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value,
+        stream: parent?.kind === 'call' ? parent.stream : undefined,
+        parent: parent?.kind === 'call' ? parent : undefined }, read);
     } catch (cause) {
       settle();
       throw cause;
@@ -163,16 +242,22 @@ export class TestHost<R, O extends { readonly status: string }> {
     return this.operateTracked(work);
   }
   private operateTracked<T>(work: () => T | Promise<T>, stream?: StreamRecord): Promise<T> {
+    const parent = this.context.getStore();
+    if (parent?.kind === 'cleanup' || hasClosingStream(parent)) throw new Error('host-revoked');
+    const consumers = consumerTickets(parent, stream);
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
     if (!admitted.ok) throw new Error('host-revoked');
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
     this.operations.add(ticket);
-    stream?.runs.add(ticket);
+    retainConsumerTicket(consumers, ticket);
     let result: Promise<T>;
     try {
-      const raw = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value }, work);
+      const raw = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value,
+        stream: parent?.kind === 'call' ? parent.stream : undefined,
+        ordinaryStream: stream,
+        parent: parent?.kind === 'call' ? parent : undefined }, work);
       // Keep a native Promise as the raw work: Promise.resolve would consult a
       // hostile constructor and could turn a still-running call into a rejection.
       if (types.isPromise(raw)) result = raw as Promise<T>;
@@ -186,7 +271,7 @@ export class TestHost<R, O extends { readonly status: string }> {
       this.kernel.release(admitted.value);
       ticket.settled = true;
       this.operations.delete(ticket);
-      stream?.runs.delete(ticket);
+      releaseConsumerTicket(consumers, ticket);
       resolveTicket(undefined);
     };
     // Both branches observe the result; the caller still receives its original promise.
@@ -233,6 +318,8 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   /** A TEST-only retained consumer. Custody is independent of invocation authority. */
   retainStream(resource: StreamResource): Readonly<{ run<T>(work: () => T | Promise<T>): Promise<T> }> {
+    const context = this.context.getStore();
+    if (context?.kind === 'cleanup' || hasClosingStream(context)) throw new Error('stream-admission-refused');
     if (!this.isOpen() || this.lifecycle().phase !== 'active') throw new Error('stream-admission-refused');
     const custody = this.kernel.retainCustody(this.generation);
     if (!custody.ok) throw new Error(`stream-custody:${custody.reason}`);
@@ -242,6 +329,138 @@ export class TestHost<R, O extends { readonly status: string }> {
       if (record.settled) throw new Error('stream-closed');
       return this.operateTracked(work, record);
     } });
+  }
+
+  /** Fixed TEST stream protocol. Callback references are captured before publication. */
+  retainTerminalStream<T, U extends TerminalResultValue>(resource: TerminalStreamResource<T, U>): TerminalStreamView<T, U> {
+    const context = this.context.getStore();
+    if (context?.kind === 'cleanup' || hasClosingStream(context)) throw new Error('stream-admission-refused');
+    if (!this.isOpen() || this.lifecycle().phase !== 'active') throw new Error('stream-admission-refused');
+    if (resource === null || typeof resource !== 'object') throw new Error('unsupported-stream-resource');
+    const callbacks = {
+      next: ownMethod(resource, 'next', true)!, result: ownMethod(resource, 'result', false),
+      return: ownMethod(resource, 'return', false), close: ownMethod(resource, 'close', true)!,
+    };
+    const custody = this.kernel.retainCustody(this.generation);
+    if (!custody.ok) throw new Error(`stream-custody:${custody.reason}`);
+    const record: TerminalStreamRecord = { resource, custody: custody.value, callbacks,
+      started: false, iterationEnded: false, closing: false, tickets: new Set(), settled: false };
+    this.terminalStreams.add(record);
+    const next = (): Promise<IteratorResult<T>> => {
+      if (record.closing || record.settled || this.lifecycle().phase !== 'active')
+        return Promise.reject(new Error('host-revoked'));
+      if (record.iterationEnded && !record.closing) return Promise.resolve({ done: true, value: undefined });
+      return this.streamCall(record, callbacks.next, value => {
+        const chunk = iteratorResult<T>(value);
+        if (chunk.done) record.iterationEnded = true;
+        return chunk;
+      }, true);
+    };
+    const result = (): Promise<U> => {
+      if (record.closing || record.settled || this.lifecycle().phase !== 'active')
+        return Promise.reject(new Error('host-revoked'));
+      if (!callbacks.result) return Promise.reject(new Error('stream-result-unsupported'));
+      return this.streamCall(record, callbacks.result, value => {
+        if (value !== null && (typeof value === 'object' || typeof value === 'function'))
+          throw new Error('unsupported-stream-result');
+        return value as U;
+      });
+    };
+    const close = () => this.startTerminalClose(record);
+    const returned = (): Promise<IteratorResult<T>> => {
+      const flight = observeNativePromise.call(close(),
+        () => ({ done: true as const, value: undefined })) as Promise<IteratorResult<T>>;
+      // A public fire-and-forget return must not leave its derived flight unobserved.
+      void observeNativePromise.call(flight, undefined, () => undefined);
+      return flight;
+    };
+    return Object.freeze({ next, result,
+      return: returned,
+      cancel: () => close(),
+      [Symbol.asyncIterator]: () => Object.freeze({ next, return: returned }),
+    });
+  }
+
+  private streamCall<T>(record: TerminalStreamRecord, callback: () => unknown,
+      validate: (value: unknown) => T, startsIteration = false): Promise<T> {
+    const parent = this.context.getStore();
+    if (parent?.kind === 'cleanup' || hasClosingStream(parent)) return Promise.reject(new Error('host-revoked'));
+    const consumers = consumerTickets(parent, undefined, record);
+    if (record.closing || record.settled) return Promise.reject(new Error('stream-closed'));
+    this.assertReady(this.generation);
+    const admitted = this.kernel.beginCall(this.generation);
+    if (!admitted.ok) throw new Error('host-revoked');
+    let resolveTicket!: (value: unknown) => void;
+    const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
+    this.operations.add(ticket);
+    retainConsumerTicket(consumers, ticket);
+    const settle = () => {
+      if (ticket.settled) return;
+      ticket.settled = true;
+      this.kernel.release(admitted.value);
+      this.operations.delete(ticket);
+      releaseConsumerTicket(consumers, ticket);
+      resolveTicket(undefined);
+    };
+    let raw: unknown;
+    try {
+      if (!this.kernel.checkCall(admitted.value).ok) throw new Error('host-revoked');
+      if (startsIteration) record.started = true;
+      raw = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value,
+        stream: record, parent: parent?.kind === 'call' ? parent : undefined }, callback);
+      if (raw !== null && (typeof raw === 'object' || typeof raw === 'function') &&
+          !types.isPromise(raw) && Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null)
+        throw new Error('unsupported-stream-output');
+    } catch (cause) { settle(); return Promise.reject(cause); }
+    return new Promise<T>((resolve, reject) => {
+      const success = (value: unknown) => {
+        settle();
+        if (this.lifecycle().phase !== 'active' || record.closing || hasClosingStream(parent)) {
+          reject(new Error('host-revoked'));
+          return;
+        }
+        try { resolve(validate(value)); } catch (cause) { reject(cause); }
+      };
+      const failure = (cause: unknown) => { settle(); reject(cause); };
+      if (!types.isPromise(raw)) { success(raw); return; }
+      try { observeNativePromise.call(raw, success, failure); }
+      catch (cause) { reject(new Error('stream-observer-refused', { cause })); }
+    });
+  }
+
+  private startTerminalClose(record: TerminalStreamRecord): Promise<void> {
+    if (record.close) return record.close;
+    record.closing = true;
+    let resolveClose!: () => void;
+    let rejectClose!: (cause: unknown) => void;
+    record.close = new Promise<void>((resolve, reject) => { resolveClose = resolve; rejectClose = reject; });
+    // The Host retains this flight even if a caller does not await cancel().
+    void observeNativePromise.call(record.close, undefined, () => undefined);
+    const actions = [this.invokeCleanup(() => record.callbacks.close() as void | Promise<void>)];
+    if (record.started && !record.iterationEnded && record.callbacks.return) {
+      actions.push(this.invokeCleanup(async () => {
+        const raw = record.callbacks.return!();
+        if (types.isPromise(raw)) {
+          await new Promise<void>((resolve, reject) => {
+            try { observeNativePromise.call(raw, value => {
+              try { iteratorResult(value, true); resolve(); }
+              catch (cause) { reject(cause); }
+            }, reject); }
+            catch (cause) { reject(new Error('stream-return-observer-refused', { cause })); }
+          });
+        } else iteratorResult(raw, true);
+      }));
+    }
+    const pending = [...record.tickets].map(ticket => ticket.promise);
+    void Promise.allSettled([...actions, ...pending]).then(outcomes => {
+      const failed = outcomes.find((outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected');
+      if (failed) { rejectClose(failed.reason); return; }
+      this.kernel.release(record.custody);
+      record.settled = true;
+      this.terminalStreams.delete(record);
+      resolveClose();
+    });
+    return record.close;
   }
 
   requestRetirement(): RetirementReceipt {
@@ -315,13 +534,17 @@ export class TestHost<R, O extends { readonly status: string }> {
         : Promise.allSettled(runs.map(ticket => ticket.promise))
           .then(() => this.invokeCleanup(() => stream.resource.close()));
     }
+    for (const stream of this.terminalStreams) this.startTerminalClose(stream);
     const tickets = [...(this.construction ? [this.construction] : []), ...this.operations];
     void (async () => {
       const streamRecords = [...this.streams];
-      const closedStreams = await Promise.allSettled(streamRecords.map(stream => stream.close!));
+      const terminalRecords = [...this.terminalStreams];
+      const allStreamRecords = [...streamRecords, ...terminalRecords];
+      const closedStreams = await Promise.allSettled([...streamRecords.map(stream => stream.close!),
+        ...terminalRecords.map(stream => stream.close!)]);
       await Promise.allSettled(tickets.map(ticket => ticket.promise));
       const streamFailures: CleanupFailure[] = closedStreams.flatMap((result, index) =>
-        result.status === 'rejected' ? [{ debt: streamRecords[index]!.resource, cause: result.reason }] : []);
+        result.status === 'rejected' ? [{ debt: allStreamRecords[index]!.resource, cause: result.reason }] : []);
       let terminal: CloseTerminal;
       try {
         streamRecords.forEach((stream, index) => {

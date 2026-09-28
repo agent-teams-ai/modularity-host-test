@@ -1,11 +1,15 @@
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fork } from 'node:child_process';
 import { deferred, fixture } from './fixture.mjs';
-process.env.TEST_MARKERS = join(mkdtempSync(join(tmpdir(), 'test-host-lifecycle-')), 'markers');
+const markerRoot = mkdtempSync(join(tmpdir(), 'test-host-lifecycle-'));
+process.env.TEST_MARKERS = join(markerRoot, 'markers');
+after(() => {
+  if (process.env.TEST_PRESERVE_MARKERS !== '1') rmSync(markerRoot, { recursive: true, force: true });
+});
 
 function product(host, resource, value = 'value') {
   const resourceId = 'shared';
@@ -722,6 +726,33 @@ test('busy stream closes only after its accepted run settles', async () => {
   await raw;
   assert.deepEqual(await x.host.observeRetirement(request.operationId), { status: 'closed' });
   assert.deepEqual(events, ['idle-close', 'run-settled', 'stream-close', 'owner-dispose']);
+});
+
+test('ordinary stream waits for detached nested read and command before close', async () => {
+  const readGate = deferred(), commandGate = deferred(), events = [];
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { events.push('owner-dispose'); } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  const stream = x.host.retainStream({ close() { events.push('stream-close'); } });
+  let readFlight, commandFlight;
+  await stream.run(() => {
+    readFlight = x.host.read(() => readGate.promise);
+    commandFlight = x.host.operate(() => commandGate.promise);
+    return 'run-done';
+  });
+  const retirement = x.host.close();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(events, []);
+  readGate.resolve('read-done');
+  await readFlight;
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(events, []);
+  commandGate.resolve('command-done');
+  await commandFlight;
+  assert.equal((await retirement).status, 'closed');
+  assert.deepEqual(events, ['stream-close', 'owner-dispose']);
 });
 
 // Regression: synchronous self-retirement must see the stream ticket before
