@@ -39,3 +39,7 @@ The candidate archives were packed from clean Get Modular source commit
 `6b31f20fe3e5fb8324812aa2ee907905751cde71`; they are not npm publication
 evidence. This fixed synthetic Host says nothing about Agent Runtime, Extension
 Foundation or OpenClaw product conformance.
+
+The selected accepted run and four deliberate mutant failures are preserved
+under `evidence/accepted/` with archive and manifest hashes. The generated
+`evidence/runs/` directory remains ignored so exploratory runs do not enter PRs.
