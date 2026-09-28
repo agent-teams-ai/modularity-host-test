@@ -3,7 +3,7 @@ import { assemblyFor, type AssemblyOutcome, type AnyFactoryHandle } from '@get-m
 import { admitTrusted, type Admitted } from './policy.ts';
 import { candidates, grants, type Candidate, type Grant } from '../inventory/trusted.ts';
 import { declarations, providerA, providerB, writer, reader, root, sentinel, type Contracts, type Root } from '../fixtures/graph.ts';
-import { OneShotOwner, type OwnedResource } from '../host/one-shot.ts';
+import { TestHost, type OwnedResource } from '../host/lifetime.ts';
 
 export type LoaderId = 'test/provider/a' | 'test/provider/b' | 'test/writer/main' | 'test/reader/main' | 'test/root/main' | 'test/sentinel/main';
 export type LoaderRow = Readonly<{ implementationId: LoaderId; load: () => Promise<unknown> }>;
@@ -60,13 +60,19 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
     if (rows.filter(row => row.implementationId === selected.implementationId).length !== 1)
       return { phase: 'mapping', reason: 'selected-loader-cardinality' };
   }
-  const owner = new OneShotOwner();
+  const owner = new TestHost<Root, { status: 'succeeded'; roots: { app: Root }; created: readonly unknown[] }
+    | { status: 'failed' | 'cancelled'; code?: string; created: readonly unknown[] }>();
   const providerPort = Object.freeze({
-    acquire: (resource: OwnedResource) => owner.acquire(resource),
+    reserve: (): ((resource: OwnedResource) => void) => owner.reserve(),
     effect: (value: string) => owner.effect(value),
+    read: <T>(read: () => T): T => owner.read(read),
+    assertReady: () => owner.assertOperationReady(),
   });
   const api = assemblyFor<Contracts>();
   const admitted = (id: string): boolean => selections.some(selection => selection.implementationId === id);
+  const assertFactoryOpen = (): void => {
+    if (!owner.isOpen()) throw new Error('factory-authority-closed');
+  };
   const load = async (id: LoaderId): Promise<unknown> => {
     if (!admitted(id) || !owner.isOpen()) throw new Error('loader-authority-closed');
     const row = rows.find(item => item.implementationId === id);
@@ -81,31 +87,37 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
     const a = api.bindFactory(providerA, async (deps) => {
       const mod = await load('test/provider/a');
       if (!isModule<{ create: typeof import('../fixtures/candidates/a.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create(deps, providerPort);
     });
     const b = api.bindFactory(providerB, async (deps) => {
       const mod = await load('test/provider/b');
       if (!isModule<{ create: typeof import('../fixtures/candidates/b.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create(deps, providerPort);
     });
     const w = api.bindFactory(writer, async deps => {
       const mod = await load('test/writer/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/writer.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create(deps);
     });
     const r = api.bindFactory(reader, async deps => {
       const mod = await load('test/reader/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/reader.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create(deps);
     });
     const app = api.bindFactory(root, async deps => {
       const mod = await load('test/root/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/root.mjs').create }>(mod)) throw new Error('bad-export');
-      return mod.create(deps);
+      assertFactoryOpen();
+      return mod.create(deps, providerPort);
     });
     const s = api.bindFactory(sentinel, async () => {
       const mod = await load('test/sentinel/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/sentinel.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create();
     });
     const selectedHandles: AnyFactoryHandle<Contracts>[] = [];
@@ -117,18 +129,25 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
     if (admitted('test/sentinel/main')) selectedHandles.push(s);
     const prepared = await api.prepare({ composition, factories: selectedHandles, roots: { app } });
     if (prepared.status !== 'prepared') return { phase: 'preparation', code: prepared.error.code };
-    let outcome: AssemblyOutcome<{ app: typeof app }>;
+    let construction;
     constructionStarted = true;
-    try { outcome = await prepared.prepared.run(); }
+    try { construction = await owner.construct(signal => prepared.prepared.run({ signal }),
+      outcome => outcome.status === 'succeeded' ? outcome.roots.app : undefined); }
     catch { return { phase: 'construction', status: 'threw', created: 0, effects: owner.effects, digest: composition.digest, order: composition.plan.dependencyOrder }; }
-    if (outcome.status !== 'succeeded') return { phase: 'construction', status: outcome.status,
-      code: outcome.status === 'failed' ? outcome.code : undefined, created: outcome.created.length,
+    const outcome = construction.raw;
+    if (!outcome || construction.status !== 'published') return { phase: 'construction', status: construction.status === 'cancelled' ? 'cancelled' : outcome?.status ?? 'threw',
+      code: outcome?.status === 'failed' ? outcome.code : undefined, created: outcome?.created.length ?? 0,
       effects: owner.effects, digest: composition.digest, order: composition.plan.dependencyOrder };
-    const instance: Root = outcome.roots.app;
+    const instance: Root = construction.root;
     const values = instance.run();
     const identities = instance.identities();
-    const actions = ['test/writer/main', 'test/reader/main'].map(id =>
-      outcome.created.find(entry => entry.implementationId === id)?.capabilities['test/action']);
+    const actions = ['test/writer/main', 'test/reader/main'].map(id => {
+      const entry = outcome.created.find(item => item !== null && typeof item === 'object' &&
+        'implementationId' in item && item.implementationId === id);
+      const capabilities = entry !== null && typeof entry === 'object' && 'capabilities' in entry ? entry.capabilities : undefined;
+      return capabilities !== null && typeof capabilities === 'object' && 'test/action' in capabilities
+        ? capabilities['test/action'] : undefined;
+    });
     const identitiesFromAssembly = actions.map(action =>
       action !== null && typeof action === 'object' && 'resourceIdentity' in action ? action.resourceIdentity : undefined);
     const sharedResource = owner.matchesResourceIdentities(identitiesFromAssembly[0], identitiesFromAssembly[1]);
@@ -139,5 +158,5 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
     if (constructionStarted) return { phase: 'construction', status: 'threw', created: 0, effects: [...owner.effects], digest: composition.digest, order: composition.plan.dependencyOrder };
     return { phase: 'preparation', code: 'bind-or-prepare-threw' };
   }
-  finally { owner.close(); }
+  finally { await owner.close(); }
 }
