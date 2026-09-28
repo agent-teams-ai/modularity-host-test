@@ -7,6 +7,7 @@
   },
   "publishedPair": {
     "version": "0.1.0",
+    "origin": "npm-published-archives",
     "core": {
       "path": "third_party/archives/published-0.1/get-modular-core-0.1.0.tgz",
       "sha256": "50803ea69e2fb4078013a897f858908b4d73d26296336ab155a6118809dfb8ba",
@@ -16,6 +17,21 @@
       "path": "third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz",
       "sha256": "e89207171e44afd5e813aa5e7a0db8abc999b42338559d38b44b4db71da228ab",
       "sri": "sha512-wxK49abnnAWLkCuI8EwL8cJENP2IfDmEm29UHi0w5t0/BL/c2IdTNbOTvQDo/8+hl0ZCJZtwqIqPZ3AnxJ7WNQ=="
+    }
+  },
+  "candidatePair": {
+    "version": "0.2.0",
+    "origin": "packed-from-clean-source-commit",
+    "sourceCommit": "6b31f20fe3e5fb8324812aa2ee907905751cde71",
+    "core": {
+      "path": "third_party/archives/candidate-0.2/get-modular-core-0.2.0.tgz",
+      "sha256": "c7fe3bdd549b206880be9c7a39beb9e0c422345840de61bde031d8515f2c7468",
+      "sri": "sha512-DkMbu55KnIeOEcwTsjA5uhJuoDiXWxGiSuUz66G83H7hodtKu1dffJPZOx4uktRHTbt183wYfoXk8SiHhoUp6A=="
+    },
+    "assembly": {
+      "path": "third_party/archives/candidate-0.2/get-modular-assembly-0.2.0.tgz",
+      "sha256": "ec0a636619c0cf19d049966879ebb575da8dd1e003463b93e193eb80ce4171e2",
+      "sri": "sha512-AO94ss0PMjKFSNJvQkDEA4IKhuH+w2aBzJUvPm+g4UanTmvcKi1ilVD/RzAKGgn68gV8O8bVpUUvO11Kx3j9Bw=="
     }
   }
 }
