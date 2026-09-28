@@ -43,7 +43,7 @@ The Core/Assembly 0.2.0 candidate archives were packed from clean Get Modular
 source commit `6b31f20fe3e5fb8324812aa2ee907905751cde71`. The separate
 private lifecycle-kernel tarball was packed from clean commit
 `e0e2290cfcbf8d8300beaa57aee9c8337429d67d`. The current Consumer Module
-Standard is pinned to merged commit `461bff0c2bffd657e0dc129aadffb263d417f0e3`;
+Standard is pinned to merged commit `24d6557a1b04b01a3a73c64b1d9a9afd83d89c8f`;
 its full bytes match the prior candidate source. These are not npm publication
 evidence. This fixed synthetic Host says nothing about Agent Runtime, Extension
 Foundation or OpenClaw product conformance.
