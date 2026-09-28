@@ -28,6 +28,16 @@ The archive SHA-256 is
 It covers only one-shot Host lifecycle; stream, replacement, recovery, and
 production qualification remain separate checkpoints.
 
+`4b38510-l2a-review-run.tar.gz` retains the accepted replay after PR review
+for clean source commit `4b385100fc3ea8fe5c5db8994af9eeeaee1fb8b8`.
+Both exact pairs again passed 62 tests, 23 admission cases and 24 focused
+lifecycle cases on Node 24.18.0. The Consumer Module Standard pin now names
+merged Get Modular `461bff0`, whose full bytes match the prior candidate pin;
+the kernel archive still comes from `e0e2290`. The manifest SHA-256 is
+`c0abafa0dc185edf280b1bd1bd01ee3f47a5464a477dee1dc4973371901b42d8`.
+The archive SHA-256 is
+`d2d32a1a27b2f2bac84b54e1cffd0db19b144f6bef11dd5b30f36a3c1ec60519`.
+
 Inspect the accepted manifest without extracting the archive:
 
 ```sh
@@ -36,6 +46,9 @@ tar -xOzf evidence/accepted/2f098f0-run.tar.gz \
 
 tar -xOzf evidence/accepted/1fb563c-l2a-run.tar.gz \
   evidence/runs/2026-09-28T20-47-55-114Z-73422/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/4b38510-l2a-review-run.tar.gz \
+  evidence/runs/2026-09-28T21-14-17-859Z-11213/evidence.json | shasum -a 256
 ```
 
 These archives preserve evidence for the exact TEST subjects. They do not
