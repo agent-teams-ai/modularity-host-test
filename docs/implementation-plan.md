@@ -1,8 +1,32 @@
 # Modularity Host TEST stand - implementation plan
 
-Status: adversarially reviewed execution contract; isolated TEST implementation in progress. Snapshot: 2026-09-28.
-The discarded scaffold is not a source or evidence artifact. Node migration is
-owned separately; recheck its result before executing this plan.
+Status: completed for the exact synthetic TEST subjects below. Snapshot: 2026-09-28.
+The discarded scaffold is not a source or evidence artifact. Node 26 migration
+is owned separately; this stand's exact published archives require Node 24.
+
+## Execution outcome
+
+- The isolated `agent-teams-ai/modularity-host-test` consumer was delivered in
+  [PR #1](https://github.com/agent-teams-ai/modularity-host-test/pull/1),
+  [PR #2](https://github.com/agent-teams-ai/modularity-host-test/pull/2) and
+  [PR #3](https://github.com/agent-teams-ai/modularity-host-test/pull/3).
+  Main commit `12a17598936448a7a2acb8255901ba9e5cde562c` contains the
+  accepted source and retained evidence. Only the explicitly TEST consumer ran.
+- The final PR head `61fec77de379915f2c7bb04e5ce50b2d4890c534` passed a
+  clean frozen offline install, typecheck, 59 tests and `pnpm evidence` under
+  Node 24.21.0. Its evidence result was `accepted` for published Core/Assembly
+  0.1.0 and separately packed candidate Core/Assembly 0.2.0, with 23 admission
+  and 21 focused lifecycle scenarios per pair. Its source tree equals the merge
+  commit's tree. The candidate result is not publication evidence.
+- The distinct-root-ID probe records `assembly.prepare.roots` on 0.1.0 and
+  `prepared` on candidate 0.2.0. Four deliberate mutants against Host commit
+  `815f47518003ac889cf3778b93c095ef879cd9ed` failed for their intended
+  reasons. Independent Astra re-reviews found no remaining P1/P2 in the Host
+  or evidence runner after fixes. See the
+  [retained evidence](https://github.com/agent-teams-ai/modularity-host-test/blob/12a17598936448a7a2acb8255901ba9e5cde562c/evidence/accepted/README.md).
+- This is a fixed TEST Host proof. Agent Runtime C0, Extension Foundation
+  qualification, OpenClaw behavior, arbitrary JavaScript security, real OS
+  effects and Node 26 remain outside its accepted claim.
 
 ## Summary
 
@@ -518,8 +542,7 @@ were read separately via `gh` at `c9b8efe485e2736bbaba4e9c47914fe3ac849b8a`.
 The organization [early product advantage priority](https://github.com/agent-teams-ai/.github/blob/main/docs/engineering-quality-standard.md#early-product-advantage)
 was read through `gh`; no superiority claim follows from this proposed fixture.
 
-No stand/package source, compilation, runtime, agent flow or pack was executed during this plan
-review. Remaining risks are actual pair-specific TypeScript acceptance, clean
-archive installation under the selected engines, deterministic observer scheduling
-and honest acquisition custody in the future implementation. Verify them in the
-staged TEST runs above; source inspection does not turn them into green evidence.
+No stand/package source, compilation, runtime, agent flow or pack was executed
+during the initial plan review. The subsequent isolated TEST implementation and
+pair-specific acceptance are recorded in the execution outcome above. Those
+results do not revise the historical Agent Runtime or Extension Foundation gates.
