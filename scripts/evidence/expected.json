@@ -75,7 +75,19 @@
     "stream close observes native raw settlement despite a replaced then",
     "foreign command thenable is rejected before its then executes",
     "owned disposer error with throwing stream getter preserves original debt",
-    "detached cleanup continuation observes terminal receipt"
+    "detached cleanup continuation observes terminal receipt",
+    "terminal stream waits for pending next after early return acknowledgement",
+    "terminal done true still waits for pending explicit result",
+    "terminal result is never eager or cached",
+    "terminal public close paths and retirement share one close flight",
+    "terminal post-await effect is revoked while raw next remains retained",
+    "terminal close failure retains debt while sibling closes",
+    "terminal observer timeout leaves raw next and later close intact",
+    "terminal callback getters and foreign thenables fail closed",
+    "terminal native next observer ignores replaced then until raw settlement",
+    "terminal return done false retains custody as failed close debt",
+    "terminal cancel revokes late stream effect before owner retirement",
+    "terminal native return validates mutated thenable ack before bridging"
   ],
   "lifecycleStartIndex": 38,
   "admissionChildren": [
