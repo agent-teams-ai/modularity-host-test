@@ -133,6 +133,12 @@ Use four selected nodes, one unselected alternative and one sentinel:
 Profiles contain explicit root **module IDs**, module/implementation selections
 and provider implementation IDs per slot. Loader projection uses implementation
 IDs. One Host capability schema has three stable contracts, with no V1/V2 pair.
+The archived Assembly 0.1.0 `prepare` compares `plan.roots` with each root
+handle's **implementation ID**, while Core interprets profile roots as module
+IDs. Use the same literal ID for the TEST root's module and implementation so
+this exact fixture traverses both public APIs. Record that constraint in the
+evidence; this does not prove arbitrary distinct root IDs work on 0.1.0. Check
+the 0.2.0 pair separately rather than carrying the workaround by assumption.
 These are planned read/write/action entries in `C`, not three GM API generations.
 The graph table is conceptual until its literal typed fixture passes. Published
 Core 0.1.0 declares `many({ min, max })` with `kind: "many"` and `order: "profile"`;
