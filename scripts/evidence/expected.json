@@ -88,6 +88,8 @@
     "terminal callback getters and foreign thenables fail closed",
     "terminal native next observer ignores replaced then until raw settlement",
     "terminal return done false retains custody as failed close debt",
+    "terminal unobserved cancel failure remains owned without process rejection",
+    "terminal unobserved return failure remains owned without process rejection",
     "terminal cancel revokes late stream effect before owner retirement",
     "terminal cancelled parent cannot start a sibling stream effect",
     "terminal in-flight sibling keeps cancelled parent effect fence",

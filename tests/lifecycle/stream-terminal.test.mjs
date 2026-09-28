@@ -249,6 +249,38 @@ test('terminal return done false retains custody as failed close debt', async ()
   assert.equal(x.host.status().lifecycle.custody, 2);
 });
 
+test('terminal unobserved cancel failure remains owned without process rejection', async () => {
+  const x = await installed();
+  const resource = {
+    next() { return { done: false, value: 1 }; },
+    return() { return { done: false, value: 2 }; },
+    close() {},
+  };
+  const view = x.host.retainTerminalStream(resource);
+  await view.next();
+  void view.cancel();
+  await tick();
+  const terminal = await x.host.close();
+  assert.equal(terminal.status, 'cleanup-incomplete');
+  assert.strictEqual(terminal.debt, resource);
+});
+
+test('terminal unobserved return failure remains owned without process rejection', async () => {
+  const x = await installed();
+  const resource = {
+    next() { return { done: false, value: 1 }; },
+    return() { return { done: false, value: 2 }; },
+    close() {},
+  };
+  const view = x.host.retainTerminalStream(resource);
+  await view.next();
+  void view.return();
+  await tick();
+  const terminal = await x.host.close();
+  assert.equal(terminal.status, 'cleanup-incomplete');
+  assert.strictEqual(terminal.debt, resource);
+});
+
 test('terminal cancel revokes late stream effect before owner retirement', async () => {
   const events = [], gate = deferred();
   const x = await installed(events);

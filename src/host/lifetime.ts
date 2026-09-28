@@ -365,10 +365,17 @@ export class TestHost<R, O extends { readonly status: string }> {
       });
     };
     const close = () => this.startTerminalClose(record);
+    const returned = (): Promise<IteratorResult<T>> => {
+      const flight = observeNativePromise.call(close(),
+        () => ({ done: true as const, value: undefined })) as Promise<IteratorResult<T>>;
+      // A public fire-and-forget return must not leave its derived flight unobserved.
+      void observeNativePromise.call(flight, undefined, () => undefined);
+      return flight;
+    };
     return Object.freeze({ next, result,
-      return: () => close().then(() => ({ done: true as const, value: undefined })),
+      return: returned,
       cancel: () => close(),
-      [Symbol.asyncIterator]: () => Object.freeze({ next, return: () => close().then(() => ({ done: true as const, value: undefined })) }),
+      [Symbol.asyncIterator]: () => Object.freeze({ next, return: returned }),
     });
   }
 
@@ -425,6 +432,8 @@ export class TestHost<R, O extends { readonly status: string }> {
     let resolveClose!: () => void;
     let rejectClose!: (cause: unknown) => void;
     record.close = new Promise<void>((resolve, reject) => { resolveClose = resolve; rejectClose = reject; });
+    // The Host retains this flight even if a caller does not await cancel().
+    void observeNativePromise.call(record.close, undefined, () => undefined);
     const actions = [this.invokeCleanup(() => record.callbacks.close() as void | Promise<void>)];
     if (record.started && !record.iterationEnded && record.callbacks.return) {
       actions.push(this.invokeCleanup(async () => {

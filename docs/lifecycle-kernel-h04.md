@@ -45,6 +45,10 @@ Idle consumers and completed iterators do not call `return` or `result` as a
 retirement prerequisite. Failed close or unsupported `return` retains debt;
 independent sibling close still completes. Owned disposal follows successful
 stream close and raw call drain. Observer timeout changes no raw obligation.
+The Host observes its own close flight and public return derivative when a
+caller fire-and-forgets cancel/return, preserving the failure for later
+retirement without an unhandled rejection in the supported native Promise
+case. A caller-created Promise chain remains the caller's responsibility.
 The fixed TEST resource contract therefore requires its `close` and `return`
 callbacks to tolerate overlap with already-admitted `next`/`result` raw work.
 The Host prevents new calls and retains their debt, but cannot make an
@@ -57,7 +61,7 @@ The pinned Consumer Module Standard bytes still match current upstream
 `33b41d5babf0a431c97e8e596a56e6ec1557ba1a0b26d39bf23e13d9a19e1fbd`).
 This Host-only TEST extension does not alter Core, Assembly, kernel API, shared
 module guidance or the accepted pin. The source-bound evidence runner includes
-the nineteen new H04 scenarios for both installed archive pairs and retains this
+the twenty-one new H04 scenarios for both installed archive pairs and retains this
 document in its worktree digest. An accepted claim requires a retained replay
 from clean committed source; working-tree test passes alone are insufficient.
 
