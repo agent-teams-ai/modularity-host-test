@@ -70,6 +70,9 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
   });
   const api = assemblyFor<Contracts>();
   const admitted = (id: string): boolean => selections.some(selection => selection.implementationId === id);
+  const assertFactoryOpen = (): void => {
+    if (!owner.isOpen()) throw new Error('factory-authority-closed');
+  };
   const load = async (id: LoaderId): Promise<unknown> => {
     if (!admitted(id) || !owner.isOpen()) throw new Error('loader-authority-closed');
     const row = rows.find(item => item.implementationId === id);
@@ -84,31 +87,37 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
     const a = api.bindFactory(providerA, async (deps) => {
       const mod = await load('test/provider/a');
       if (!isModule<{ create: typeof import('../fixtures/candidates/a.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create(deps, providerPort);
     });
     const b = api.bindFactory(providerB, async (deps) => {
       const mod = await load('test/provider/b');
       if (!isModule<{ create: typeof import('../fixtures/candidates/b.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create(deps, providerPort);
     });
     const w = api.bindFactory(writer, async deps => {
       const mod = await load('test/writer/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/writer.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create(deps);
     });
     const r = api.bindFactory(reader, async deps => {
       const mod = await load('test/reader/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/reader.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create(deps);
     });
     const app = api.bindFactory(root, async deps => {
       const mod = await load('test/root/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/root.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create(deps, providerPort);
     });
     const s = api.bindFactory(sentinel, async () => {
       const mod = await load('test/sentinel/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/sentinel.mjs').create }>(mod)) throw new Error('bad-export');
+      assertFactoryOpen();
       return mod.create();
     });
     const selectedHandles: AnyFactoryHandle<Contracts>[] = [];
@@ -132,8 +141,13 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
     const instance: Root = construction.root;
     const values = instance.run();
     const identities = instance.identities();
-    const actions = ['test/writer/main', 'test/reader/main'].map(id =>
-      outcome.created.find(entry => entry.implementationId === id)?.capabilities['test/action']);
+    const actions = ['test/writer/main', 'test/reader/main'].map(id => {
+      const entry = outcome.created.find(item => item !== null && typeof item === 'object' &&
+        'implementationId' in item && item.implementationId === id);
+      const capabilities = entry !== null && typeof entry === 'object' && 'capabilities' in entry ? entry.capabilities : undefined;
+      return capabilities !== null && typeof capabilities === 'object' && 'test/action' in capabilities
+        ? capabilities['test/action'] : undefined;
+    });
     const identitiesFromAssembly = actions.map(action =>
       action !== null && typeof action === 'object' && 'resourceIdentity' in action ? action.resourceIdentity : undefined);
     const sharedResource = owner.matchesResourceIdentities(identitiesFromAssembly[0], identitiesFromAssembly[1]);

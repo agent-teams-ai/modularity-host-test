@@ -7,7 +7,7 @@ globalThis.__testImportRelease = release.promise;
 globalThis.__testCreateCalled = () => { created++; };
 
 try {
-  const x = await fixture(async ({ load }) => (await load('../../src/fixtures/candidates/import-paused.mjs')).create());
+  const x = await fixture(undefined, { providerPath: '../../src/fixtures/candidates/import-paused.mjs' });
   const construction = x.start();
   process.on('message', async message => {
     if (message === 'seal') {

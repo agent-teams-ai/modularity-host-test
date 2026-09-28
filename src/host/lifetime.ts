@@ -5,13 +5,14 @@ const mark = (event: string): void => {
 
 export type OwnedResource = { readonly resourceIdentity?: symbol; dispose(): void | Promise<void> };
 export type CloseTerminal = Readonly<{ status: 'closed' } | { status: 'cleanup-incomplete'; cause: unknown; debt: OwnedResource }>;
-export type CloseReceipt = CloseTerminal | Readonly<{ status: 'pending'; reason: 'aborted' | 'deadline' }>;
+export type CloseReceipt = Readonly<{ status: 'closed' | 'cleanup-incomplete' } | { status: 'pending'; reason: 'aborted' | 'deadline' }>;
 export type Clock = Readonly<{ now(): number; schedule(delay: number, wake: () => void): unknown; cancel(handle: unknown): void }>;
 const clock: Clock = {
   now: () => performance.now(),
   schedule: (delay, wake) => setTimeout(wake, delay),
   cancel: handle => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
+const MAX_TIMER_DELAY = 2 ** 31 - 1;
 type Ticket = { settled: boolean; promise: Promise<unknown> };
 type Waiter = { wake(): void; remove(): void };
 export type Construction<R, O> = Readonly<
@@ -166,11 +167,14 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   observeClose(options: { signal?: AbortSignal; deadlineAt?: number } = {}): Promise<CloseReceipt> {
     if (!this.retirement) return Promise.reject(new Error('close-not-started'));
-    if (options.deadlineAt !== undefined && !Number.isFinite(options.deadlineAt))
+    const signal = options.signal;
+    const deadlineAt = options.deadlineAt;
+    if (deadlineAt !== undefined && !Number.isFinite(deadlineAt))
       return Promise.reject(new Error('invalid-deadline'));
-    if (this.terminal) return Promise.resolve(this.terminal);
-    if (options.signal?.aborted) return Promise.resolve(Object.freeze({ status: 'pending', reason: 'aborted' }));
-    if (options.deadlineAt !== undefined && options.deadlineAt <= this.timer.now())
+    const receipt = (terminal: CloseTerminal): CloseReceipt => Object.freeze({ status: terminal.status });
+    if (this.terminal) return Promise.resolve(receipt(this.terminal));
+    if (signal?.aborted) return Promise.resolve(Object.freeze({ status: 'pending', reason: 'aborted' }));
+    if (deadlineAt !== undefined && deadlineAt <= this.timer.now())
       return Promise.resolve(Object.freeze({ status: 'pending', reason: 'deadline' }));
     return new Promise(resolve => {
       let handle: unknown;
@@ -179,24 +183,33 @@ export class TestHost<R, O extends { readonly status: string }> {
         if (done) return;
         done = true;
         waiter.remove();
-        resolve(this.terminal ?? Object.freeze({ status: 'pending', reason: reason ?? (options.signal?.aborted ? 'aborted' : 'deadline') }));
+        resolve(this.terminal ? receipt(this.terminal) : Object.freeze({ status: 'pending', reason: reason ?? (signal?.aborted ? 'aborted' : 'deadline') }));
       };
       const abort = () => finish('aborted');
-      const timeout = () => finish('deadline');
+      const timeout = () => {
+        handle = undefined;
+        if (this.terminal) return finish();
+        if (signal?.aborted) return finish('aborted');
+        if (deadlineAt !== undefined && deadlineAt > this.timer.now()) return schedule();
+        finish('deadline');
+      };
+      const schedule = () => {
+        if (deadlineAt !== undefined) handle = this.timer.schedule(Math.min(MAX_TIMER_DELAY, Math.max(0, deadlineAt - this.timer.now())), timeout);
+      };
       const waiter: Waiter = {
         wake: () => finish(),
         remove: () => {
           this.waiters.delete(waiter);
-          options.signal?.removeEventListener('abort', abort);
+          signal?.removeEventListener('abort', abort);
           if (handle !== undefined) this.timer.cancel(handle);
         },
       };
       this.waiters.add(waiter);
-      options.signal?.addEventListener('abort', abort, { once: true });
-      if (options.deadlineAt !== undefined) handle = this.timer.schedule(Math.max(0, options.deadlineAt - this.timer.now()), timeout);
+      signal?.addEventListener('abort', abort, { once: true });
+      if (!done) schedule();
       if (this.terminal) finish();
-      else if (options.signal?.aborted) finish('aborted');
-      else if (options.deadlineAt !== undefined && options.deadlineAt <= this.timer.now()) finish('deadline');
+      else if (signal?.aborted) finish('aborted');
+      else if (deadlineAt !== undefined && deadlineAt <= this.timer.now()) finish('deadline');
     });
   }
 }

@@ -30,12 +30,18 @@ export async function fixture(providerFactory, options = {}) {
     if (!host.isOpen()) throw Error('post-import-authority-closed');
     return module;
   };
+  const create = async (path, deps, port) => {
+    const module = await load(path);
+    if (typeof module.create !== 'function') throw Error('bad-export');
+    if (!host.isOpen()) throw Error('factory-authority-closed');
+    return port === undefined ? module.create(deps) : module.create(deps, port);
+  };
   const a = api.bindFactory(providerA, async deps => providerFactory
     ? providerFactory({ host, owner, deps, load })
-    : (await load('../../src/fixtures/candidates/a.mjs')).create(deps, owner));
-  const w = api.bindFactory(writer, async deps => (await load('../../src/fixtures/candidates/writer.mjs')).create(deps));
-  const r = api.bindFactory(reader, async deps => (await load('../../src/fixtures/candidates/reader.mjs')).create(deps));
-  const app = api.bindFactory(root, async deps => (await load('../../src/fixtures/candidates/root.mjs')).create(deps, owner));
+    : create(options.providerPath ?? '../../src/fixtures/candidates/a.mjs', deps, owner));
+  const w = api.bindFactory(writer, async deps => create('../../src/fixtures/candidates/writer.mjs', deps));
+  const r = api.bindFactory(reader, async deps => create('../../src/fixtures/candidates/reader.mjs', deps));
+  const app = api.bindFactory(root, async deps => create('../../src/fixtures/candidates/root.mjs', deps, owner));
   const prepared = await api.prepare({ composition, factories: [a, w, r, app], roots: { app } });
   assert.equal(prepared.status, 'prepared');
   const start = () => host.construct(signal => prepared.prepared.run({ signal }), out => out.status === 'succeeded' ? out.roots.app : undefined);

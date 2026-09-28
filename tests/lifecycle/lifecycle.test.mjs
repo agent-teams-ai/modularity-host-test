@@ -41,21 +41,20 @@ test('single flight, one shared resource and saved handles remain revoked', asyn
   await next.host.close();
 });
 
-// Regression: a detached registration callback appends ownership debt after its construction ticket settled.
-test('settled registration and detached acquisition are refused', async () => {
+// Regression: first delivery after the construction ticket settles is accepted as cleanup debt.
+test('first registration after settlement and detached acquisition are refused', async () => {
   let register, disposals = 0;
   const x = await fixture(async ({ host, owner }) => {
     register = owner.reserve();
-    const resource = { dispose() { disposals++; } };
-    register(resource);
-    return product(host, resource);
+    return product(host);
   });
   assert.equal((await x.start()).status, 'published');
-  assert.throws(() => register({ dispose() { throw Error('detached'); } }), /registration-refused/);
+  assert.throws(() => register({ dispose() { disposals++; } }), /registration-refused/);
   const close = x.host.close();
   assert.throws(() => x.host.reserve(), /reservation-refused/);
   assert.equal((await close).status, 'closed');
-  assert.equal(disposals, 1);
+  assert.equal(disposals, 0);
+  assert.equal(x.host.status().hasResource, false);
 });
 
 // Regression: a live construction ticket incorrectly permits a fresh post-seal reservation.
@@ -145,6 +144,37 @@ test('fresh child seals during ESM top-level await before create', async () => {
   }
 });
 
+// Regression: admission's real Assembly wrappers start create after an import resumes or after load's authority check yields.
+test('admission wrappers fence create at both import and load continuation boundaries', async () => {
+  for (const mode of ['control', 'import', 'gap']) {
+    const dir = mkdtempSync(join(tmpdir(), 'host-admission-wrapper-'));
+    const child = fork(new URL('./admission-child.mjs', import.meta.url), [mode], {
+      cwd: dir, execArgv: [], env: { HOME: dir, TMPDIR: dir, LANG: 'C', TEST_MARKERS: join(dir, 'markers') },
+    });
+    const messages = [], waiters = [];
+    const enqueue = message => { const waiter = waiters.shift(); if (waiter) waiter(message); else messages.push(message); };
+    child.on('message', enqueue);
+    child.on('error', error => enqueue({ type: 'error', message: String(error) }));
+    child.on('exit', (code, signal) => enqueue({ type: 'exit', code, signal }));
+    const next = () => new Promise(resolve => { if (messages.length) resolve(messages.shift()); else waiters.push(resolve); });
+    const watchdog = setTimeout(() => child.kill(), 10000);
+    try {
+      if (mode === 'import') {
+        assert.deepEqual(await next(), { type: 'import-started' });
+        child.send('seal');
+        assert.deepEqual(await next(), { type: 'sealed', state: 'draining' });
+        child.send('release');
+      }
+      assert.deepEqual(await next(), { type: 'result', phase: 'construction', status: 'failed', created: 0,
+        createCalls: mode === 'control' ? 1 : 0, terminal: 'closed', hasResource: false });
+    } finally {
+      clearTimeout(watchdog);
+      child.kill();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+});
+
 // Regression: successful Assembly handoff publishes a root after a synchronous seal in the handoff callback.
 test('seal between real Assembly success and publication retains raw success', async () => {
   const x = await fixture();
@@ -184,38 +214,69 @@ test('post-await commit is fenced and all operation tickets drain', async () => 
   assert.deepEqual(x.host.effects, []);
 });
 
-// Regression: abort callbacks can admit sibling work or see a different close promise.
-test('abort listener sees sealed authority and identical raw close', async () => {
-  const entered = deferred(), release = deferred();
-  let sibling, reentrant;
+// Regression: a borrowed read facet still runs its callback after seal while cleanup is held.
+test('public Assembly read facet revokes before its callback', async () => {
+  let reads = 0, disposals = 0;
   const x = await fixture(async ({ host, owner }) => {
-    owner.reserve()({ dispose() {} });
-    hostSignal.addEventListener('abort', () => {
-      try { host.operate(() => 'wrong'); } catch (error) { sibling = error; }
-      reentrant = host.close();
-    });
-    entered.resolve(); await release.promise;
-    throw Error('after-abort');
+    const resource = { dispose() { disposals++; } };
+    owner.reserve()(resource);
+    const made = product(host, resource);
+    made.capabilities['test/resource/read'].read = () => host.read(() => { reads++; return 'value'; });
+    return made;
   });
-  // This reference is set from the actual public run signal before provider invocation.
-  let hostSignal;
-  const construction = x.host.construct(signal => { hostSignal = signal; return x.run(signal); },
+  const result = await x.start();
+  assert.equal(result.status, 'published');
+  const handed = result.raw.created.find(entry => entry.implementationId === 'test/provider/a');
+  const read = handed.capabilities['test/resource/read'].read;
+  assert.equal(read(), 'value');
+  assert.equal(reads, 1);
+  const gate = deferred();
+  const pending = x.host.operate(() => gate.promise);
+  const close = x.host.close();
+  assert.equal(x.host.status().state, 'draining');
+  assert.throws(read, /host-revoked/);
+  assert.equal(reads, 1);
+  assert.equal(disposals, 0);
+  gate.resolve(); await pending; await close;
+  assert.equal(disposals, 1);
+});
+
+// Regression: abort callbacks can use a ready sibling handle after seal or see a different close promise.
+test('abort listener sees sealed authority and identical raw close', async () => {
+  let disposals = 0, hostSignal;
+  const x = await fixture(async ({ host, owner }) => {
+    const resource = { dispose() { disposals++; } };
+    owner.reserve()(resource);
+    return product(host, resource);
+  });
+  const published = await x.host.construct(signal => { hostSignal = signal; return x.run(signal); },
     out => out.status === 'succeeded' ? out.roots.app : undefined);
-  await entered.promise;
+  assert.equal(published.status, 'published');
+  let sibling, reentrant;
+  const siblingRun = published.root.run;
+  // Use an accepted operation to hold the close flight while abort reenters.
+  const gate = deferred();
+  const pending = x.host.operate(() => gate.promise);
+  hostSignal.addEventListener('abort', () => {
+    try { siblingRun(); } catch (error) { sibling = error; }
+    reentrant = x.host.close();
+  });
   const close = x.host.close();
   assert.strictEqual(reentrant, close);
   assert.match(String(sibling), /host-revoked/);
-  release.resolve();
-  await construction;
+  assert.deepEqual(x.host.effects, []);
+  gate.resolve(); await pending;
   assert.equal((await close).status, 'closed');
+  assert.equal(disposals, 1);
 });
 
 // Regression: a failed disposer is retried or overwrites the primary factory failure.
 test('cleanup failure retains cause, debt and original construction failure', async () => {
   const primary = Error('primary'), cleanup = Error('cleanup');
-  let calls = 0;
+  let calls = 0, resource;
   const x = await fixture(async ({ owner }) => {
-    owner.reserve()({ dispose() { calls++; throw cleanup; } });
+    resource = { dispose() { calls++; throw cleanup; } };
+    owner.reserve()(resource);
     throw primary;
   });
   const construction = await x.start();
@@ -225,7 +286,8 @@ test('cleanup failure retains cause, debt and original construction failure', as
   const terminal = await close;
   assert.equal(terminal.status, 'cleanup-incomplete');
   assert.strictEqual(terminal.cause, cleanup);
-  assert.strictEqual(x.host.status().debt, terminal.debt);
+  assert.strictEqual(terminal.debt, resource);
+  assert.strictEqual(x.host.status().debt, resource);
   assert.equal(calls, 1);
 });
 
@@ -262,7 +324,7 @@ test('async disposer rejection keeps primary factory failure', async () => {
 // Regression: observer abort or deadline aborts cleanup, changes a pending receipt, or leaks waiters.
 test('observers preserve pending receipts and terminal wins at a wake', async () => {
   const scheduled = new Map(); let now = 10, next = 0;
-  const clock = { now: () => now, schedule: (_delay, wake) => { const id = ++next; scheduled.set(id, wake); return id; },
+  const clock = { now: () => now, schedule: (_delay, wake) => { const id = ++next; scheduled.set(id, () => { scheduled.delete(id); wake(); }); return id; },
     cancel: id => { scheduled.delete(id); } };
   const entered = deferred(), release = deferred();
   let dispose;
@@ -303,6 +365,67 @@ test('observers preserve pending receipts and terminal wins at a wake', async ()
   assert.equal(first.reason, 'aborted');
   assert.equal((await x.host.observeClose({ deadlineAt: 5 })).status, 'closed');
   assert.equal(x.host.status().observers, 0);
+  assert.equal(scheduled.size, 0);
+});
+
+// Regression: mutating enrollment options redirects listener removal and strands the original signal listener.
+test('observer snapshots its signal and deadline and removes the enrolled listener', async () => {
+  const gate = deferred();
+  const scheduled = new Map(); let next = 0;
+  const clock = { now: () => 0, schedule: (delay, wake) => { const id = ++next; scheduled.set(id, { delay, wake }); return id; },
+    cancel: id => { scheduled.delete(id); } };
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() {} });
+    return product(host);
+  }, { clock });
+  assert.equal((await x.start()).status, 'published');
+  const pending = x.host.operate(() => gate.promise);
+  const close = x.host.close();
+  const original = new AbortController(), swapped = new AbortController();
+  let added = 0, removed = 0;
+  const add = original.signal.addEventListener.bind(original.signal);
+  const remove = original.signal.removeEventListener.bind(original.signal);
+  original.signal.addEventListener = (...args) => { added++; return add(...args); };
+  original.signal.removeEventListener = (...args) => { removed++; return remove(...args); };
+  const options = { signal: original.signal, deadlineAt: 100 };
+  const observed = x.host.observeClose(options);
+  options.signal = swapped.signal; options.deadlineAt = 1;
+  assert.equal([...scheduled.values()][0].delay, 100);
+  original.abort();
+  assert.deepEqual(await observed, { status: 'pending', reason: 'aborted' });
+  assert.equal(added, 1);
+  assert.equal(removed, 1);
+  assert.equal(scheduled.size, 0);
+  assert.equal(x.host.status().observers, 0);
+  gate.resolve(); await pending; await close;
+});
+
+// Regression: Node clamps an oversized timeout to 1 ms, or an early timer wake falsely expires a deadline.
+test('large finite observer deadline is chunked and rechecked', async () => {
+  const gate = deferred(), scheduled = new Map();
+  let now = 0, next = 0;
+  const clock = { now: () => now, schedule: (delay, wake) => { const id = ++next; scheduled.set(id, { delay, wake: () => { scheduled.delete(id); wake(); } }); return id; },
+    cancel: id => { scheduled.delete(id); } };
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() {} }); return product(host);
+  }, { clock });
+  assert.equal((await x.start()).status, 'published');
+  const pending = x.host.operate(() => gate.promise);
+  const close = x.host.close();
+  const observed = x.host.observeClose({ deadlineAt: 2 ** 31 + 100 });
+  let settled = false;
+  observed.then(() => { settled = true; });
+  assert.equal([...scheduled.values()][0].delay, 2 ** 31 - 1);
+  [...scheduled.values()][0].wake();
+  await Promise.resolve();
+  assert.equal(settled, false);
+  assert.equal([...scheduled.values()][0].delay, 2 ** 31 - 1);
+  now = 2 ** 31 - 1;
+  [...scheduled.values()][0].wake();
+  assert.equal([...scheduled.values()][0].delay, 101);
+  gate.resolve(); await pending;
+  assert.equal((await close).status, 'closed');
+  assert.deepEqual(await observed, { status: 'closed' });
   assert.equal(scheduled.size, 0);
 });
 
@@ -349,7 +472,7 @@ test('rejection after abort keeps original cause and cancellation evidence', asy
 // Regression: timeout observes a synthetic terminal or a later disposal failure edits its pending receipt.
 test('deadline pending stays fixed across late async disposal failure', async () => {
   const scheduled = new Map(); let now = 0, next = 0;
-  const clock = { now: () => now, schedule: (_delay, wake) => { const id = ++next; scheduled.set(id, wake); return id; },
+  const clock = { now: () => now, schedule: (_delay, wake) => { const id = ++next; scheduled.set(id, () => { scheduled.delete(id); wake(); }); return id; },
     cancel: id => { scheduled.delete(id); } };
   const disposal = deferred(), cleanup = Error('async-cleanup');
   const x = await fixture(async ({ host, owner }) => {
@@ -371,7 +494,18 @@ test('deadline pending stays fixed across late async disposal failure', async ()
   assert.equal(terminal.status, 'cleanup-incomplete');
   assert.strictEqual(terminal.cause, cleanup);
   assert.equal(receipt.reason, 'deadline');
-  assert.strictEqual(await x.host.observeClose({ deadlineAt: -1 }), terminal);
+  const terminalReceipt = await x.host.observeClose({ deadlineAt: -1 });
+  const laterReceipt = await x.host.observeClose();
+  assert.deepEqual(terminalReceipt, { status: 'cleanup-incomplete' });
+  assert.deepEqual(laterReceipt, { status: 'cleanup-incomplete' });
+  assert.notStrictEqual(terminalReceipt, terminal);
+  assert.notStrictEqual(laterReceipt, terminalReceipt);
+  assert.equal(Object.isFrozen(terminalReceipt), true);
+  assert.equal(Object.isFrozen(laterReceipt), true);
+  assert.equal('cause' in terminalReceipt, false);
+  assert.equal('debt' in terminalReceipt, false);
+  assert.strictEqual(x.host.close(), close);
+  assert.strictEqual(x.host.status().debt, terminal.debt);
 });
 
 // Regression: an expired observer overrules a stored terminal, or a pre-aborted signal loses to a deadline.
@@ -380,11 +514,19 @@ test('close-before-construct guard and observer same-turn priority', async () =>
   const clock = { now: () => 10, schedule: (_delay, wake) => { const id = ++next; timer.set(id, wake); return id; },
     cancel: id => { timer.delete(id); } };
   const x = await fixture(undefined, { clock });
-  const terminal = await x.host.close();
+  const rawClose = x.host.close();
+  const terminal = await rawClose;
   assert.equal(terminal.status, 'closed');
   await assert.rejects(x.start(), /construction-refused/);
   const aborter = new AbortController(); aborter.abort();
-  assert.strictEqual(await x.host.observeClose({ signal: aborter.signal, deadlineAt: 0 }), terminal);
+  const firstReceipt = await x.host.observeClose({ signal: aborter.signal, deadlineAt: 0 });
+  const secondReceipt = await x.host.observeClose();
+  assert.deepEqual(firstReceipt, { status: 'closed' });
+  assert.deepEqual(secondReceipt, { status: 'closed' });
+  assert.notStrictEqual(firstReceipt, secondReceipt);
+  assert.notStrictEqual(firstReceipt, terminal);
+  assert.equal(Object.isFrozen(firstReceipt), true);
+  assert.strictEqual(x.host.close(), rawClose);
   assert.equal(x.host.status().observers, 0);
 
   const entered = deferred(), release = deferred();
