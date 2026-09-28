@@ -1,6 +1,6 @@
 # Modularity Host TEST stand - implementation plan
 
-Status: adversarially reviewed proposal, implementation not started. Snapshot: 2026-09-27.
+Status: adversarially reviewed execution contract; isolated TEST implementation in progress. Snapshot: 2026-09-28.
 The discarded scaffold is not a source or evidence artifact. Node migration is
 owned separately; recheck its result before executing this plan.
 
@@ -133,6 +133,15 @@ Use four selected nodes, one unselected alternative and one sentinel:
 Profiles contain explicit root **module IDs**, module/implementation selections
 and provider implementation IDs per slot. Loader projection uses implementation
 IDs. One Host capability schema has three stable contracts, with no V1/V2 pair.
+The archived Assembly 0.1.0 `prepare` compares `plan.roots` with each root
+handle's **implementation ID**, while Core interprets profile roots as module
+IDs. Use the same literal ID for the TEST root's module and implementation so
+this exact fixture traverses both public APIs. Record that constraint in the
+evidence; this does not prove arbitrary distinct root IDs work on 0.1.0. Check
+the 0.2.0 pair separately rather than carrying the workaround by assumption.
+Its packed Assembly source checks root handles against `moduleId`; add a small
+0.2.0-only distinct-root-ID probe to test that correction through `prepare`.
+Keep the shared-ID fixture for the otherwise identical cross-pair scenarios.
 These are planned read/write/action entries in `C`, not three GM API generations.
 The graph table is conceptual until its literal typed fixture passes. Published
 Core 0.1.0 declares `many({ min, max })` with `kind: "many"` and `order: "profile"`;
@@ -264,13 +273,16 @@ while preserving the actual Assembly outcome for evidence.
 
 **Acquisition is distinct from new authority.** The provider reserves its owner
 acquisition under the live construction ticket **before** starting allocation.
+Reservation is synchronous and requires the Host to remain `open`; a live
+construction ticket alone cannot authorize a new reservation after seal.
 Registration is synchronous at delivery of the resource and before the factory's
 next await or exposure. An already reserved allocation may complete after seal:
 its owner still registers and cleans the late resource before construction settles.
-The registration callback validates the exact Host/ticket, rejects duplicates and
-rejects calls after ticket settlement. It is never exposed in capabilities. A late
-import does not admit a new factory/acquisition: the wrapper's post-import fence
-refuses `create`, so this case has zero acquired resources/disposals. A detached
+The registration callback validates the exact Host/ticket and pre-seal reservation,
+rejects duplicates and rejects calls after ticket settlement. It is never exposed
+in capabilities. A late import does not admit a new factory/acquisition: the
+wrapper's post-import fence refuses `create`, so this case has zero acquired
+resources/disposals. A detached
 callback with no live admitted ticket cannot acquire or append cleanup debt after
 closure. Detached work, an unregistered allocation and arbitrary top-level effects
 remain outside the cooperative fixture contract.
@@ -349,7 +361,8 @@ readiness, and a plan digest is not a generation identity.
 
 | Case / plausible regression it detects | Required independent observation |
 | --- | --- |
-| Invalid **last** selected grant/namespace, forged self-owner, wrong subject/target or unauthorized structurally valid injection; detects elementwise validate-and-load | Zero loader calls/evaluations for **all** candidates, zero factory calls/effects, stable Host admission reason. |
+| Invalid **last** selected grant/namespace, forged self-owner or wrong subject/target; detects elementwise validate-and-load | Zero loader calls/evaluations for **all** candidates, zero factory calls/effects, stable Host admission reason. |
+| Structurally valid but unauthorized injection; detects treating Core acceptance as a receive grant | On the **same immutable declarations and profile**, the actual public `compileComposition` succeeds and its exact binding contains the disputed edge; the Host then refuses it before any loader call/evaluation or factory effect. Use a TEST-owned trusted inventory variant assigning the compatible provider to another subject with valid namespace/provision grants but no consumer receive grant; keep the request's claimed owner consistent with that subject so no other refusal masks the missing receive grant. |
 | Duplicate/unknown selection, ambiguous inventory, missing selected loader; detects lossy indexing/fallback | Host admission/mapping refusal before loader invocation, no root. |
 | Wrong token or provider binding; separately tampered digest/order, missing/extra/forged handle or incomplete roots | Actual Core or Assembly refusal, phase/code retained, zero loaders/factories; typed mistakes additionally fail the compiler fixture. |
 | Mutate original request/profile after admission begins; detects authorization snapshot drift | Frozen selected subject/target/bindings remain the ones prepared; changed input cannot redirect code. |
@@ -357,6 +370,7 @@ readiness, and a plan digest is not a generation identity.
 | Close before construct; detects a bypass of the Host guard | Construction refused without calling `prepared.run`; zero loaders/resources/disposals. |
 | Close during provider A's actual `import()` top-level await, before the first create; detects untracked construction and missing post-import fence | Raw close stays pending until load settles; `create` never called after seal, no root/effect/resource; zero disposal. A top-level marker may already exist. |
 | Acquisition reserved before seal, resource delivered afterward; detects rejected late custody or premature disposal | Live ticket accepts registration before settlement; close waits and disposes exactly once. Registration after ticket settlement is refused. |
+| Factory begins and pauses **before** reservation; Host seals, then factory attempts acquisition; detects using a live construction ticket as post-seal authority | Reservation is refused synchronously without allocating a resource; construction settles without publication, close drains it, zero acquired resources/disposals. |
 | Resource acquired, factory awaits then rejects **without** returned product; detects lost cleanup owner | Caller still holds TestHost and primary failure; close disposes once. |
 | Malformed late product, valid late product, or rejection after abort; detects wrong handoff/error precedence | Failed malformed: raw `returned` identity absent from `created`; valid: created exactly once then cancelled; rejection: original cause plus cancellation. No root, one Host disposal for an acquired resource. |
 | Seal after Assembly success before Host publication; repeated/concurrent construct | Host publishes no root after seal; joined construction invoked each factory at most once and allocated one resource. |

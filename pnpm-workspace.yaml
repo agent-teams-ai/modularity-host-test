@@ -1,0 +1,5 @@
+packages:
+  - .
+
+overrides:
+  '@get-modular/core': file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz
