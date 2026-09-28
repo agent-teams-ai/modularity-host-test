@@ -58,10 +58,11 @@ physical resources, observer clocks and cleanup. This one synthetic consumer
 does not prove a general cross-consumer runtime SPI; no shared extraction is
 accepted here.
 
-The eleven focused H13 tests cover 64/65 admission, cleanup at capacity, debt,
+The twelve focused H13 tests cover 64/65 admission, cleanup at capacity, debt,
 deadline/cancel, lost construction handle, 257 completion-order eviction,
 unknown IDs, reentrant publication, cohort sibling compaction including
-stream-initiated retirement with a failed sibling, and hostile
+stream-initiated retirement with a failed sibling, failed fixture preparation
+that releases only its own reservation, and hostile
 cause getters. They use synthetic resources and real public Assembly
 construction where executable work is involved. An accepted source-bound
 claim requires an exact committed snapshot replay on both pinned archive
