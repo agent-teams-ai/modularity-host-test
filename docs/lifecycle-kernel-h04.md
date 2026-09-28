@@ -20,9 +20,9 @@ generation remains active; raw work remains retained until settlement. A late
 does not release stream custody. `result()` is invoked only on explicit calls
 and each call gets a fresh ticket.
 
-Nested stream calls retain their active ancestor call context. A cancelled
-parent blocks a later sibling call, and a sibling already in flight cannot
-commit an effect after the parent is cancelled. Private close/return callbacks
+Nested stream calls retain their ancestor call context. A cancelled parent
+blocks a later sibling call, and a sibling already in flight cannot commit an
+effect or publish a chunk/result after the parent is cancelled. Private close/return callbacks
 cannot enter normal Host effect, read, command or stream admission even when
 the generation remains active during a single-stream cancel.
 
@@ -51,9 +51,9 @@ The pinned Consumer Module Standard bytes still match current upstream
 `33b41d5babf0a431c97e8e596a56e6ec1557ba1a0b26d39bf23e13d9a19e1fbd`).
 This Host-only TEST extension does not alter Core, Assembly, kernel API, shared
 module guidance or the accepted pin. The source-bound evidence runner includes
-the sixteen new H04 scenarios for both installed archive pairs and retains this
-document in its worktree digest. Until a committed exact-head replay exists,
-the evidence is working-tree evidence, not an accepted release claim.
+the seventeen new H04 scenarios for both installed archive pairs and retains this
+document in its worktree digest. An accepted claim requires a retained replay
+from clean committed source; working-tree test passes alone are insufficient.
 
 Shared-first review: a reusable package contract could define nominal
 stream-ticket identities and terminal conformance fixtures (~80-120 LOC),

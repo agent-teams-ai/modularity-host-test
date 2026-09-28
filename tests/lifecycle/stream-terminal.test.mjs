@@ -312,6 +312,27 @@ test('terminal in-flight sibling keeps cancelled parent effect fence', async () 
   assert.equal((await x.host.close()).status, 'closed');
 });
 
+test('terminal in-flight sibling cannot publish a chunk after parent cancel', async () => {
+  const gate = deferred();
+  const x = await installed();
+  const sibling = x.host.retainTerminalStream({ next() { return gate.promise; }, close() {} });
+  let siblingCall;
+  const parent = x.host.retainTerminalStream({
+    next() { siblingCall = sibling.next(); return siblingCall; },
+    return() { return { done: true, value: undefined }; },
+    close() {},
+  });
+  const parentCall = parent.next();
+  const parentRejected = assert.rejects(parentCall, /host-revoked/);
+  const siblingRejected = assert.rejects(siblingCall, /host-revoked/);
+  const cancelled = parent.cancel();
+  gate.resolve({ done: false, value: 'late' });
+  await siblingRejected;
+  await parentRejected;
+  await cancelled;
+  assert.equal((await x.host.close()).status, 'closed');
+});
+
 test('terminal cancel cleanup cannot enter ordinary Host effect', async () => {
   const x = await installed();
   const resource = { next() { return { done: true, value: undefined }; },

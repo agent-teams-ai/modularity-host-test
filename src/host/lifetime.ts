@@ -380,7 +380,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     return new Promise<T>((resolve, reject) => {
       const success = (value: unknown) => {
         settle();
-        if (this.lifecycle().phase !== 'active' || record.closing) {
+        if (this.lifecycle().phase !== 'active' || record.closing || hasClosingStream(parent)) {
           reject(new Error('host-revoked'));
           return;
         }
