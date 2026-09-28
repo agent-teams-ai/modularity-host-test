@@ -357,6 +357,8 @@ export class TestHost<R, O extends { readonly status: string }> {
       }, true);
     };
     const result = (): Promise<U> => {
+      if (record.closing || record.settled || this.lifecycle().phase !== 'active')
+        return Promise.reject(new Error('host-revoked'));
       if (!callbacks.result) return Promise.reject(new Error('stream-result-unsupported'));
       return this.streamCall(record, callbacks.result, value => {
         if (value !== null && (typeof value === 'object' || typeof value === 'function'))

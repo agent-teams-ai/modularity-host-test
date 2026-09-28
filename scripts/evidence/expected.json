@@ -80,6 +80,7 @@
     "terminal stream waits for pending next after early return acknowledgement",
     "terminal done true still waits for pending explicit result",
     "terminal result is never eager or cached",
+    "terminal closed result and next reject with the same revoked state",
     "terminal public close paths and retirement share one close flight",
     "terminal post-await effect is revoked while raw next remains retained",
     "terminal close failure retains debt while sibling closes",

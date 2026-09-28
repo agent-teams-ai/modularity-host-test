@@ -18,7 +18,8 @@ Public `cancel` revokes that stream's effect authority even while the owner
 generation remains active; raw work remains retained until settlement. A late
 `done:false` chunk after revoke is rejected, never published. `done:true` ends iteration but
 does not release stream custody. `result()` is invoked only on explicit calls
-and each call gets a fresh ticket.
+and each call gets a fresh ticket. After close, both `next()` and `result()`
+reject with `host-revoked` before invoking provider callbacks.
 
 Nested stream calls retain their ancestor call context. A cancelled parent
 blocks a later sibling call, and a sibling already in flight cannot commit an
@@ -61,7 +62,7 @@ The pinned Consumer Module Standard bytes still match current upstream
 `33b41d5babf0a431c97e8e596a56e6ec1557ba1a0b26d39bf23e13d9a19e1fbd`).
 This Host-only TEST extension does not alter Core, Assembly, kernel API, shared
 module guidance or the accepted pin. The source-bound evidence runner includes
-the twenty-one new H04 scenarios for both installed archive pairs and retains this
+the twenty-three new H04 scenarios for both installed archive pairs and retains this
 document in its worktree digest. An accepted claim requires a retained replay
 from clean committed source; working-tree test passes alone are insufficient.
 

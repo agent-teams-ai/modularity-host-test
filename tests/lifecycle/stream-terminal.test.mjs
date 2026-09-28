@@ -91,6 +91,19 @@ test('terminal result is never eager or cached', async () => {
   assert.equal((await x.host.close()).status, 'closed');
 });
 
+test('terminal closed result and next reject with the same revoked state', async () => {
+  const x = await installed();
+  const view = x.host.retainTerminalStream({
+    next() { return { done: true, value: undefined }; },
+    result() { return 7; },
+    close() {},
+  });
+  await view.cancel();
+  await assert.rejects(view.next(), /host-revoked/);
+  await assert.rejects(view.result(), /host-revoked/);
+  assert.equal((await x.host.close()).status, 'closed');
+});
+
 test('terminal public close paths and retirement share one close flight', async () => {
   const events = [], gate = deferred();
   const x = await installed(events);
