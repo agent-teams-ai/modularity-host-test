@@ -2,9 +2,9 @@
 
 This checkpoint extends the single-generation synthetic TEST Host from L2a.
 It uses the same pinned `@get-modular/lifecycle-kernel` 0.1.0 candidate and
-Core/Assembly archive pairs. The Consumer Module Standard pin migrates from
-candidate source `e0e2290` to merged Get Modular `461bff0`: comparison found
-identical full bytes (SHA-256
+Core/Assembly archive pairs. The L2a base already migrated the Consumer Module
+Standard pin from candidate source `e0e2290` to merged Get Modular `461bff0`;
+comparison found identical full bytes (SHA-256
 `33b41d5babf0a431c97e8e596a56e6ec1557ba1a0b26d39bf23e13d9a19e1fbd`).
 The candidate kernel tarball retains its exact original source commit and hash.
 No kernel API change is part of this checkpoint.
