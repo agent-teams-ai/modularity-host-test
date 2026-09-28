@@ -8,7 +8,9 @@ const mark = (event: string): void => {
 
 export type OwnedResource = { readonly resourceIdentity?: symbol; dispose(): void | Promise<void> };
 export type StreamResource = { close(): void | Promise<void> };
-export type CloseTerminal = Readonly<{ status: 'closed' } | { status: 'cleanup-incomplete'; cause: unknown; debt: OwnedResource | StreamResource }>;
+export type CleanupFailure = Readonly<{ debt: OwnedResource | StreamResource; cause: unknown }>;
+export type CloseTerminal = Readonly<{ status: 'closed' } | { status: 'cleanup-incomplete'; cause: unknown;
+  debt: OwnedResource | StreamResource; failures: readonly CleanupFailure[] }>;
 export type CloseReceipt = Readonly<{ status: 'closed' | 'cleanup-incomplete' } | { status: 'pending'; reason: 'aborted' | 'deadline' } | { status: 'self-wait' }>;
 export type RetirementReceipt = Readonly<{ kind: 'requested'; operationId: string }>;
 export type RetirementReadReceipt = Readonly<{ status: 'pending' | 'closed' | 'cleanup-incomplete' | 'unknown-or-expired' }>;
@@ -71,6 +73,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     return Object.freeze({ state, ready: lifecycle.phase === 'active', lifecycle, hasResource: !!this.resource,
       debt: this.terminal?.status === 'cleanup-incomplete' ? this.terminal.debt : undefined,
       cause: this.terminal?.status === 'cleanup-incomplete' ? this.terminal.cause : undefined,
+      failures: this.terminal?.status === 'cleanup-incomplete' ? this.terminal.failures : undefined,
       streams: this.streams.size, observers: this.waiters.size });
   }
 
@@ -317,8 +320,9 @@ export class TestHost<R, O extends { readonly status: string }> {
       const streamRecords = [...this.streams];
       const closedStreams = await Promise.allSettled(streamRecords.map(stream => stream.close!));
       await Promise.allSettled(tickets.map(ticket => ticket.promise));
+      const streamFailures: CleanupFailure[] = closedStreams.flatMap((result, index) =>
+        result.status === 'rejected' ? [{ debt: streamRecords[index]!.resource, cause: result.reason }] : []);
       let terminal: CloseTerminal;
-      let failedStream: StreamResource | undefined;
       try {
         streamRecords.forEach((stream, index) => {
           if (closedStreams[index]?.status === 'fulfilled') {
@@ -327,12 +331,8 @@ export class TestHost<R, O extends { readonly status: string }> {
             this.streams.delete(stream);
           }
         });
-        const failedIndex = closedStreams.findIndex(result => result.status === 'rejected');
-        if (failedIndex !== -1) {
-          failedStream = streamRecords[failedIndex]!.resource;
-          const rejected = closedStreams[failedIndex] as PromiseRejectedResult;
-          throw new Error('stream-close-incomplete', { cause: rejected.reason });
-        }
+        if (streamFailures.length)
+          throw new Error('stream-close-incomplete', { cause: streamFailures[0]!.cause });
         await this.invokeCleanup(() => this.resource?.dispose());
         if (this.custody) {
           this.kernel.release(this.custody);
@@ -342,7 +342,10 @@ export class TestHost<R, O extends { readonly status: string }> {
         if (!finished.ok) throw new Error(`kernel-finish:${finished.reason}`);
         terminal = Object.freeze({ status: 'closed' });
       } catch (cause) {
-        terminal = Object.freeze({ status: 'cleanup-incomplete', cause, debt: failedStream ?? this.resource! });
+        const debt = streamFailures[0]?.debt ?? this.resource!;
+        const failures = streamFailures.length ? streamFailures : [{ debt, cause }];
+        terminal = Object.freeze({ status: 'cleanup-incomplete', cause, debt,
+          failures: Object.freeze(failures.map(failure => Object.freeze(failure))) });
       }
       this.terminal = terminal;
       for (const waiter of [...this.waiters]) waiter.wake();
@@ -355,16 +358,16 @@ export class TestHost<R, O extends { readonly status: string }> {
     if (!this.retirement) return Promise.reject(new Error('close-not-started'));
     const receipt = (terminal: CloseTerminal): CloseReceipt => Object.freeze({ status: terminal.status });
     if (this.terminal) return Promise.resolve(receipt(this.terminal));
+    const signal = options.signal;
+    const deadlineAt = options.deadlineAt;
+    if (deadlineAt !== undefined && !Number.isFinite(deadlineAt))
+      return Promise.reject(new Error('invalid-deadline'));
     const current = this.context.getStore();
     const currentCall = current?.kind === 'call' && current.generation === this.generation
       ? this.kernel.checkCall(current.lease) : undefined;
     if (current?.kind === 'cleanup' && current.operationId === this.retirementId && current.active ||
         currentCall && !currentCall.ok && currentCall.reason === 'revoked')
       return Promise.resolve(Object.freeze({ status: 'self-wait' }));
-    const signal = options.signal;
-    const deadlineAt = options.deadlineAt;
-    if (deadlineAt !== undefined && !Number.isFinite(deadlineAt))
-      return Promise.reject(new Error('invalid-deadline'));
     if (signal?.aborted) return Promise.resolve(Object.freeze({ status: 'pending', reason: 'aborted' }));
     if (deadlineAt !== undefined && deadlineAt <= this.timer.now())
       return Promise.resolve(Object.freeze({ status: 'pending', reason: 'deadline' }));

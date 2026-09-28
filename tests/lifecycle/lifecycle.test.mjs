@@ -777,7 +777,7 @@ test('self-retirement returns requested and self-observe cannot join', async () 
 // Regression: a synchronous stream cleanup callback can observe or start a
 // second retirement flight and accidentally wait on itself.
 test('stream cleanup sees one published flight and self-wait receipt', async () => {
-  let reentered, seen;
+  let reentered, seen, invalid, aborted;
   const x = await fixture(async ({ host, owner }) => {
     owner.reserve()({ dispose() {} });
     return product(host);
@@ -786,10 +786,16 @@ test('stream cleanup sees one published flight and self-wait receipt', async () 
   x.host.retainStream({ close() {
     reentered = x.host.close();
     seen = x.host.observeRetirement('retirement-1');
+    invalid = x.host.observeRetirement('retirement-1', { deadlineAt: Infinity });
+    const controller = new AbortController();
+    controller.abort();
+    aborted = x.host.observeRetirement('retirement-1', { signal: controller.signal });
   } });
   const raw = x.host.close();
   assert.strictEqual(reentered, raw);
   assert.deepEqual(await seen, { status: 'self-wait' });
+  await assert.rejects(invalid, /invalid-deadline/);
+  assert.deepEqual(await aborted, { status: 'self-wait' });
   assert.equal((await raw).status, 'closed');
 });
 
@@ -810,6 +816,36 @@ test('stream close failure retains custody and blocks dependent disposal', async
   assert.strictEqual(terminal.debt, failed);
   assert.deepEqual(events, ['failed-close', 'sibling-close']);
   assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 0, custody: 2 });
+});
+
+// Regression: only the first failed consumer remains visible while sibling
+// custody and its original failure are retained privately with no retry path.
+test('multiple failed stream closes retain every failure and close successful siblings', async () => {
+  const events = [], firstCause = Error('first'), secondCause = Error('second');
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { events.push('owner-dispose'); } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  const first = { close() { events.push('first-close'); throw firstCause; } };
+  const second = { close() { events.push('second-close'); throw secondCause; } };
+  x.host.retainStream(first);
+  x.host.retainStream(second);
+  x.host.retainStream({ close() { events.push('sibling-close'); } });
+  const flight = x.host.close();
+  assert.strictEqual(x.host.close(), flight);
+  const terminal = await flight;
+  assert.equal(terminal.status, 'cleanup-incomplete');
+  assert.strictEqual(terminal.debt, first);
+  assert.deepEqual(terminal.failures, [
+    { debt: first, cause: firstCause },
+    { debt: second, cause: secondCause },
+  ]);
+  assert.strictEqual(x.host.status().failures, terminal.failures);
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 0, custody: 3 });
+  assert.deepEqual(events, ['first-close', 'second-close', 'sibling-close']);
+  assert.strictEqual(await x.host.close(), terminal);
+  assert.deepEqual(events, ['first-close', 'second-close', 'sibling-close']);
 });
 
 // Regression: two capability views of one owned resource cause double disposal.

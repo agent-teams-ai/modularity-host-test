@@ -69,6 +69,7 @@
     "self-retirement returns requested and self-observe cannot join",
     "stream cleanup sees one published flight and self-wait receipt",
     "stream close failure retains custody and blocks dependent disposal",
+    "multiple failed stream closes retain every failure and close successful siblings",
     "consumer closes while shared owner disposes once",
     "unobservable native command promise keeps its raw lease and cleanup debt",
     "stream close observes native raw settlement despite a replaced then",
