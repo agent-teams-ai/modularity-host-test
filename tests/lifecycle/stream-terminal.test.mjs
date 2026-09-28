@@ -139,6 +139,25 @@ test('terminal close failure retains debt while sibling closes', async () => {
   assert.equal(x.host.status().lifecycle.custody, 2);
 });
 
+test('ordinary and terminal stream close failures remain separately owned', async () => {
+  const events = [], ordinaryCause = Error('ordinary-close'), terminalCause = Error('terminal-close');
+  const x = await installed(events);
+  const ordinary = { close() { events.push('ordinary'); throw ordinaryCause; } };
+  const terminalStream = { next() { return { done: true, value: undefined }; },
+    close() { events.push('terminal'); throw terminalCause; } };
+  x.host.retainStream(ordinary);
+  x.host.retainTerminalStream(terminalStream);
+  x.host.retainTerminalStream({ next() { return { done: true, value: undefined }; },
+    close() { events.push('sibling'); } });
+  const closed = await x.host.close();
+  assert.equal(closed.status, 'cleanup-incomplete');
+  assert.deepEqual(closed.failures, [
+    { debt: ordinary, cause: ordinaryCause }, { debt: terminalStream, cause: terminalCause },
+  ]);
+  assert.deepEqual(events, ['ordinary', 'terminal', 'sibling']);
+  assert.equal(x.host.status().lifecycle.custody, 3);
+});
+
 test('terminal observer timeout leaves raw next and later close intact', async () => {
   const gate = deferred(), events = [];
   const x = await installed(events);

@@ -82,6 +82,7 @@
     "terminal public close paths and retirement share one close flight",
     "terminal post-await effect is revoked while raw next remains retained",
     "terminal close failure retains debt while sibling closes",
+    "ordinary and terminal stream close failures remain separately owned",
     "terminal observer timeout leaves raw next and later close intact",
     "terminal callback getters and foreign thenables fail closed",
     "terminal native next observer ignores replaced then until raw settlement",

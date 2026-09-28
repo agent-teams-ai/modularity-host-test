@@ -45,7 +45,7 @@ The pinned Consumer Module Standard bytes still match current upstream
 `33b41d5babf0a431c97e8e596a56e6ec1557ba1a0b26d39bf23e13d9a19e1fbd`).
 This Host-only TEST extension does not alter Core, Assembly, kernel API, shared
 module guidance or the accepted pin. The source-bound evidence runner includes
-the twelve new H04 scenarios for both installed archive pairs and retains this
+the thirteen new H04 scenarios for both installed archive pairs and retains this
 document in its worktree digest. Until a committed exact-head replay exists,
 the evidence is working-tree evidence, not an accepted release claim.
 
