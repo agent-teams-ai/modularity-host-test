@@ -139,6 +139,9 @@ IDs. Use the same literal ID for the TEST root's module and implementation so
 this exact fixture traverses both public APIs. Record that constraint in the
 evidence; this does not prove arbitrary distinct root IDs work on 0.1.0. Check
 the 0.2.0 pair separately rather than carrying the workaround by assumption.
+Its packed Assembly source checks root handles against `moduleId`; add a small
+0.2.0-only distinct-root-ID probe to test that correction through `prepare`.
+Keep the shared-ID fixture for the otherwise identical cross-pair scenarios.
 These are planned read/write/action entries in `C`, not three GM API generations.
 The graph table is conceptual until its literal typed fixture passes. Published
 Core 0.1.0 declares `many({ min, max })` with `kind: "many"` and `order: "profile"`;
