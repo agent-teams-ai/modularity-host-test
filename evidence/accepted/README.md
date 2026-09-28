@@ -38,6 +38,15 @@ the kernel archive still comes from `e0e2290`. The manifest SHA-256 is
 The archive SHA-256 is
 `d2d32a1a27b2f2bac84b54e1cffd0db19b144f6bef11dd5b30f36a3c1ec60519`.
 
+`4f6d88c-l2a-doc-run.tar.gz` retains the accepted replay after the standard
+and kernel source provenance wording was separated, for clean source commit
+`4f6d88c4e5b5de46739080b594c606561e6d2acf`. Both exact pairs again passed
+frozen offline install, typecheck, 62 tests, 23 admission cases and 24 focused
+lifecycle cases. Manifest SHA-256:
+`6a925bb734f253fb010fd180273caf7126c3829d71c9decff0442fb3d1d0f383`.
+Archive SHA-256:
+`2113ea574bb1a10827cc40c669a9cfe921a862831403daa5288da5b0dd9b0fa2`.
+
 Inspect the accepted manifest without extracting the archive:
 
 ```sh
@@ -49,6 +58,9 @@ tar -xOzf evidence/accepted/1fb563c-l2a-run.tar.gz \
 
 tar -xOzf evidence/accepted/4b38510-l2a-review-run.tar.gz \
   evidence/runs/2026-09-28T21-14-17-859Z-11213/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/4f6d88c-l2a-doc-run.tar.gz \
+  evidence/runs/2026-09-28T21-24-05-672Z-24282/evidence.json | shasum -a 256
 ```
 
 These archives preserve evidence for the exact TEST subjects. They do not
