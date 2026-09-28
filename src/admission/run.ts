@@ -1,11 +1,13 @@
 import { compileComposition, type CompositionProfile, type CompileCompositionResult } from '@get-modular/core';
 import { assemblyFor, type AssemblyOutcome, type AnyFactoryHandle } from '@get-modular/assembly';
-import { admit } from './policy.ts';
+import { admitTrusted, type Admitted } from './policy.ts';
+import { candidates, grants, type Candidate, type Grant } from '../inventory/trusted.ts';
 import { declarations, providerA, providerB, writer, reader, root, sentinel, type Contracts, type Root } from '../fixtures/graph.ts';
 import { OneShotOwner, type OwnedResource } from '../host/one-shot.ts';
 
 export type LoaderId = 'test/provider/a' | 'test/provider/b' | 'test/writer/main' | 'test/reader/main' | 'test/root/main' | 'test/sentinel/main';
 export type LoaderRow = Readonly<{ implementationId: LoaderId; load: () => Promise<unknown> }>;
+export type TrustedAuthorities = Readonly<{ inventory: readonly Candidate[]; grants: readonly Grant[] }>;
 // Literal executable paths are fixed in this TEST repository; request data cannot supply paths.
 export const loaders: readonly LoaderRow[] = Object.freeze([
   { implementationId: 'test/provider/a', load: () => import('../fixtures/candidates/a.mjs') },
@@ -20,7 +22,7 @@ export type RunResult =
   | { phase: 'core'; diagnostics: readonly string[] }
   | { phase: 'mapping'; reason: string }
   | { phase: 'preparation'; code: string }
-  | { phase: 'construction'; status: string; code?: string; created: number; values?: readonly string[]; identities?: readonly string[]; sharedResource?: boolean; effects: readonly string[]; digest: string; order: readonly string[] };
+  | { phase: 'construction'; status: string; code?: string; created: number; values?: readonly string[]; identities?: readonly string[]; sharedResource?: boolean; rootReportedSharedResource?: boolean; effects: readonly string[]; digest: string; order: readonly string[] };
 
 import { appendFileSync } from 'node:fs';
 const marker = (event: string): void => {
@@ -29,12 +31,9 @@ const marker = (event: string): void => {
 const isModule = <T extends { create: Function }>(value: unknown): value is T =>
   value !== null && typeof value === 'object' && 'create' in value && typeof value.create === 'function';
 
-export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = loaders,
-  profileEdit?: (profile: CompositionProfile) => CompositionProfile): Promise<RunResult> {
-  const decision = admit(input);
-  if (!decision.ok) return { phase: 'admission', reason: decision.reason };
-  const selections = decision.snapshot.selections;
-  const profile: CompositionProfile = {
+export function projectProfile(snapshot: Admitted): CompositionProfile {
+  const selections = snapshot.selections;
+  return {
     kind: 'get-modular.composition-profile', schemaVersion: 1, profileId: 'test/admission', roots: ['test/root/main'],
     selections: selections.map(({ moduleId, implementationId }) => ({ moduleId, implementationId })),
     bindings: selections.flatMap(selection => {
@@ -43,6 +42,15 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
         providerImplementationIds: selection.injections.filter(edge => edge.slot === slotId).map(edge => edge.providerImplementationId) }));
     }),
   };
+}
+
+export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = loaders,
+  profileEdit?: (profile: CompositionProfile) => CompositionProfile,
+  authorities: TrustedAuthorities = { inventory: candidates, grants }): Promise<RunResult> {
+  const decision = admitTrusted(input, authorities.inventory, authorities.grants);
+  if (!decision.ok) return { phase: 'admission', reason: decision.reason };
+  const selections = decision.snapshot.selections;
+  const profile = projectProfile(decision.snapshot);
   let composition: CompileCompositionResult;
   try { composition = await compileComposition({ declarations, profile: profileEdit ? profileEdit(profile) : profile }); }
   catch { return { phase: 'core', diagnostics: ['core-threw'] }; }
@@ -119,9 +127,14 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
     const instance: Root = outcome.roots.app;
     const values = instance.run();
     const identities = instance.identities();
-    const sharedResource = instance.sharedResource();
+    const actions = ['test/writer/main', 'test/reader/main'].map(id =>
+      outcome.created.find(entry => entry.implementationId === id)?.capabilities['test/action']);
+    const identitiesFromAssembly = actions.map(action =>
+      action !== null && typeof action === 'object' && 'resourceIdentity' in action ? action.resourceIdentity : undefined);
+    const sharedResource = owner.matchesResourceIdentities(identitiesFromAssembly[0], identitiesFromAssembly[1]);
     return { phase: 'construction', status: 'succeeded', created: outcome.created.length,
-      values, identities, sharedResource, effects: [...owner.effects], digest: composition.digest, order: composition.plan.dependencyOrder };
+      values, identities, sharedResource, rootReportedSharedResource: instance.sharedResource(),
+      effects: [...owner.effects], digest: composition.digest, order: composition.plan.dependencyOrder };
   } catch {
     if (constructionStarted) return { phase: 'construction', status: 'threw', created: 0, effects: [...owner.effects], digest: composition.digest, order: composition.plan.dependencyOrder };
     return { phase: 'preparation', code: 'bind-or-prepare-threw' };

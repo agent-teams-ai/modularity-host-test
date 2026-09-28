@@ -5,6 +5,7 @@ export async function create({ actions }) {
   return { instance: {
     run: () => actions.map(action => action.run()),
     identities: () => actions.map(action => action.resourceId),
-    sharedResource: () => actions[0].resourceIdentity === actions[1].resourceIdentity,
+    sharedResource: () => typeof actions[0].resourceIdentity === 'symbol' &&
+      typeof actions[1].resourceIdentity === 'symbol' && actions[0].resourceIdentity === actions[1].resourceIdentity,
   }, capabilities: {} };
 }

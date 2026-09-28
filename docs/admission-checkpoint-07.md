@@ -13,8 +13,12 @@ inside those lazy factories, with Host authority checked before and after the im
 allowlisted environment. Candidate entrypoint and transitive evaluation, loader
 invocation, factory entry and disposal have separate markers. The A and B outputs
 and shared identity are literal test oracles, not derived from a profile.
-The two facets also carry the same opaque symbol, and the root reports a strict
-reference-equality check so duplicate resources with copied string IDs are caught.
+The two facets also carry the same opaque symbol. The Host independently compares
+the writer and reader action symbols from Assembly's public `created` outcome
+against its retained resource identity. The candidate root's own comparison
+requires real symbols. Missing identities on both actions and a distinct reader
+identity are negative controls; copied string IDs still produce the expected
+output, but fail the shared-resource oracle.
 
 Published 0.1.0 Core interprets profile roots as module IDs while Assembly's
 root-handle check compares those roots with implementation IDs. For this fixture,
@@ -42,9 +46,23 @@ The policy audit additionally uses fresh-child trusted table variants for namesp
 lookalikes, unknown subjects, ungranted provisions and ambiguous associations.
 If a variant is wrongly admitted, its child enters the executable Core/Assembly
 control path; the zero-marker assertion then fails.
+For the disputed injection, a TEST-owned trusted variant authenticates provider A
+as another subject with namespace and exact provision grants. The writer has a
+receive grant for that subject; the reader lacks only its receive grant. The
+request claims that authenticated owner. In the same fresh child, a hand-written
+profile is compared with the Host's projection, and the public Core compiler
+accepts its exact reader/read binding. The child then calls the actual Host
+admission path with the disputed authorities; it returns `injection-grant` with
+zero loader, candidate evaluation, factory, effect and acquisition markers.
 The typecheck includes expected compiler errors for wrong token, capability,
-slot and a constructor that does not return a Promise. A reverse-many control
+slot and a constructor that does not return a Promise. Its valid async Action
+product includes the required resource identity in every negative. A reverse-many control
 confirms that order changes the result.
+
+On the admission proof fix checkout at `a33ad98e419c40df115bfdbee34c47d2308fbdb4`,
+direct `./node_modules/.bin/tsc --noEmit -p tsconfig.json`, `node --test`
+(38 passed), and `git diff --check` passed under Node 24.21.0. No install or
+registry operation was run for this fix.
 
 The worker sandbox could not write its pnpm store. The orchestrator reran
 `pnpm install --frozen-lockfile --offline` on the same isolated TEST checkout

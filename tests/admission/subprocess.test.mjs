@@ -28,6 +28,7 @@ test('positive A imports selected modules once, runs ordered actions and dispose
   assert.deepEqual(result.values, ['a:write', 'a-value']);
   assert.deepEqual(result.identities, ['a-resource', 'a-resource']);
   assert.equal(result.sharedResource, true);
+  assert.equal(result.rootReportedSharedResource, true);
   assert.deepEqual(result.effects, ['write']);
   for (const name of ['a', 'writer', 'reader', 'root']) {
     assert.equal(events.filter(event => event === `${name}:evaluate`).length, 1);
@@ -42,13 +43,18 @@ test('positive A imports selected modules once, runs ordered actions and dispose
 });
 // Regression: elementwise validate-and-load admits earlier factories before the last invalid row.
 for (const [name, reason] of [['wrong-target', 'wrong-target'], ['forged-owner', 'forged-owner'],
-  ['wrong-token', 'provider-capability'], ['unauthorized-injection', 'injection-grant'],
+  ['wrong-token', 'provider-capability'],
   ['duplicate-selection', 'duplicate-module'], ['unknown-selection', 'unknown-selection']]) {
   test(`${name} refuses the whole graph before any executable marker`, () => {
     const observed = scenario(name); zero(observed);
     assert.deepEqual(observed.result, { phase: 'admission', reason });
   });
 }
+// Regression: structural Core acceptance is treated as the reader's receive authority.
+test('Core-valid disputed read binding is refused by the Host before executable loading', () => {
+  const observed = scenario('unauthorized-injection'); zero(observed);
+  assert.deepEqual(observed.result, { phase: 'admission', reason: 'injection-grant', coreValidDisputedBinding: true });
+});
 // Regression: malformed trusted rows reach executable loading after a policy change.
 for (const [name, reason] of [['namespace-lookalike', 'namespace'], ['unknown-subject', 'subject-grant'],
   ['ungranted-provision', 'provision-grant'], ['ambiguous-inventory', 'ambiguous-inventory']]) {
@@ -92,6 +98,18 @@ test('swapped A loader is caught by the A oracle', () => {
   assert.deepEqual(observed.result.values, ['b:write', 'b-value']);
   assert.equal(observed.events.includes('b:evaluate'), true);
 });
+// Regression: absent or copied identities are accepted as one owned resource.
+for (const name of ['missing-identity', 'distinct-identity']) {
+  test(`${name} fails the independent resource identity oracle`, () => {
+    const { result, events } = scenario(name);
+    assert.equal(result.status, 'succeeded');
+    assert.deepEqual(result.values, ['a:write', 'a-value']);
+    assert.deepEqual(result.identities, ['a-resource', 'a-resource']);
+    assert.equal(result.sharedResource, false);
+    assert.equal(result.rootReportedSharedResource, false);
+    assert.equal(events.filter(event => event === 'a:dispose').length, 1);
+  });
+}
 
 // Regression: Assembly ignores the explicit profile order of a many slot.
 test('reversed many binding changes the independent action oracle', () => {

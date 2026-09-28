@@ -46,14 +46,6 @@ test('forged owner label is refused', () => {
   assert.equal(admit(input).reason, 'forged-owner');
 });
 
-// Regression: Core-valid edges are mistaken for authority to consume a capability.
-test('unauthorized injection is refused', () => {
-  const input = request();
-  input.selections[2].injections[0].capabilityId = 'test/resource/write';
-  input.selections[2].injections[0].token = 'test/resource/write/v1';
-  assert.equal(admit(input).reason, 'injection-grant');
-});
-
 // Regression: indexing duplicate or unknown IDs loses an invalid selection.
 test('duplicate and unknown selections are refused', () => {
   const duplicate = request();

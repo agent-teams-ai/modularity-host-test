@@ -6,6 +6,7 @@ export async function create(_dependencies, owner) {
   const resourceIdentity = Symbol('a-resource');
   let disposed = false;
   const resource = {
+    resourceIdentity,
     read() { if (disposed) throw Error('resource-disposed'); return 'a-value'; },
     write(value) { if (disposed) throw Error('resource-disposed'); owner.effect(value); return `a:${value}`; },
     dispose() { if (disposed) throw Error('double-dispose'); disposed = true; mark('a:dispose'); },

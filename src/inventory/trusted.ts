@@ -52,3 +52,17 @@ export const grants: readonly Grant[] = Object.freeze([
   ] },
   { subject: 'fixture/sentinel', target, namespace: 'test/sentinel', provisions: [], receives: [] },
 ].map(grant => Object.freeze({ ...grant, provisions: Object.freeze(grant.provisions), receives: Object.freeze(grant.receives) })));
+
+// Trusted TEST authority variant: the reader has no receive grant for A's new subject.
+export const disputedAuthorities = Object.freeze({
+  inventory: Object.freeze(candidates.map(candidate => candidate.implementationId === 'test/provider/a'
+    ? Object.freeze({ ...candidate, subject: 'fixture/alternate-provider' }) : candidate)),
+  grants: Object.freeze([
+    ...grants.map(grant => grant.subject === 'fixture/writer'
+      ? Object.freeze({ ...grant, receives: Object.freeze([...grant.receives,
+        'fixture/alternate-provider|test/resource/write|test/resource/write/v1']) }) : grant),
+    Object.freeze({ subject: 'fixture/alternate-provider', target, namespace: 'test/provider',
+      provisions: Object.freeze(['test/resource/read|test/resource/read/v1',
+        'test/resource/write|test/resource/write/v1']), receives: Object.freeze([]) }),
+  ]),
+});

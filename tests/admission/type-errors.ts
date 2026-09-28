@@ -10,7 +10,10 @@ const wrongCapability = defineModule({ ...writer, provides: [{ capabilityId: 'te
 } }] } as const);
 const wrongSlot = defineModule({ ...writer, slots: [{ slotId: 'resource', capabilityId: 'test/unknown',
   compatibility: { family: 'exact', familyVersion: 1, token: 'test/resource/write/v1' }, cardinality: required() }] } as const);
-const product = async () => ({ instance: {}, capabilities: { 'test/action': { resourceId: 'r', run: () => 'x' } } });
+const action = { resourceId: 'r', resourceIdentity: Symbol('r'), run: () => 'x' };
+const product = async () => ({ instance: {}, capabilities: { 'test/action': action } });
+// Positive control: the product and asynchronous factory satisfy the valid declaration.
+api.bindFactory(writer, product);
 // Regression: exact token, capability ID, and slot capability escape typed binding.
 // @ts-expect-error an unlisted exact token is rejected
 api.bindFactory(wrongToken, product);
@@ -20,4 +23,4 @@ api.bindFactory(wrongCapability, product);
 api.bindFactory(wrongSlot, product);
 // Regression: synchronous constructors are accepted despite Assembly's Promise contract.
 // @ts-expect-error factory must return a Promise
-api.bindFactory(writer, () => ({ instance: {}, capabilities: { 'test/action': { resourceId: 'r', run: () => 'x' } } }));
+api.bindFactory(writer, () => ({ instance: {}, capabilities: { 'test/action': action } }));

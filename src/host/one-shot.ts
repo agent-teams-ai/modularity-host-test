@@ -4,7 +4,7 @@ const mark = (event: string): void => {
   if (process.env.TEST_MARKERS) appendFileSync(process.env.TEST_MARKERS, `${event}\n`);
 };
 
-export type OwnedResource = { dispose(): void };
+export type OwnedResource = { readonly resourceIdentity: symbol; dispose(): void };
 
 // The checkpoint-2 owner retains the actual fixture resource and in-memory sink.
 // Concurrent construction and revocation semantics belong to checkpoint 3.
@@ -13,6 +13,10 @@ export class OneShotOwner {
   private resource: OwnedResource | undefined;
   private closed = false;
   isOpen(): boolean { return !this.closed; }
+  matchesResourceIdentities(first: unknown, second: unknown): boolean {
+    return typeof this.resource?.resourceIdentity === 'symbol' &&
+      first === this.resource.resourceIdentity && second === this.resource.resourceIdentity;
+  }
   acquire(resource: OwnedResource): void {
     if (this.closed || this.resource) throw new Error('owner-unavailable');
     this.resource = resource;
