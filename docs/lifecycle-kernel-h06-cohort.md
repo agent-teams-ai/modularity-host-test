@@ -55,8 +55,9 @@ The nineteen focused cohort scenarios cover synchronous abort reentry, nested
 and cleanup self-wait, diagnostic ID reuse, detached frames, sibling failure,
 stream prerequisites, retained observer budget, cancellation and both
 deadline/settlement orders. Existing H04 focused scenarios remain
-required. Evidence replay remains pending until a clean source commit and both
-installed archive pairs have been run; working-tree tests are preflight only.
+required. An accepted replay must cover 118 tests, 23 admission and 80 focused
+lifecycle cases for each exact installed archive pair. Its source commit,
+manifest and portable archive are recorded in `evidence/accepted/README.md`.
 
 Limits: no H13 bounded inventory, replacement/readback, general dynamic
 membership, crash recovery, arbitrary JavaScript isolation, or product Host
