@@ -1,6 +1,6 @@
 # Exact-pair TEST evidence replay
 
-Run under Node 24.21.0 and pnpm 11.20.0 in this TEST repository:
+Run under Node 24.18.0 or 24.21.0 and pnpm 11.20.0 in this TEST repository:
 
 ```sh
 pnpm install --frozen-lockfile --offline
@@ -12,7 +12,9 @@ pnpm evidence
 `pnpm evidence` creates separate disposable roots for the published 0.1.0 and
 candidate 0.2.0 archives. Its 0.2.0 manifest, exact override and lock are in
 `evidence/candidate-0.2/`; the root manifest and lock continue to install the
-published 0.1.0 pair. The runner copies only this TEST stand's source and tests,
+published 0.1.0 pair. Both roots also install the same separately pinned private
+`@get-modular/lifecycle-kernel` candidate tarball. The runner copies only this
+TEST stand's source and tests,
 disables pnpm's registry-backed release-age check in the disposable 0.1.0 copy,
 and requests a frozen offline install. A preseeded writable store may be supplied
 as `TEST_EVIDENCE_PNPM_STORE`. It does not change the root lock or package defaults.
@@ -24,8 +26,8 @@ expected event sequence. Lifecycle and probe marker counts are labeled partial;
 an absent marker is never presented as a zero total. The cleanup probe separately
 records its fixture-owned disposer counter.
 `accepted` requires both frozen installs, package-root resolution, pinned compiler
-typechecks, all 59 named tests with no skipped or extra test, all 23 direct
-admission child scenarios with their expected ordered markers, 21 focused
+typechecks, all 62 named tests with no skipped or extra test, all 23 direct
+admission child scenarios with their expected ordered markers, 24 focused
 lifecycle executions with per-process marker logs, a retained import-fence
 marker from the child scenario, the 0.1.0 negative
 and 0.2.0 positive distinct-root preparation probe, and a real Assembly
@@ -35,11 +37,13 @@ install leaves `pending` and exits nonzero. Archive-only replay after an install
 failure is diagnostic and cannot change that status. Probe JSON uses fixture-owned
 IDs and booleans; it does not export raw resource, product or error objects.
 
-The candidate archives were packed from clean Get Modular source commit
-`6b31f20fe3e5fb8324812aa2ee907905751cde71`; they are not npm publication
+The Core/Assembly 0.2.0 candidate archives were packed from clean Get Modular
+source commit `6b31f20fe3e5fb8324812aa2ee907905751cde71`. The separate
+private lifecycle-kernel tarball and current Consumer Module Standard are pinned
+to `e0e2290cfcbf8d8300beaa57aee9c8337429d67d`. These are not npm publication
 evidence. This fixed synthetic Host says nothing about Agent Runtime, Extension
 Foundation or OpenClaw product conformance.
 
-The selected accepted run and four deliberate mutant failures are preserved
-under `evidence/accepted/` with archive and manifest hashes. The generated
+The historical selected accepted run and four deliberate mutant failures are
+preserved under `evidence/accepted/` with archive and manifest hashes. The generated
 `evidence/runs/` directory remains ignored so exploratory runs do not enter PRs.

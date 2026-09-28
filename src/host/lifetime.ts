@@ -1,4 +1,6 @@
 import { appendFileSync } from 'node:fs';
+import { types } from 'node:util';
+import { createLifecycleKernel, type CallLease, type CustodyLease, type Generation, type GenerationSnapshot } from '@get-modular/lifecycle-kernel';
 const mark = (event: string): void => {
   if (process.env.TEST_MARKERS) appendFileSync(process.env.TEST_MARKERS, `${event}\n`);
 };
@@ -13,6 +15,7 @@ const clock: Clock = {
   cancel: handle => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 const MAX_TIMER_DELAY = 2 ** 31 - 1;
+const observeNativePromise = Promise.prototype.then;
 type Ticket = { settled: boolean; promise: Promise<unknown> };
 type Waiter = { wake(): void; remove(): void };
 export type Construction<R, O> = Readonly<
@@ -24,14 +27,15 @@ export type Construction<R, O> = Readonly<
 /** The only lifetime owner in this stand. It never interprets Assembly's journals as disposers. */
 export class TestHost<R, O extends { readonly status: string }> {
   readonly effects: string[] = [];
-  private readonly generation = Symbol('test-host-generation');
+  private readonly kernel = createLifecycleKernel();
+  // This attempt owner is created before Assembly may load any executable module.
+  private readonly generation: Generation = this.kernel.stage();
   private readonly controller = new AbortController();
-  private state: 'open' | 'sealed' | 'draining' | 'closed' | 'cleanup-incomplete' = 'open';
-  private ready = false;
   private construction: Ticket | undefined;
   private constructionResult: Promise<Construction<R, O>> | undefined;
   private readonly operations = new Set<Ticket>();
   private resource: OwnedResource | undefined;
+  private custody: CustodyLease | undefined;
   private reserved = false;
   private retirement: Promise<CloseTerminal> | undefined;
   private resolveRetirement: ((result: CloseTerminal) => void) | undefined;
@@ -41,13 +45,20 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   constructor(timer: Clock = clock) { this.timer = timer; }
 
-  isOpen(): boolean { return this.state === 'open'; }
+  private lifecycle(): GenerationSnapshot {
+    const result = this.kernel.snapshot(this.generation);
+    if (!result.ok) throw new Error(`kernel-snapshot:${result.reason}`);
+    return result.value;
+  }
+  isOpen(): boolean { return this.lifecycle().phase === 'staged' || this.lifecycle().phase === 'active'; }
   matchesResourceIdentities(first: unknown, second: unknown): boolean {
     return typeof this.resource?.resourceIdentity === 'symbol' &&
       first === this.resource.resourceIdentity && second === this.resource.resourceIdentity;
   }
   status() {
-    return Object.freeze({ state: this.state, ready: this.ready, hasResource: !!this.resource,
+    const lifecycle = this.lifecycle();
+    const state = this.terminal?.status ?? (lifecycle.phase === 'retiring' || lifecycle.phase === 'retired' ? 'draining' : 'open');
+    return Object.freeze({ state, ready: lifecycle.phase === 'active', lifecycle, hasResource: !!this.resource,
       debt: this.terminal?.status === 'cleanup-incomplete' ? this.terminal.debt : undefined,
       cause: this.terminal?.status === 'cleanup-incomplete' ? this.terminal.cause : undefined,
       observers: this.waiters.size });
@@ -55,7 +66,7 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   /** Reservation happens before allocation; the returned registration remains valid after seal. */
   reserve(): (resource: OwnedResource) => void {
-    if (this.state !== 'open' || !this.construction || this.construction.settled || this.reserved)
+    if (!this.isOpen() || !this.construction || this.construction.settled || !this.custody || this.reserved)
       throw new Error('reservation-refused');
     this.reserved = true;
     const ticket = this.construction;
@@ -70,23 +81,68 @@ export class TestHost<R, O extends { readonly status: string }> {
     };
   }
 
-  private assertReady(generation: symbol): void {
-    if (generation !== this.generation || this.state !== 'open' || !this.ready) throw new Error('host-revoked');
+  private assertReady(generation: Generation): void {
+    if (generation !== this.generation || this.lifecycle().phase !== 'active') throw new Error('host-revoked');
   }
-  assertOperationReady(): void { this.assertReady(this.generation); }
+  private withCall<T>(generation: Generation, action: (lease: CallLease) => T): T {
+    this.assertReady(generation);
+    const admitted = this.kernel.beginCall(generation);
+    if (!admitted.ok) throw new Error('host-revoked');
+    try {
+      if (!this.kernel.checkCall(admitted.value).ok) throw new Error('host-revoked');
+      return action(admitted.value);
+    } finally { this.kernel.release(admitted.value); }
+  }
+  assertOperationReady(): void { this.withCall(this.generation, () => undefined); }
   /** The check and sink write are one synchronous block. */
   effect(value: string): void {
-    this.assertReady(this.generation);
-    this.effects.push(value);
-    mark(`owner:effect:${value}`);
+    this.withCall(this.generation, lease => {
+      if (!this.kernel.checkCall(lease).ok) throw new Error('host-revoked');
+      this.effects.push(value);
+      mark(`owner:effect:${value}`);
+    });
   }
   read<T>(read: () => T): T {
     this.assertReady(this.generation);
-    return read();
+    const admitted = this.kernel.beginCall(this.generation);
+    if (!admitted.ok) throw new Error('host-revoked');
+    let resolveTicket!: (value: unknown) => void;
+    const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
+    this.operations.add(ticket);
+    const settle = () => {
+      if (ticket.settled) return;
+      this.kernel.release(admitted.value);
+      ticket.settled = true;
+      this.operations.delete(ticket);
+      resolveTicket(undefined);
+    };
+    let result: T;
+    try {
+      if (!this.kernel.checkCall(admitted.value).ok) throw new Error('host-revoked');
+      result = read();
+    } catch (cause) {
+      settle();
+      throw cause;
+    }
+    // Only native Promises retain the lease. Never inspect a user result's `then` getter.
+    if (types.isPromise(result)) {
+      try {
+        observeNativePromise.call(result, settle, settle);
+      } catch (cause) {
+        // The raw Promise may still settle. Without an installed observer its work
+        // cannot be proven complete, so retain the ticket and cleanup custody.
+        throw new Error('read-observer-refused', { cause });
+      }
+      return result;
+    }
+    settle();
+    return result;
   }
   /** Publishes an operation ticket before calling the supplied operation. */
   operate<T>(work: () => T | Promise<T>): Promise<T> {
     this.assertReady(this.generation);
+    const admitted = this.kernel.beginCall(this.generation);
+    if (!admitted.ok) throw new Error('host-revoked');
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
     this.operations.add(ticket);
@@ -95,7 +151,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     catch (cause) { result = Promise.reject(cause); }
     // Both branches observe the result; the caller still receives its original promise.
     result.then(() => settle(), () => settle());
-    const settle = () => { ticket.settled = true; this.operations.delete(ticket); resolveTicket(undefined); };
+    const settle = () => { this.kernel.release(admitted.value); ticket.settled = true; this.operations.delete(ticket); resolveTicket(undefined); };
     return result;
   }
   /** Captures this generation for extracted methods and fences post-await writes. */
@@ -110,7 +166,10 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   construct(run: (signal: AbortSignal) => Promise<O>, rootOf: (outcome: O) => R | undefined): Promise<Construction<R, O>> {
     if (this.constructionResult) return this.constructionResult;
-    if (this.state !== 'open') return Promise.reject(new Error('construction-refused'));
+    if (this.lifecycle().phase !== 'staged') return Promise.reject(new Error('construction-refused'));
+    const custody = this.kernel.retainCustody(this.generation);
+    if (!custody.ok) return Promise.reject(new Error(`construction-custody:${custody.reason}`));
+    this.custody = custody.value;
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
     this.construction = ticket;
@@ -120,6 +179,10 @@ export class TestHost<R, O extends { readonly status: string }> {
     const settle = (value: Construction<R, O>) => {
       resolveResult(value);
       ticket.settled = true;
+      if (!this.resource && this.custody) {
+        this.kernel.release(this.custody);
+        this.custody = undefined;
+      }
       resolveTicket(undefined);
     };
     let raw: Promise<O>;
@@ -128,14 +191,15 @@ export class TestHost<R, O extends { readonly status: string }> {
     raw.then(outcome => {
       if (outcome.status === 'cancelled') return settle({ status: 'cancelled', raw: outcome });
       if (outcome.status !== 'succeeded') return settle({ status: 'failed', raw: outcome });
-      if (this.state !== 'open') return settle({ status: 'cancelled', raw: outcome });
+      if (!this.isOpen()) return settle({ status: 'cancelled', raw: outcome });
       let root: R | undefined;
       try { root = rootOf(outcome); }
       catch (cause) { return settle({ status: 'failed', raw: outcome, cause }); }
       if (root === undefined) return settle({ status: 'failed', raw: outcome, cause: new Error('missing-root') });
       // No await or user callback between the final authority check and publication.
-      if (this.state !== 'open') return settle({ status: 'cancelled', raw: outcome });
-      this.ready = true;
+      if (!this.isOpen()) return settle({ status: 'cancelled', raw: outcome });
+      const activated = this.kernel.activate(this.generation);
+      if (!activated.ok) return settle({ status: 'failed', raw: outcome, cause: new Error(`kernel-activate:${activated.reason}`) });
       settle({ status: 'published', raw: outcome, root });
     }, cause => settle({ status: 'failed', cause }));
     return result;
@@ -143,21 +207,26 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   close(): Promise<CloseTerminal> {
     if (this.retirement) return this.retirement;
-    this.state = 'sealed';
     this.retirement = new Promise(resolve => { this.resolveRetirement = resolve; });
+    const revoked = this.kernel.retire(this.generation);
+    if (!revoked.ok) throw new Error(`kernel-retire:${revoked.reason}`);
     this.controller.abort();
     const tickets = [...(this.construction ? [this.construction] : []), ...this.operations];
-    this.state = 'draining';
     void (async () => {
       await Promise.allSettled(tickets.map(ticket => ticket.promise));
       let terminal: CloseTerminal;
       try {
         await this.resource?.dispose();
+        if (this.custody) {
+          this.kernel.release(this.custody);
+          this.custody = undefined;
+        }
+        const finished = this.kernel.finishRetirement(this.generation);
+        if (!finished.ok) throw new Error(`kernel-finish:${finished.reason}`);
         terminal = Object.freeze({ status: 'closed' });
       } catch (cause) {
         terminal = Object.freeze({ status: 'cleanup-incomplete', cause, debt: this.resource! });
       }
-      this.state = terminal.status;
       this.terminal = terminal;
       for (const waiter of [...this.waiters]) waiter.wake();
       this.resolveRetirement!(terminal);

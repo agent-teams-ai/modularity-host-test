@@ -17,6 +17,9 @@ importers:
       '@get-modular/core':
         specifier: file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz
         version: file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz
+      '@get-modular/lifecycle-kernel':
+        specifier: file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz
+        version: file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz
     devDependencies:
       '@types/node':
         specifier: 24.19.0
@@ -36,6 +39,11 @@ packages:
     resolution: {integrity: sha512-0aqzW7sbh7O8aAPBGJIPZBbhgeYnk+HuZdVf27dimkQ3d/zb9zpsYIMdLGt3EXi1B8MaBjw09ApzLaiIRiAgIQ==, tarball: file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz}
     version: 0.1.0
     engines: {node: '>=24.18.0 <25'}
+
+  '@get-modular/lifecycle-kernel@file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz':
+    resolution: {integrity: sha512-y35QlGeQdNJBrfDT+0O65Vfwxw0vvpXZRkxfzN3nRwNo5EC+ueXuZLw+86LQty6hUYUoKLI+hFfvX5L3GSbfCA==, tarball: file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz}
+    version: 0.1.0
+    engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
 
   '@types/node@24.19.0':
     resolution: {integrity: sha512-zY+5tKxXdhGh1PYI0ac+7juvEu4OI6vWtVVoj5i2m42jxAY1U+zHGt6QCyOFwykdP62sM3MJ9stoYYUw5aCWew==}
@@ -175,6 +183,8 @@ snapshots:
       '@get-modular/core': file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz
 
   '@get-modular/core@file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz': {}
+
+  '@get-modular/lifecycle-kernel@file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz': {}
 
   '@types/node@24.19.0':
     dependencies:

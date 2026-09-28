@@ -7,6 +7,7 @@ coverage/
 !third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz
 !third_party/archives/candidate-0.2/get-modular-core-0.2.0.tgz
 !third_party/archives/candidate-0.2/get-modular-assembly-0.2.0.tgz
+!third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz
 .corepack/
 .agents/
 evidence/runs/
