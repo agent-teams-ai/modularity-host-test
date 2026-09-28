@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@get-modular/assembly": "file:third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz",
-    "@get-modular/core": "file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz"
+    "@get-modular/core": "file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz",
+    "@get-modular/lifecycle-kernel": "file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

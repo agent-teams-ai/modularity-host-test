@@ -87,15 +87,20 @@ test('reserved acquisition delivered after seal is registered and disposed once'
     assert.throws(() => register(resource), /registration-refused/);
     return product(host, resource);
   });
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'staged', calls: 0, custody: 0 });
   const construction = x.start(); await entered.promise;
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'staged', calls: 0, custody: 1 });
   const close = x.host.close();
   assert.equal(x.host.status().state, 'draining');
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 0, custody: 1 });
   release.resolve();
   const result = await construction;
+  assert.equal(result.status, 'cancelled');
   assert.equal(result.raw.status, 'cancelled');
   assert.equal(result.raw.created.length, 1);
   assert.equal((await close).status, 'closed');
   assert.equal(disposals, 1);
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retired', calls: 0, custody: 0 });
 });
 
 // Regression: a factory rejection loses a registered resource because no product was returned.
@@ -203,8 +208,10 @@ test('post-await commit is fenced and all operation tickets drain', async () => 
   const paused = x.host.operate(async () => { entered.resolve(); await gate.promise; x.host.commit('late'); });
   const bad = x.host.operate(async () => { await rejectGate.promise; throw Error('operation-primary'); });
   await entered.promise;
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'active', calls: 2, custody: 1 });
   const close = x.host.close();
   assert.equal(x.host.status().state, 'draining');
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 2, custody: 1 });
   rejectGate.resolve();
   await assert.rejects(bad, /operation-primary/);
   assert.equal(x.host.status().state, 'draining');
@@ -212,6 +219,7 @@ test('post-await commit is fenced and all operation tickets drain', async () => 
   await assert.rejects(paused, /host-revoked/);
   assert.equal((await close).status, 'closed');
   assert.deepEqual(x.host.effects, []);
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retired', calls: 0, custody: 0 });
 });
 
 // Regression: a borrowed read facet still runs its callback after seal while cleanup is held.
@@ -239,6 +247,93 @@ test('public Assembly read facet revokes before its callback', async () => {
   assert.equal(disposals, 0);
   gate.resolve(); await pending; await close;
   assert.equal(disposals, 1);
+});
+
+// Regression: a native Promise returned by a public read releases its call lease before raw settlement,
+// letting close dispose the owned resource while the read callback can still resume.
+test('public async read holds call custody through revoke and settles before physical cleanup', async () => {
+  const gate = deferred(), events = [];
+  const x = await fixture(async ({ host, owner }) => {
+    const resource = { dispose() { events.push('dispose'); } };
+    owner.reserve()(resource);
+    const made = product(host, resource);
+    made.capabilities['test/resource/read'].read = () => owner.read(() => gate.promise.then(() => {
+      try { owner.effect('late'); }
+      finally { events.push('read-settled'); }
+      return 'value';
+    }));
+    return made;
+  });
+  const construction = await x.start();
+  assert.equal(construction.status, 'published');
+  const handed = construction.raw.created.find(entry => entry.implementationId === 'test/provider/a');
+  const pending = handed.capabilities['test/resource/read'].read();
+  const refused = assert.rejects(pending, /host-revoked/);
+  const close = x.host.close();
+  try {
+    assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 1, custody: 1 });
+    assert.deepEqual(events, []);
+  } finally {
+    gate.resolve();
+    await refused;
+    await close;
+  }
+  assert.deepEqual(events, ['read-settled', 'dispose']);
+  assert.deepEqual(x.host.effects, []);
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retired', calls: 0, custody: 0 });
+});
+
+// Regression: a synchronous read failure strands a call lease and blocks one-shot close.
+test('public synchronous read failure releases its call before close', async () => {
+  const failure = Error('read-failure');
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() {} });
+    const made = product(host);
+    made.capabilities['test/resource/read'].read = () => owner.read(() => { throw failure; });
+    return made;
+  });
+  const construction = await x.start();
+  assert.equal(construction.status, 'published');
+  const handed = construction.raw.created.find(entry => entry.implementationId === 'test/provider/a');
+  assert.throws(handed.capabilities['test/resource/read'].read, error => error === failure);
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'active', calls: 0, custody: 1 });
+  assert.equal((await x.host.close()).status, 'closed');
+});
+
+// Regression: a hostile native Promise blocks observer installation, but the Host falsely
+// releases its raw call and disposes before that Promise has settled.
+test('failed native Promise observer installation retains unresolved cleanup debt', async () => {
+  const speciesFailure = Error('species-failure');
+  let resolveRaw, disposals = 0;
+  const raw = new Promise(resolve => { resolveRaw = resolve; });
+  Object.defineProperty(raw, 'constructor', { value: {
+    get [Symbol.species]() { throw speciesFailure; },
+  } });
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { disposals++; } });
+    const made = product(host);
+    made.capabilities['test/resource/read'].read = () => owner.read(() => raw);
+    return made;
+  });
+  const construction = await x.start();
+  assert.equal(construction.status, 'published');
+  const handed = construction.raw.created.find(entry => entry.implementationId === 'test/provider/a');
+  let refusal;
+  try { handed.capabilities['test/resource/read'].read(); }
+  catch (error) { refusal = error; }
+  const close = x.host.close();
+  let closed = false;
+  close.then(() => { closed = true; });
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 1, custody: 1 });
+  assert.equal(disposals, 0);
+  resolveRaw('late-value');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(String(refusal), /read-observer-refused/);
+  assert.strictEqual(refusal.cause, speciesFailure);
+  assert.equal(closed, false);
+  assert.equal(disposals, 0);
+  assert.deepEqual(await x.host.observeClose({ deadlineAt: 0 }), { status: 'pending', reason: 'deadline' });
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 1, custody: 1 });
 });
 
 // Regression: abort callbacks can use a ready sibling handle after seal or see a different close promise.
@@ -289,6 +384,7 @@ test('cleanup failure retains cause, debt and original construction failure', as
   assert.strictEqual(terminal.debt, resource);
   assert.strictEqual(x.host.status().debt, resource);
   assert.equal(calls, 1);
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 0, custody: 1 });
 });
 
 // Regression: disposer reentrancy starts another cleanup flight or retries disposal.

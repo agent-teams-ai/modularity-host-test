@@ -16,7 +16,8 @@ const read = path => readFileSync(path);
 const git = (...args) => execFileSync('git', args, { cwd: source, encoding: 'utf8' }).trim();
 const files = [];
 const sourcePaths = ['src', 'tests', 'scripts/evidence', 'evidence/candidate-0.2',
-  'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'third_party/pins.json'];
+  'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'third_party',
+  'docs/lifecycle-kernel-l2a.md', 'docs/evidence-replay.md'];
 const commitCoversWorktree = git('status', '--porcelain', '--untracked-files=all', '--', ...sourcePaths) === '';
 function scan(path) {
   for (const entry of readdirSync(join(source, path), { withFileTypes: true })) {
@@ -27,7 +28,8 @@ function scan(path) {
 }
 for (const path of ['src', 'tests', 'scripts/evidence', 'evidence/candidate-0.2']) scan(path);
 for (const path of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json',
-  'third_party/pins.json', pins.consumerModuleStandard.path])
+  'third_party/pins.json', pins.consumerModuleStandard.path, pins.lifecycleKernel.path,
+  'docs/lifecycle-kernel-l2a.md', 'docs/evidence-replay.md'])
   files.push({ path, sha256: sha256(read(join(source, path))) });
 files.sort((a, b) => a.path.localeCompare(b.path));
 const report = {
@@ -38,11 +40,12 @@ const report = {
     worktreeFiles: files, worktreeDigest: sha256(Buffer.from(JSON.stringify(files))) },
   standard: { sourceCommit: pins.getModularSourceCommit, sourcePath: pins.consumerModuleStandard.sourcePath,
     copyPath: pins.consumerModuleStandard.path, sha256: sha256(read(join(source, pins.consumerModuleStandard.path))) },
+  lifecycleKernel: { sourceCommit: pins.lifecycleKernel.sourceCommit, origin: pins.lifecycleKernel.origin },
   environment: { node: process.version, pnpm: null, typescript: null },
   limits: [
     'Synthetic fixed TEST Host only; no Agent Runtime, Extension Foundation, OpenClaw, or production conformance.',
     'No arbitrary JavaScript sandbox, physical effect cancellation, crash recovery, or Node 26 support.',
-    '0.2.0 archives are packed candidate evidence from one clean source commit, not npm publication.',
+    '0.2.0 Core/Assembly archives and 0.1.0 lifecycle-kernel archive are separately packed candidate evidence, not npm publication.',
     '0.1.0 shared root module/implementation ID fixture does not establish distinct-ID root support.',
     'Archive-only diagnostic replay is not an accepted frozen-lock installation or typecheck gate.',
   ], pairs: {}, failures: [],
@@ -98,6 +101,19 @@ function checkPins(key) {
     failed('candidate Assembly does not declare exact Core 0.2.0');
   return archive;
 }
+function checkKernelPin() {
+  const pin = pins.lifecycleKernel;
+  const bytes = read(join(source, pin.path));
+  const manifest = JSON.parse(execFileSync('tar', ['-xOzf', join(source, pin.path), 'package/package.json']));
+  const item = { path: pin.path, origin: pin.origin, sourceCommit: pin.sourceCommit,
+    version: manifest.version, sha256: sha256(bytes), sri: sri(bytes), engines: manifest.engines,
+    private: manifest.private };
+  if (item.sha256 !== pin.sha256 || item.sri !== pin.sri || item.version !== pin.version ||
+      manifest.name !== '@get-modular/lifecycle-kernel' || manifest.private !== true ||
+      manifest.engines?.node !== '>=24.18.0 <25 || >=26.10.0 <27')
+    failed('lifecycle-kernel: archive pin or manifest mismatch');
+  return item;
+}
 function copyTestRoot(key, destination) {
   mkdirSync(destination, { recursive: true });
   for (const path of ['src', 'tests', 'scripts/evidence', 'third_party'])
@@ -120,15 +136,17 @@ function installedRoots(root, pair, version) {
     const consumer=createRequire(process.cwd()+'/package.json');
     const assembly=realpathSync(consumer.resolve('@get-modular/assembly'));
     const core=realpathSync(consumer.resolve('@get-modular/core'));
+    const kernel=realpathSync(consumer.resolve('@get-modular/lifecycle-kernel'));
     const assemblyCore=realpathSync(createRequire(assembly).resolve('@get-modular/core'));
     const versionOf=x=>JSON.parse(readFileSync(join(dirname(dirname(x)),'package.json'))).version;
-    console.log(JSON.stringify({assembly,core,assemblyCore,assemblyVersion:versionOf(assembly),coreVersion:versionOf(core)}));`;
+    console.log(JSON.stringify({assembly,core,kernel,assemblyCore,assemblyVersion:versionOf(assembly),coreVersion:versionOf(core),kernelVersion:versionOf(kernel)}));`;
   const cmd = command(root, `${pair}.resolve`, process.execPath, ['-e', script]);
   if (cmd.exitCode !== 0) { failed(`${pair}: installed root resolution failed`); return { command: cmd }; }
   const roots = JSON.parse(cmd.text);
   if (roots.core !== roots.assemblyCore ||
-      [roots.assembly, roots.core, roots.assemblyCore].some(path => !path.startsWith(root + '/')) ||
-      roots.assemblyVersion !== version || roots.coreVersion !== version)
+      [roots.assembly, roots.core, roots.kernel, roots.assemblyCore].some(path => !path.startsWith(root + '/')) ||
+      roots.assemblyVersion !== version || roots.coreVersion !== version ||
+      roots.kernelVersion !== pins.lifecycleKernel.version)
     failed(`${pair}: installed package roots, versions, or Core resolution differ`);
   return { command: cmd, roots };
 }
@@ -277,14 +295,17 @@ try {
   if (!report.source.commitCoversWorktree)
     failed('source worktree is uncommitted; baseline commit/tree do not cover executed source snapshot');
   if (report.standard.sha256 !== pins.consumerModuleStandard.sha256) failed('CMS copy hash differs from pin');
-  if (process.version !== 'v24.21.0') failed(`unreviewed Node binary ${process.version}`);
+  // Both exact Node patches are inside the immutable Core/Assembly and kernel engine ranges.
+  if (!['v24.18.0', 'v24.21.0'].includes(process.version)) failed(`unreviewed Node binary ${process.version}`);
+  report.lifecycleKernel.archive = checkKernelPin();
   const pnpmVersion = command(source, 'pnpm-version', 'pnpm', ['--version']);
   report.environment.pnpm = pnpmVersion.text.trim();
   if (pnpmVersion.exitCode !== 0 || report.environment.pnpm !== '11.20.0') failed('pnpm 11.20.0 unavailable');
   for (const [key, label] of [['publishedPair', 'published-0.1'], ['candidatePair', 'candidate-0.2']]) {
     const root = join(temp, label);
     const pair = report.pairs[label] = { origin: pins[key].origin,
-      sourceCommit: pins[key].sourceCommit ?? null, pins: checkPins(key), installRoot: root };
+      sourceCommit: pins[key].sourceCommit ?? null, pins: checkPins(key),
+      kernelPin: report.lifecycleKernel.archive, installRoot: root };
     copyTestRoot(key, root);
     pair.childNode = command(root, `${label}.node-version`, 'node',
       ['-p', 'JSON.stringify({version:process.version,execPath:process.execPath})']);
@@ -300,6 +321,8 @@ try {
     for (const name of ['core', 'assembly'])
       if (!lockText.includes(pair.pins[name].path) || !lockText.includes(pair.pins[name].sri))
         failed(`${label}: lock lacks exact ${name} path/SRI`);
+    if (!lockText.includes(pair.kernelPin.path) || !lockText.includes(pair.kernelPin.sri))
+      failed(`${label}: lock lacks exact lifecycle-kernel path/SRI`);
     if (lockText.includes(key === 'publishedPair' ? 'candidate-0.2' : 'published-0.1'))
       failed(`${label}: lock mixes exact pairs`);
     const store = process.env.TEST_EVIDENCE_PNPM_STORE;
@@ -342,6 +365,7 @@ try {
       const diagnostic = join(temp, `${label}-archive-probe`);
       mkdirSync(join(diagnostic, 'node_modules/@get-modular/core'), { recursive: true });
       mkdirSync(join(diagnostic, 'node_modules/@get-modular/assembly'), { recursive: true });
+      mkdirSync(join(diagnostic, 'node_modules/@get-modular/lifecycle-kernel'), { recursive: true });
       mkdirSync(join(diagnostic, 'scripts/evidence'), { recursive: true });
       for (const path of ['src', 'tests']) cpSync(join(source, path), join(diagnostic, path), { recursive: true });
       cpSync(join(source, 'package.json'), join(diagnostic, 'package.json'));
@@ -350,6 +374,8 @@ try {
       for (const name of ['core', 'assembly'])
         execFileSync('tar', ['-xzf', join(source, pair.pins[name].path), '-C',
           join(diagnostic, 'node_modules/@get-modular', name), '--strip-components=1']);
+      execFileSync('tar', ['-xzf', join(source, pair.kernelPin.path), '-C',
+        join(diagnostic, 'node_modules/@get-modular/lifecycle-kernel'), '--strip-components=1']);
       pair.archiveOnlyResolution = installedRoots(diagnostic, `${label}.archive-only`, pins[key].version);
       pair.archiveOnlyDistinctRoot = probe(diagnostic, label, 'distinct-root-probe', key === 'publishedPair'
         ? { phase: 'preparation', status: 'failed', code: 'assembly.prepare.roots' }
