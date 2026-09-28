@@ -47,6 +47,16 @@ lifecycle cases. Manifest SHA-256:
 Archive SHA-256:
 `2113ea574bb1a10827cc40c669a9cfe921a862831403daa5288da5b0dd9b0fa2`.
 
+`055c5e9-l2b1-run.tar.gz` retains the accepted bounded stream/retirement
+checkpoint for clean source commit `055c5e9818f260ebfa4071dbb89f880d95826a18`.
+Both exact pairs passed frozen offline install, typecheck, 73 tests, 23
+admission cases and 35 focused lifecycle cases on Node 24.18.0. The manifest
+SHA-256 is `b253d44b4f434ba7e8e6567df48517aa46962d0041a55a84a4350f75f48611cf`;
+the archive SHA-256 is
+`ddc44c8565ef5b21a1346f743dae68cbce697e4f332263b7b7ce68ba0fda9db0`.
+Iterator/result terminal, cross-generation cohort, bounded retirement inventory,
+replacement and production qualification remain separate checkpoints.
+
 Inspect the accepted manifest without extracting the archive:
 
 ```sh
@@ -61,6 +71,9 @@ tar -xOzf evidence/accepted/4b38510-l2a-review-run.tar.gz \
 
 tar -xOzf evidence/accepted/4f6d88c-l2a-doc-run.tar.gz \
   evidence/runs/2026-09-28T21-24-05-672Z-24282/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/055c5e9-l2b1-run.tar.gz \
+  evidence/runs/2026-09-28T21-18-22-392Z-17184/evidence.json | shasum -a 256
 ```
 
 These archives preserve evidence for the exact TEST subjects. They do not
