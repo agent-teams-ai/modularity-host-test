@@ -76,6 +76,17 @@ lifecycle cases on Node 24.18.0. The manifest SHA-256 is
 the archive SHA-256 is
 `e86d599f0f72a853672727f7d6064fb3cf26e3455cb5c350a73320b375e4afd7`.
 
+`5f78cf5-l2b1-current-pin-run.tar.gz` retains the accepted replay after
+advancing the reviewed Consumer Module Standard source pin to merged Get
+Modular `24d6557`, whose standard bytes are unchanged. Its clean TEST source
+commit is `5f78cf5e403da7348f46e84b1fd1ca5510a97ec2` (tree
+`67e1bb1cf629c43a559bc1c8e53fb5b20212ef78`). Both exact pairs passed
+frozen offline install, typecheck, 75 tests, 23 admission cases and 37 focused
+lifecycle cases on Node 24.18.0. The manifest SHA-256 is
+`c35073d9a10ff5bad2448bb948059b7fc9ab07c6f5859fc6b7bfa5be6d6fd7d5`;
+the archive SHA-256 is
+`343f4561b4a997e74468ff677152baa9804bce7ba825810d0e7a32627d0f765d`.
+
 Inspect the accepted manifest without extracting the archive:
 
 ```sh
@@ -99,6 +110,9 @@ tar -xOzf evidence/accepted/93fb18b-l2b1-fix-run.tar.gz \
 
 tar -xOzf evidence/accepted/d8e684b-l2b1-main-run.tar.gz \
   evidence/runs/2026-09-28T21-49-06-395Z-60030/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/5f78cf5-l2b1-current-pin-run.tar.gz \
+  evidence/runs/2026-09-28T21-54-12-486Z-67954/evidence.json | shasum -a 256
 ```
 
 These archives preserve evidence for the exact TEST subjects. They do not
