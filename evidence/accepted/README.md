@@ -87,6 +87,16 @@ lifecycle cases on Node 24.18.0. The manifest SHA-256 is
 the archive SHA-256 is
 `343f4561b4a997e74468ff677152baa9804bce7ba825810d0e7a32627d0f765d`.
 
+`0dea754-l2b1-review-run.tar.gz` retains the accepted replay after review
+fixes for invalid self-observer deadlines and multiple failed stream closes.
+Its clean TEST source commit is `0dea754c371d39adfa5d3f1c892ff66293ef3c75`
+(tree `4fd79e65d557451267a19cffe370d5965a4bf17b`). Both exact pairs passed
+frozen offline install, typecheck, 76 tests, 23 admission cases and 38 focused
+lifecycle cases on Node 24.18.0. The manifest SHA-256 is
+`28d84d03d62847dddd3df0ccd8ed8fc386ecc8ec2d2f75b520daa5d5c1a7c92a`;
+the archive SHA-256 is
+`8e25250fa216855b53398381fb853e51ba281b6a74608f6d524467362e08e5aa`.
+
 Inspect the accepted manifest without extracting the archive:
 
 ```sh
@@ -113,6 +123,9 @@ tar -xOzf evidence/accepted/d8e684b-l2b1-main-run.tar.gz \
 
 tar -xOzf evidence/accepted/5f78cf5-l2b1-current-pin-run.tar.gz \
   evidence/runs/2026-09-28T21-54-12-486Z-67954/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/0dea754-l2b1-review-run.tar.gz \
+  evidence/runs/2026-09-28T22-05-43-826Z-82924/evidence.json | shasum -a 256
 ```
 
 These archives preserve evidence for the exact TEST subjects. They do not
