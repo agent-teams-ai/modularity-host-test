@@ -61,7 +61,18 @@
     "malformed late product is returned but never created",
     "rejection after abort keeps original cause and cancellation evidence",
     "deadline pending stays fixed across late async disposal failure",
-    "close-before-construct guard and observer same-turn priority"
+    "close-before-construct guard and observer same-turn priority",
+    "retained call checks its lease at the post-await effect sink",
+    "idle stream private close starts before raw drain and owned disposal",
+    "self-retirement returns requested and self-observe cannot join",
+    "stream cleanup sees one published flight and self-wait receipt",
+    "stream close failure retains custody and blocks dependent disposal",
+    "borrowed provider survives consumer close while shared owner disposes once",
+    "unobservable native command promise keeps its raw lease and cleanup debt",
+    "stream close observes native raw settlement despite a replaced then",
+    "foreign command thenable is rejected before its then executes",
+    "owned disposer error with throwing stream getter preserves original debt",
+    "detached cleanup continuation observes terminal receipt"
   ],
   "lifecycleStartIndex": 38,
   "admissionChildren": [

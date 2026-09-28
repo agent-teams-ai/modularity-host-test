@@ -642,3 +642,238 @@ test('close-before-construct guard and observer same-turn priority', async () =>
   assert.equal(y.host.status().observers, 0);
   assert.equal(timer.size, 0);
 });
+
+// Regression: a post-await ordinary effect uses a new lease or bypasses the
+// admitted call lease, so it writes after revoke or releases its raw work early.
+test('retained call checks its lease at the post-await effect sink', async () => {
+  const gate = deferred(), events = [];
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { events.push('dispose'); } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  const pending = x.host.operate(async () => {
+    await gate.promise;
+    try { x.host.effect('late'); } finally { events.push('raw-settled'); }
+  });
+  const refused = assert.rejects(pending, /host-revoked/);
+  const request = x.host.requestRetirement();
+  assert.deepEqual(request, { kind: 'requested', operationId: 'retirement-1' });
+  assert.equal(x.host.status().lifecycle.calls, 1);
+  assert.deepEqual(events, []);
+  gate.resolve(); await refused;
+  assert.deepEqual(await x.host.observeRetirement(request.operationId), { status: 'closed' });
+  assert.deepEqual(events, ['raw-settled', 'dispose']);
+  assert.deepEqual(x.host.effects, []);
+});
+
+// Regression: retirement waits for idle stream custody before invoking its
+// private close, or observer timeout releases the owned resource too early.
+test('idle stream private close starts before raw drain and owned disposal', async () => {
+  const command = deferred(), streamClose = deferred(), events = [];
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { events.push('owner-dispose'); } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  const stream = x.host.retainStream({ close() { events.push('stream-close-start'); return streamClose.promise; } });
+  const raw = x.host.operate(async () => { await command.promise; events.push('command-done'); });
+  const request = x.host.requestRetirement();
+  assert.deepEqual(events, ['stream-close-start']);
+  assert.equal(x.host.status().lifecycle.custody, 2);
+  assert.throws(() => stream.run(() => undefined), /host-revoked/);
+  assert.deepEqual(await x.host.observeRetirement(request.operationId, { deadlineAt: 0 }),
+    { status: 'pending', reason: 'deadline' });
+  assert.deepEqual(events, ['stream-close-start']);
+  command.resolve(); await raw;
+  assert.equal(x.host.status().lifecycle.custody, 2);
+  streamClose.resolve();
+  assert.deepEqual(await x.host.observeRetirement(request.operationId), { status: 'closed' });
+  assert.deepEqual(events, ['stream-close-start', 'command-done', 'owner-dispose']);
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retired', calls: 0, custody: 0 });
+});
+
+// Regression: a callback synchronously requests its own retirement and then
+// waits on the raw flight it holds, or returns an early released receipt.
+test('self-retirement returns requested and self-observe cannot join', async () => {
+  const events = [];
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { events.push('dispose'); } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  let request;
+  const raw = x.host.operate(async () => {
+    request = x.host.requestRetirement();
+    const inside = await x.host.observeRetirement(request.operationId);
+    events.push(inside.status);
+    assert.equal(inside.status, 'self-wait');
+  });
+  assert.deepEqual(request, { kind: 'requested', operationId: 'retirement-1' });
+  assert.deepEqual(x.host.readRetirement(request.operationId), { status: 'pending' });
+  await raw;
+  assert.deepEqual(await x.host.observeRetirement(request.operationId), { status: 'closed' });
+  assert.deepEqual(events, ['self-wait', 'dispose']);
+});
+
+// Regression: a synchronous stream cleanup callback can observe or start a
+// second retirement flight and accidentally wait on itself.
+test('stream cleanup sees one published flight and self-wait receipt', async () => {
+  let reentered, seen;
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() {} });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  x.host.retainStream({ close() {
+    reentered = x.host.close();
+    seen = x.host.observeRetirement('retirement-1');
+  } });
+  const raw = x.host.close();
+  assert.strictEqual(reentered, raw);
+  assert.deepEqual(await seen, { status: 'self-wait' });
+  assert.equal((await raw).status, 'closed');
+});
+
+// Regression: stream cleanup failure is treated as a successful close or
+// allows the dependent owned resource disposer to run.
+test('stream close failure retains custody and blocks dependent disposal', async () => {
+  const events = [], failure = Error('stream-failure');
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { events.push('owner-dispose'); } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  const failed = { close() { events.push('failed-close'); throw failure; } };
+  x.host.retainStream(failed);
+  x.host.retainStream({ close() { events.push('sibling-close'); } });
+  const terminal = await x.host.close();
+  assert.equal(terminal.status, 'cleanup-incomplete');
+  assert.strictEqual(terminal.debt, failed);
+  assert.deepEqual(events, ['failed-close', 'sibling-close']);
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 0, custody: 2 });
+});
+
+// Regression: closing a retained consumer disposes a borrowed provider or
+// repeats disposal for the two capability views of one owned resource.
+test('borrowed provider survives consumer close while shared owner disposes once', async () => {
+  let borrowedDisposals = 0, ownedDisposals = 0, consumerCloses = 0;
+  const borrowed = { dispose() { borrowedDisposals++; } };
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { ownedDisposals++; } });
+    return product(host);
+  });
+  const published = await x.start();
+  assert.equal(published.status, 'published');
+  assert.equal(published.root.sharedResource(), true);
+  x.host.retainStream({ close() { consumerCloses++; void borrowed; } });
+  assert.equal((await x.host.close()).status, 'closed');
+  assert.equal(consumerCloses, 1);
+  assert.equal(ownedDisposals, 1);
+  assert.equal(borrowedDisposals, 0);
+});
+
+// Regression: Promise.resolve or a failed observer silently converts still
+// running raw command work into a settled ticket and disposes its owner.
+test('unobservable native command promise keeps its raw lease and cleanup debt', async () => {
+  const failure = Error('species-refused');
+  let resolveRaw, disposals = 0;
+  const raw = new Promise(resolve => { resolveRaw = resolve; });
+  Object.defineProperty(raw, 'constructor', { value: {
+    get [Symbol.species]() { throw failure; },
+  } });
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { disposals++; } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  assert.throws(() => x.host.operate(() => raw), error =>
+    String(error).includes('operation-observer-refused') && error.cause === failure);
+  x.host.requestRetirement();
+  resolveRaw('late');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(disposals, 0);
+  assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 1, custody: 1 });
+  assert.deepEqual(await x.host.observeRetirement('retirement-1', { deadlineAt: 0 }),
+    { status: 'pending', reason: 'deadline' });
+});
+
+// Regression: a mutable `.then` reports success for a still-running physical
+// close, releasing stream custody and the owner before the raw Promise settles.
+test('stream close observes native raw settlement despite a replaced then', async () => {
+  const rawClose = deferred();
+  let fakeThenCalls = 0, disposals = 0;
+  Object.defineProperty(rawClose.promise, 'then', { value: resolve => {
+    fakeThenCalls++;
+    resolve();
+  } });
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { disposals++; } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  x.host.retainStream({ close() { return rawClose.promise; } });
+  const retirement = x.host.close();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(fakeThenCalls, 0);
+  assert.equal(disposals, 0);
+  assert.equal(x.host.status().lifecycle.custody, 2);
+  assert.deepEqual(x.host.readRetirement('retirement-1'), { status: 'pending' });
+  rawClose.resolve();
+  assert.equal((await retirement).status, 'closed');
+  assert.equal(disposals, 1);
+});
+
+// Regression: assimilation of a foreign thenable outside the admitted call
+// context can make its self-observer join the raw retirement flight.
+test('foreign command thenable is rejected before its then executes', async () => {
+  let thenCalls = 0;
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() {} });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  const foreign = { then(resolve) {
+    thenCalls++;
+    const request = x.host.requestRetirement();
+    void x.host.observeRetirement(request.operationId).then(resolve);
+  } };
+  await assert.rejects(x.host.operate(() => foreign), /unsupported-operation-result/);
+  assert.equal(thenCalls, 0);
+  assert.equal(x.host.status().lifecycle.calls, 0);
+  assert.equal((await x.host.close()).status, 'closed');
+});
+
+// Regression: arbitrary properties on a user Error cannot redirect cleanup
+// debt or throw out of the retained retirement driver.
+test('owned disposer error with throwing stream getter preserves original debt', async () => {
+  const failure = Error('owned-dispose-failure');
+  Object.defineProperty(failure, 'stream', { get() { throw Error('untrusted-getter'); } });
+  const owned = { dispose() { throw failure; } };
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()(owned);
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  const terminal = await x.host.close();
+  assert.equal(terminal.status, 'cleanup-incomplete');
+  assert.strictEqual(terminal.cause, failure);
+  assert.strictEqual(terminal.debt, owned);
+  assert.deepEqual(x.host.readRetirement('retirement-1'), { status: 'cleanup-incomplete' });
+});
+
+// Regression: a detached callback inherits ALS but no longer participates in
+// completed cleanup, so it must see the terminal receipt rather than self-wait.
+test('detached cleanup continuation observes terminal receipt', async () => {
+  const observed = deferred();
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() {} });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  x.host.retainStream({ close() {
+    setImmediate(async () => observed.resolve(await x.host.observeRetirement('retirement-1')));
+  } });
+  assert.equal((await x.host.close()).status, 'closed');
+  assert.deepEqual(await observed.promise, { status: 'closed' });
+});

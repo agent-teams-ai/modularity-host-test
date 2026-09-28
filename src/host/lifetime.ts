@@ -1,4 +1,5 @@
 import { appendFileSync } from 'node:fs';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { types } from 'node:util';
 import { createLifecycleKernel, type CallLease, type CustodyLease, type Generation, type GenerationSnapshot } from '@get-modular/lifecycle-kernel';
 const mark = (event: string): void => {
@@ -6,8 +7,11 @@ const mark = (event: string): void => {
 };
 
 export type OwnedResource = { readonly resourceIdentity?: symbol; dispose(): void | Promise<void> };
-export type CloseTerminal = Readonly<{ status: 'closed' } | { status: 'cleanup-incomplete'; cause: unknown; debt: OwnedResource }>;
-export type CloseReceipt = Readonly<{ status: 'closed' | 'cleanup-incomplete' } | { status: 'pending'; reason: 'aborted' | 'deadline' }>;
+export type StreamResource = { close(): void | Promise<void> };
+export type CloseTerminal = Readonly<{ status: 'closed' } | { status: 'cleanup-incomplete'; cause: unknown; debt: OwnedResource | StreamResource }>;
+export type CloseReceipt = Readonly<{ status: 'closed' | 'cleanup-incomplete' } | { status: 'pending'; reason: 'aborted' | 'deadline' } | { status: 'self-wait' }>;
+export type RetirementReceipt = Readonly<{ kind: 'requested'; operationId: string }>;
+export type RetirementReadReceipt = Readonly<{ status: 'pending' | 'closed' | 'cleanup-incomplete' | 'unknown-or-expired' }>;
 export type Clock = Readonly<{ now(): number; schedule(delay: number, wake: () => void): unknown; cancel(handle: unknown): void }>;
 const clock: Clock = {
   now: () => performance.now(),
@@ -18,6 +22,9 @@ const MAX_TIMER_DELAY = 2 ** 31 - 1;
 const observeNativePromise = Promise.prototype.then;
 type Ticket = { settled: boolean; promise: Promise<unknown> };
 type Waiter = { wake(): void; remove(): void };
+type StreamRecord = { resource: StreamResource; custody: CustodyLease; close?: Promise<void>; settled: boolean };
+type CallContext = { kind: 'call'; generation: Generation; lease: CallLease };
+type CleanupContext = { kind: 'cleanup'; operationId: string; active: boolean };
 export type Construction<R, O> = Readonly<
   | { status: 'published'; root: R; raw: O }
   | { status: 'cancelled'; raw: O }
@@ -34,10 +41,13 @@ export class TestHost<R, O extends { readonly status: string }> {
   private construction: Ticket | undefined;
   private constructionResult: Promise<Construction<R, O>> | undefined;
   private readonly operations = new Set<Ticket>();
+  private readonly streams = new Set<StreamRecord>();
+  private readonly context = new AsyncLocalStorage<CallContext | CleanupContext>();
   private resource: OwnedResource | undefined;
   private custody: CustodyLease | undefined;
   private reserved = false;
   private retirement: Promise<CloseTerminal> | undefined;
+  private readonly retirementId = 'retirement-1';
   private resolveRetirement: ((result: CloseTerminal) => void) | undefined;
   private terminal: CloseTerminal | undefined;
   private readonly waiters = new Set<Waiter>();
@@ -61,7 +71,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     return Object.freeze({ state, ready: lifecycle.phase === 'active', lifecycle, hasResource: !!this.resource,
       debt: this.terminal?.status === 'cleanup-incomplete' ? this.terminal.debt : undefined,
       cause: this.terminal?.status === 'cleanup-incomplete' ? this.terminal.cause : undefined,
-      observers: this.waiters.size });
+      streams: this.streams.size, observers: this.waiters.size });
   }
 
   /** Reservation happens before allocation; the returned registration remains valid after seal. */
@@ -96,6 +106,13 @@ export class TestHost<R, O extends { readonly status: string }> {
   assertOperationReady(): void { this.withCall(this.generation, () => undefined); }
   /** The check and sink write are one synchronous block. */
   effect(value: string): void {
+    const current = this.context.getStore();
+    if (current?.kind === 'call' && current.generation === this.generation) {
+      if (!this.kernel.checkCall(current.lease).ok) throw new Error('host-revoked');
+      this.effects.push(value);
+      mark(`owner:effect:${value}`);
+      return;
+    }
     this.withCall(this.generation, lease => {
       if (!this.kernel.checkCall(lease).ok) throw new Error('host-revoked');
       this.effects.push(value);
@@ -119,7 +136,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     let result: T;
     try {
       if (!this.kernel.checkCall(admitted.value).ok) throw new Error('host-revoked');
-      result = read();
+      result = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value }, read);
     } catch (cause) {
       settle();
       throw cause;
@@ -147,10 +164,16 @@ export class TestHost<R, O extends { readonly status: string }> {
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
     this.operations.add(ticket);
     let result: Promise<T>;
-    try { result = Promise.resolve(work()); }
+    try {
+      const raw = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value }, work);
+      // Keep a native Promise as the raw work: Promise.resolve would consult a
+      // hostile constructor and could turn a still-running call into a rejection.
+      if (types.isPromise(raw)) result = raw as Promise<T>;
+      else if (raw !== null && (typeof raw === 'object' || typeof raw === 'function'))
+        throw new Error('unsupported-operation-result');
+      else result = Promise.resolve(raw);
+    }
     catch (cause) { result = Promise.reject(cause); }
-    // Both branches observe the result; the caller still receives its original promise.
-    result.then(() => settle(), () => settle());
     const settle = () => {
       if (ticket.settled) return;
       this.kernel.release(admitted.value);
@@ -158,6 +181,12 @@ export class TestHost<R, O extends { readonly status: string }> {
       this.operations.delete(ticket);
       resolveTicket(undefined);
     };
+    // Both branches observe the result; the caller still receives its original promise.
+    try { observeNativePromise.call(result, settle, settle); }
+    catch (cause) {
+      // The raw work may still be running. An unobservable result keeps its lease.
+      throw new Error('operation-observer-refused', { cause });
+    }
     return result;
   }
   /** Captures this generation for extracted methods and fences post-await writes. */
@@ -169,6 +198,58 @@ export class TestHost<R, O extends { readonly status: string }> {
     };
   }
   commit(value: string): void { this.effect(value); }
+
+  /** Observe only a native raw cleanup result, bypassing a replaceable `.then`. */
+  private invokeCleanup(cleanup: () => void | Promise<void>): Promise<void> {
+    const scope: CleanupContext = { kind: 'cleanup', operationId: this.retirementId, active: true };
+    let raw: void | Promise<void>;
+    try { raw = this.context.run(scope, cleanup); }
+    catch (cause) { scope.active = false; return Promise.reject(cause); }
+    if (raw === undefined) { scope.active = false; return Promise.resolve(); }
+    if (!types.isPromise(raw)) {
+      scope.active = false;
+      return Promise.reject(new Error('unsupported-cleanup-result'));
+    }
+    return new Promise<void>((resolve, reject) => {
+      try {
+        observeNativePromise.call(raw,
+          () => { scope.active = false; resolve(); },
+          cause => { scope.active = false; reject(cause); });
+      } catch (cause) {
+        // The physical action may still be running: retain its custody as debt.
+        scope.active = false;
+        reject(new Error('cleanup-observer-refused', { cause }));
+      }
+    });
+  }
+
+  /** A TEST-only retained consumer. Custody is independent of invocation authority. */
+  retainStream(resource: StreamResource): Readonly<{ run<T>(work: () => T | Promise<T>): Promise<T> }> {
+    if (!this.isOpen() || this.lifecycle().phase !== 'active') throw new Error('stream-admission-refused');
+    const custody = this.kernel.retainCustody(this.generation);
+    if (!custody.ok) throw new Error(`stream-custody:${custody.reason}`);
+    const record: StreamRecord = { resource, custody: custody.value, settled: false };
+    this.streams.add(record);
+    return Object.freeze({ run: <T>(work: () => T | Promise<T>): Promise<T> => {
+      if (record.settled) throw new Error('stream-closed');
+      return this.operate(work);
+    } });
+  }
+
+  requestRetirement(): RetirementReceipt {
+    this.close();
+    return Object.freeze({ kind: 'requested', operationId: this.retirementId });
+  }
+
+  readRetirement(operationId: string): RetirementReadReceipt {
+    if (operationId !== this.retirementId || !this.retirement) return Object.freeze({ status: 'unknown-or-expired' });
+    return this.terminal ? Object.freeze({ status: this.terminal.status }) : Object.freeze({ status: 'pending' });
+  }
+
+  observeRetirement(operationId: string, options: { signal?: AbortSignal; deadlineAt?: number } = {}): Promise<CloseReceipt | Readonly<{ status: 'unknown-or-expired' }>> {
+    if (operationId !== this.retirementId || !this.retirement) return Promise.resolve(Object.freeze({ status: 'unknown-or-expired' }));
+    return this.observeClose(options);
+  }
 
   construct(run: (signal: AbortSignal) => Promise<O>, rootOf: (outcome: O) => R | undefined): Promise<Construction<R, O>> {
     if (this.constructionResult) return this.constructionResult;
@@ -217,12 +298,32 @@ export class TestHost<R, O extends { readonly status: string }> {
     const revoked = this.kernel.retire(this.generation);
     if (!revoked.ok) throw new Error(`kernel-retire:${revoked.reason}`);
     this.controller.abort();
+    // Private Host cleanup begins before waiting on stream custody or raw calls.
+    for (const stream of this.streams) {
+      stream.close = this.invokeCleanup(() => stream.resource.close());
+    }
     const tickets = [...(this.construction ? [this.construction] : []), ...this.operations];
     void (async () => {
+      const streamRecords = [...this.streams];
+      const closedStreams = await Promise.allSettled(streamRecords.map(stream => stream.close!));
       await Promise.allSettled(tickets.map(ticket => ticket.promise));
       let terminal: CloseTerminal;
+      let failedStream: StreamResource | undefined;
       try {
-        await this.resource?.dispose();
+        streamRecords.forEach((stream, index) => {
+          if (closedStreams[index]?.status === 'fulfilled') {
+            this.kernel.release(stream.custody);
+            stream.settled = true;
+            this.streams.delete(stream);
+          }
+        });
+        const failedIndex = closedStreams.findIndex(result => result.status === 'rejected');
+        if (failedIndex !== -1) {
+          failedStream = streamRecords[failedIndex]!.resource;
+          const rejected = closedStreams[failedIndex] as PromiseRejectedResult;
+          throw new Error('stream-close-incomplete', { cause: rejected.reason });
+        }
+        await this.invokeCleanup(() => this.resource?.dispose());
         if (this.custody) {
           this.kernel.release(this.custody);
           this.custody = undefined;
@@ -231,7 +332,7 @@ export class TestHost<R, O extends { readonly status: string }> {
         if (!finished.ok) throw new Error(`kernel-finish:${finished.reason}`);
         terminal = Object.freeze({ status: 'closed' });
       } catch (cause) {
-        terminal = Object.freeze({ status: 'cleanup-incomplete', cause, debt: this.resource! });
+        terminal = Object.freeze({ status: 'cleanup-incomplete', cause, debt: failedStream ?? this.resource! });
       }
       this.terminal = terminal;
       for (const waiter of [...this.waiters]) waiter.wake();
@@ -242,12 +343,18 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   observeClose(options: { signal?: AbortSignal; deadlineAt?: number } = {}): Promise<CloseReceipt> {
     if (!this.retirement) return Promise.reject(new Error('close-not-started'));
+    const receipt = (terminal: CloseTerminal): CloseReceipt => Object.freeze({ status: terminal.status });
+    if (this.terminal) return Promise.resolve(receipt(this.terminal));
+    const current = this.context.getStore();
+    const currentCall = current?.kind === 'call' && current.generation === this.generation
+      ? this.kernel.checkCall(current.lease) : undefined;
+    if (current?.kind === 'cleanup' && current.operationId === this.retirementId && current.active ||
+        currentCall && !currentCall.ok && currentCall.reason === 'revoked')
+      return Promise.resolve(Object.freeze({ status: 'self-wait' }));
     const signal = options.signal;
     const deadlineAt = options.deadlineAt;
     if (deadlineAt !== undefined && !Number.isFinite(deadlineAt))
       return Promise.reject(new Error('invalid-deadline'));
-    const receipt = (terminal: CloseTerminal): CloseReceipt => Object.freeze({ status: terminal.status });
-    if (this.terminal) return Promise.resolve(receipt(this.terminal));
     if (signal?.aborted) return Promise.resolve(Object.freeze({ status: 'pending', reason: 'aborted' }));
     if (deadlineAt !== undefined && deadlineAt <= this.timer.now())
       return Promise.resolve(Object.freeze({ status: 'pending', reason: 'deadline' }));
