@@ -125,6 +125,17 @@ the archive SHA-256 is
 The 376 archive entries contain no AppleDouble/PAX metadata, and the archived
 manifest bytes match the retained run exactly.
 
+`01b4696-h06-cohort-run.tar.gz` retains the accepted H06/H09 fixed cohort
+replay for clean TEST source commit `01b4696560daed80c45816b1c49c640b7decb677`
+(tree `9507b603937dc00b5a27bbb0c1b0e6aec661f828`). Both exact package pairs
+passed frozen offline install, typecheck, 118 tests, 23 admission cases and 80
+focused lifecycle cases on Node 24.18.0. The manifest SHA-256 is
+`8350a162af805904a236d4ef332cd2d04a8ed9b166e90c79b053ea02b0ff1a72`;
+the archive SHA-256 is
+`50f24ca1cc61281c2a03663c4c6c0317a707c30b82279176a7eb55ced9582e13`.
+All 452 entries are free of AppleDouble/PAX metadata, and archived manifest
+bytes match the retained run.
+
 
 Inspect the accepted manifest without extracting the archive:
 
@@ -161,6 +172,9 @@ tar -xOzf evidence/accepted/bab6d15-h04-final-run.tar.gz \
 
 tar -xOzf evidence/accepted/6c6740a-h04-review-run.tar.gz \
   evidence/runs/2026-09-28T22-50-06-630Z-44098/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/01b4696-h06-cohort-run.tar.gz \
+  evidence/runs/2026-09-28T23-08-53-248Z-65580/evidence.json | shasum -a 256
 
 ```
 
