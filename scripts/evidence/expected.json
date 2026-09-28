@@ -117,7 +117,7 @@
     "deadline first stays pending while late terminal becomes readable",
     "cohort observer cancellation detaches without changing raw retirement",
     "late cohort observer joins the retained deadline and a new budget is explicit",
-    "terminal first wins a same-turn deadline and removes timer"
+    "cohort terminal first wins a same-turn deadline and removes timer"
   ],
   "lifecycleStartIndex": 38,
   "admissionChildren": [

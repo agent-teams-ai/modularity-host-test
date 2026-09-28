@@ -1406,7 +1406,7 @@ test('late cohort observer joins the retained deadline and a new budget is expli
 });
 
 // Red if a coincident timer overrides an already recorded terminal result.
-test('terminal first wins a same-turn deadline and removes timer', async () => {
+test('cohort terminal first wins a same-turn deadline and removes timer', async () => {
   const time = manualClock();
   const hold = deferred();
   const a = await ready(() => hold.promise);
