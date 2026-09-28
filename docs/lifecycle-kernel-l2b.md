@@ -22,15 +22,18 @@ Foreign thenables and object results from `operate` are rejected before their
 `run` view. Retirement publishes its single raw close flight before callback
 entry, revokes the generation, signals abort, then invokes every retained
 consumer's `close` through private Host cleanup context. Closing starts before
-waiting for custody or raw commands. The driver waits for every stream close and
-raw ticket, releases successful stream custody, then disposes the sole owned
+waiting for custody or unrelated raw commands when that consumer is idle. A
+consumer with accepted `run` work closes after its own raw tickets settle, so
+its callback cannot use an already closed physical resource. The driver waits
+for every stream close and raw ticket, releases successful stream custody, then disposes the sole owned
 resource and releases its custody. A failed stream close retains that stream's
 custody and prevents its dependent owned disposal; successful sibling stream
 close still settles. Raw cleanup Promises are observed through the captured
 native `Promise.prototype.then`; a replaced `.then` cannot claim early physical
 success. Foreign cleanup results and failed raw observer installation retain
-custody as debt. A borrowed provider is not disposed by this owner. The
-existing shared owner remains disposed exactly once across two capability views.
+custody as debt. The existing shared owner remains disposed exactly once across
+two capability views. Borrowed-provider ownership needs a separate real
+delegation fixture.
 
 `requestRetirement` gives a synchronous `requested` receipt. External observers
 use the existing deadline/abort policy; a callback holding the affected call
@@ -40,15 +43,15 @@ not a physical release claim while pending. Unknown operation IDs return
 `unknown-or-expired`. The operation ID is diagnostic, not an authority token.
 
 This is a bounded checkpoint, not the complete L2b claim from the plan. The
-TEST stream view proves private idle consumer close before owner disposal. It
-does not yet implement iterator `return`/cancel or a separate `result()` terminal,
-so full H04 stream completion is pending. The borrowed-provider fixture does
-not prove a real product borrowing boundary. The Host still has one generation
+TEST stream view proves private idle consumer close before owner disposal and
+busy consumer close after its own accepted run settles. The planned H04 stream
+terminal checkpoint adds iterator `return`/cancel and explicit `result()`
+settlement; it remains pending here. The Host still has one generation
 and one retirement operation, so cross-generation
 cohort self-wait, 64 unresolved operation admission, 256 terminal receipt
 eviction, and general dependency actions are pending. It does not add a public
 stream protocol, replacement/readback/retry, durable recovery, or production
 conformance. On Node 24.18.0, the checkpoint requires both pinned archive
-replay roots to install, typecheck, pass all 73 tests and run 35 focused
+replay roots to install, typecheck, pass all 75 tests and run 37 focused
 lifecycle scenarios each. The accepted source-bound report is retained
 separately under `evidence/accepted`.

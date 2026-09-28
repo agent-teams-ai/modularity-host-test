@@ -22,7 +22,7 @@ const MAX_TIMER_DELAY = 2 ** 31 - 1;
 const observeNativePromise = Promise.prototype.then;
 type Ticket = { settled: boolean; promise: Promise<unknown> };
 type Waiter = { wake(): void; remove(): void };
-type StreamRecord = { resource: StreamResource; custody: CustodyLease; close?: Promise<void>; settled: boolean };
+type StreamRecord = { resource: StreamResource; custody: CustodyLease; runs: Set<Ticket>; close?: Promise<void>; settled: boolean };
 type CallContext = { kind: 'call'; generation: Generation; lease: CallLease };
 type CleanupContext = { kind: 'cleanup'; operationId: string; active: boolean };
 export type Construction<R, O> = Readonly<
@@ -157,12 +157,16 @@ export class TestHost<R, O extends { readonly status: string }> {
   }
   /** Publishes an operation ticket before calling the supplied operation. */
   operate<T>(work: () => T | Promise<T>): Promise<T> {
+    return this.operateTracked(work);
+  }
+  private operateTracked<T>(work: () => T | Promise<T>, stream?: StreamRecord): Promise<T> {
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
     if (!admitted.ok) throw new Error('host-revoked');
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
     this.operations.add(ticket);
+    stream?.runs.add(ticket);
     let result: Promise<T>;
     try {
       const raw = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value }, work);
@@ -179,6 +183,7 @@ export class TestHost<R, O extends { readonly status: string }> {
       this.kernel.release(admitted.value);
       ticket.settled = true;
       this.operations.delete(ticket);
+      stream?.runs.delete(ticket);
       resolveTicket(undefined);
     };
     // Both branches observe the result; the caller still receives its original promise.
@@ -228,11 +233,11 @@ export class TestHost<R, O extends { readonly status: string }> {
     if (!this.isOpen() || this.lifecycle().phase !== 'active') throw new Error('stream-admission-refused');
     const custody = this.kernel.retainCustody(this.generation);
     if (!custody.ok) throw new Error(`stream-custody:${custody.reason}`);
-    const record: StreamRecord = { resource, custody: custody.value, settled: false };
+    const record: StreamRecord = { resource, custody: custody.value, runs: new Set(), settled: false };
     this.streams.add(record);
     return Object.freeze({ run: <T>(work: () => T | Promise<T>): Promise<T> => {
       if (record.settled) throw new Error('stream-closed');
-      return this.operate(work);
+      return this.operateTracked(work, record);
     } });
   }
 
@@ -298,9 +303,14 @@ export class TestHost<R, O extends { readonly status: string }> {
     const revoked = this.kernel.retire(this.generation);
     if (!revoked.ok) throw new Error(`kernel-retire:${revoked.reason}`);
     this.controller.abort();
-    // Private Host cleanup begins before waiting on stream custody or raw calls.
+    // Idle consumer cleanup starts now. Busy consumers retain their physical
+    // resource until their own accepted raw runs have settled.
     for (const stream of this.streams) {
-      stream.close = this.invokeCleanup(() => stream.resource.close());
+      const runs = [...stream.runs];
+      stream.close = runs.length === 0
+        ? this.invokeCleanup(() => stream.resource.close())
+        : Promise.allSettled(runs.map(ticket => ticket.promise))
+          .then(() => this.invokeCleanup(() => stream.resource.close()));
     }
     const tickets = [...(this.construction ? [this.construction] : []), ...this.operations];
     void (async () => {

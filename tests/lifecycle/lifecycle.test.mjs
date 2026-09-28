@@ -693,6 +693,64 @@ test('idle stream private close starts before raw drain and owned disposal', asy
   assert.deepEqual(x.host.status().lifecycle, { phase: 'retired', calls: 0, custody: 0 });
 });
 
+// Regression: a retained consumer closes while its accepted run still uses
+// the physical resource, even though Host effects are already revoked.
+test('busy stream closes only after its accepted run settles', async () => {
+  const release = deferred(), events = [];
+  let physicallyClosed = false;
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { events.push('owner-dispose'); } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  const stream = x.host.retainStream({ close() {
+    physicallyClosed = true;
+    events.push('stream-close');
+  } });
+  x.host.retainStream({ close() { events.push('idle-close'); } });
+  const raw = stream.run(async () => {
+    await release.promise;
+    assert.equal(physicallyClosed, false);
+    events.push('run-settled');
+  });
+  const request = x.host.requestRetirement();
+  assert.deepEqual(events, ['idle-close']);
+  assert.throws(() => stream.run(() => undefined), /host-revoked/);
+  assert.deepEqual(await x.host.observeRetirement(request.operationId, { deadlineAt: 0 }),
+    { status: 'pending', reason: 'deadline' });
+  release.resolve();
+  await raw;
+  assert.deepEqual(await x.host.observeRetirement(request.operationId), { status: 'closed' });
+  assert.deepEqual(events, ['idle-close', 'run-settled', 'stream-close', 'owner-dispose']);
+});
+
+// Regression: synchronous self-retirement must see the stream ticket before
+// run() returns to its caller; the callback still holds the physical resource.
+test('stream run that requests retirement keeps its resource until settlement', async () => {
+  const release = deferred(), events = [];
+  let closed = false;
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { events.push('owner-dispose'); } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  const stream = x.host.retainStream({ close() { closed = true; events.push('stream-close'); } });
+  let request;
+  const raw = stream.run(async () => {
+    request = x.host.requestRetirement();
+    assert.equal(closed, false);
+    await release.promise;
+    assert.equal(closed, false);
+    events.push('run-settled');
+  });
+  assert.deepEqual(request, { kind: 'requested', operationId: 'retirement-1' });
+  assert.throws(() => stream.run(() => undefined), /host-revoked/);
+  release.resolve();
+  await raw;
+  assert.deepEqual(await x.host.observeRetirement(request.operationId), { status: 'closed' });
+  assert.deepEqual(events, ['run-settled', 'stream-close', 'owner-dispose']);
+});
+
 // Regression: a callback synchronously requests its own retirement and then
 // waits on the raw flight it holds, or returns an early released receipt.
 test('self-retirement returns requested and self-observe cannot join', async () => {
@@ -754,11 +812,9 @@ test('stream close failure retains custody and blocks dependent disposal', async
   assert.deepEqual(x.host.status().lifecycle, { phase: 'retiring', calls: 0, custody: 2 });
 });
 
-// Regression: closing a retained consumer disposes a borrowed provider or
-// repeats disposal for the two capability views of one owned resource.
-test('borrowed provider survives consumer close while shared owner disposes once', async () => {
-  let borrowedDisposals = 0, ownedDisposals = 0, consumerCloses = 0;
-  const borrowed = { dispose() { borrowedDisposals++; } };
+// Regression: two capability views of one owned resource cause double disposal.
+test('consumer closes while shared owner disposes once', async () => {
+  let ownedDisposals = 0, consumerCloses = 0;
   const x = await fixture(async ({ host, owner }) => {
     owner.reserve()({ dispose() { ownedDisposals++; } });
     return product(host);
@@ -766,11 +822,10 @@ test('borrowed provider survives consumer close while shared owner disposes once
   const published = await x.start();
   assert.equal(published.status, 'published');
   assert.equal(published.root.sharedResource(), true);
-  x.host.retainStream({ close() { consumerCloses++; void borrowed; } });
+  x.host.retainStream({ close() { consumerCloses++; } });
   assert.equal((await x.host.close()).status, 'closed');
   assert.equal(consumerCloses, 1);
   assert.equal(ownedDisposals, 1);
-  assert.equal(borrowedDisposals, 0);
 });
 
 // Regression: Promise.resolve or a failed observer silently converts still
