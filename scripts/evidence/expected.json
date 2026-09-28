@@ -119,6 +119,7 @@
     "late cohort observer joins the retained deadline and a new budget is explicit",
     "cohort terminal first wins a same-turn deadline and removes timer",
     "recovery reserves 64 generations before executable work and refuses the 65th",
+    "fixture closes its own reservation when preparation fails before executable work",
     "existing cleanup runs at capacity and releases only proven slots",
     "cleanup debt retains its slot after flight settlement and observer cancellation",
     "deadline observation keeps the generation reserved until raw disposal settles",
