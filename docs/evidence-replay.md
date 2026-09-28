@@ -18,9 +18,14 @@ and requests a frozen offline install. A preseeded writable store may be supplie
 as `TEST_EVIDENCE_PNPM_STORE`. It does not change the root lock or package defaults.
 
 Each run writes `evidence/runs/<run-id>/evidence.json` and hashed command logs.
+The runner places the reviewed Node executable first on child `PATH` and records
+the resolved binary and version for each pair. Admission markers have a complete
+expected event sequence. Lifecycle and probe marker counts are labeled partial;
+an absent marker is never presented as a zero total. The cleanup probe separately
+records its fixture-owned disposer counter.
 `accepted` requires both frozen installs, package-root resolution, pinned compiler
 typechecks, all 59 named tests with no skipped or extra test, all 23 direct
-admission child scenarios with their expected ordered markers, 17 focused
+admission child scenarios with their expected ordered markers, 21 focused
 lifecycle executions with per-process marker logs, a retained import-fence
 marker from the child scenario, the 0.1.0 negative
 and 0.2.0 positive distinct-root preparation probe, and a real Assembly

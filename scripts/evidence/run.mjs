@@ -55,7 +55,7 @@ const log = (name, value) => {
 function command(cwd, label, bin, args, timeout = 120000, extra = {}) {
   const dir = mkdtempSync(join(scratch, 'env-'));
   const env = { HOME: dir, TMPDIR: dir, LANG: 'C', CI: '1', COREPACK_ENABLE_NETWORK: '0',
-    PATH: process.env.PATH ?? '', ...extra };
+    PATH: `${dirname(process.execPath)}:${process.env.PATH ?? ''}`, ...extra };
   if (process.env.COREPACK_HOME) env.COREPACK_HOME = process.env.COREPACK_HOME;
   const run = spawnSync(bin, args, { cwd, env, encoding: 'utf8', timeout, maxBuffer: 20 * 1024 * 1024 });
   const markerFiles = [];
@@ -172,13 +172,15 @@ const refusal = {
 };
 const coreDiagnostic = { 'wrong-binding': 'binding.capability-missing',
   'missing-binding': 'binding.missing' };
-function countsOf(events) {
-  return { loader: events.filter(x => x.endsWith(':loader')).length,
+function markerCountsOf(events, complete) {
+  const observed = { loader: events.filter(x => x.endsWith(':loader')).length,
     evaluation: events.filter(x => x.endsWith(':evaluate')).length,
     factory: events.filter(x => x.endsWith(':factory')).length,
     effect: events.filter(x => x.startsWith('owner:effect:')).length,
     acquisition: events.filter(x => x === 'owner:acquire').length,
     disposer: events.filter(x => x.endsWith(':dispose')).length };
+  return { source: 'retained-fixture-markers', completeness: complete ? 'complete' : 'partial',
+    observed, total: complete ? observed : null };
 }
 function expectedEvents(name) {
   if (preImport.has(name)) return [];
@@ -208,7 +210,7 @@ function admissionChildren(root, pair) {
     let result = null;
     try { result = JSON.parse(cmd.text.trim()); } catch { failed(`${pair}/${name}: invalid child JSON`); }
     const events = existsSync(marker) ? readFileSync(marker, 'utf8').trim().split('\n').filter(Boolean) : [];
-    const counts = countsOf(events);
+    const markerCounts = markerCountsOf(events, true);
     const expectedOutcome = name === 'rejecting-reader'
       ? { phase: 'construction', status: 'failed', code: 'assembly.run.factory-rejected', created: 1 }
       : { phase: phaseFor(name), ...(phaseFor(name) === 'construction' ? { status: 'succeeded', created: 4 } : {}),
@@ -221,7 +223,7 @@ function admissionChildren(root, pair) {
         (result?.status === 'succeeded' && JSON.stringify(result.values) !== JSON.stringify(expectedValues)) ||
         JSON.stringify(events) !== JSON.stringify(expectedMarkers))
       failed(`${pair}/${name}: unexpected outcome or ordered marker`);
-    rows.push({ id: name, expected: expectedOutcome, actual: result, expectedEvents: expectedMarkers, orderedEvents: events, counts,
+    rows.push({ id: name, expected: expectedOutcome, actual: result, expectedEvents: expectedMarkers, orderedEvents: events, markerCounts,
       terminalDebt: 'not exposed by admission child; see terminal-debt probe and lifecycle assertions',
       command: { ...cmd, text: undefined } });
   }
@@ -243,7 +245,7 @@ function lifecycleRuns(root, pair) {
       failed(`${pair}: focused lifecycle scenario ${name} did not run exactly once`);
     const events = cmd.markerFiles.flatMap(file => file.orderedEvents);
     rows.push({ id: name, expected: 'pass', actual, totals,
-      markerFiles: cmd.markerFiles, counts: countsOf(events), command: { ...cmd, text: undefined } });
+      markerFiles: cmd.markerFiles, markerCounts: markerCountsOf(events, false), command: { ...cmd, text: undefined } });
   }
   return rows;
 }
@@ -257,7 +259,10 @@ function probe(root, pair, file, expectation) {
   if (cmd.exitCode !== 0 || !actual || Object.entries(expectation).some(([k, v]) => actual[k] !== v))
     failed(`${pair}/${file}: unexpected process result`);
   const orderedEvents = existsSync(marker) ? readFileSync(marker, 'utf8').trim().split('\n').filter(Boolean) : [];
-  return { expected: expectation, actual, orderedEvents, counts: countsOf(orderedEvents),
+  return { expected: expectation, actual, orderedEvents,
+    markerCounts: markerCountsOf(orderedEvents, false),
+    measuredCounts: file === 'terminal-debt-probe' && actual ?
+      { source: 'fixture-disposer-counter', disposerCalls: actual.disposeCalls } : undefined,
     command: { ...cmd, text: undefined } };
 }
 function importFence(root, pair) {
@@ -281,6 +286,14 @@ try {
     const pair = report.pairs[label] = { origin: pins[key].origin,
       sourceCommit: pins[key].sourceCommit ?? null, pins: checkPins(key), installRoot: root };
     copyTestRoot(key, root);
+    pair.childNode = command(root, `${label}.node-version`, 'node',
+      ['-p', 'JSON.stringify({version:process.version,execPath:process.execPath})']);
+    const childNode = JSON.parse(pair.childNode.text);
+    pair.childNode.resolved = childNode;
+    if (pair.childNode.exitCode !== 0 || childNode.version !== process.version ||
+        realpathSync(childNode.execPath) !== realpathSync(process.execPath))
+      failed(`${label}: PATH node differs from reviewed driver`);
+    delete pair.childNode.text;
     pair.lock = { sha256: sha256(read(join(root, 'pnpm-lock.yaml'))),
       path: key === 'publishedPair' ? 'pnpm-lock.yaml' : 'evidence/candidate-0.2/pnpm-lock.yaml' };
     const lockText = readFileSync(join(root, 'pnpm-lock.yaml'), 'utf8');

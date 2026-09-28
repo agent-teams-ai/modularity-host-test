@@ -22,7 +22,7 @@ test('single flight, one shared resource and saved handles remain revoked', asyn
   const first = x.start();
   assert.strictEqual(x.start(), first);
   const result = await first;
-  assert.equal(result.status, 'published', JSON.stringify(result.raw, (key, value) => key === 'cause' ? String(value) : value));
+  assert.equal(result.status, 'published');
   assert.equal(result.raw.created.length, 4);
   assert.equal(result.root.sharedResource(), true);
   assert.deepEqual(result.root.run(), ['a:write', 'a-value']);
@@ -186,7 +186,7 @@ test('seal between real Assembly success and publication retains raw success', a
     return actual;
   }, outcome => outcome.status === 'succeeded' ? outcome.roots.app : undefined);
   const raw = await handed.promise;
-  assert.equal(raw.status, 'succeeded', JSON.stringify(raw, (key, value) => key === 'cause' ? String(value) : value));
+  assert.equal(raw.status, 'succeeded');
   const close = x.host.close(); release.resolve();
   const result = await construction;
   assert.equal(result.status, 'cancelled');
