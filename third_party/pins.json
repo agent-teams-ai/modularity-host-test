@@ -1,0 +1,21 @@
+{
+  "getModularSourceCommit": "6b31f20fe3e5fb8324812aa2ee907905751cde71",
+  "consumerModuleStandard": {
+    "path": "third_party/standards/common-assembly.md",
+    "sourcePath": "docs/architecture/common-assembly.md",
+    "sha256": "d5bb71e5a700014f9f0a09b17d1f33d24b30b66c49b273c9fb65584672c51e4f"
+  },
+  "publishedPair": {
+    "version": "0.1.0",
+    "core": {
+      "path": "third_party/archives/published-0.1/get-modular-core-0.1.0.tgz",
+      "sha256": "50803ea69e2fb4078013a897f858908b4d73d26296336ab155a6118809dfb8ba",
+      "sri": "sha512-0aqzW7sbh7O8aAPBGJIPZBbhgeYnk+HuZdVf27dimkQ3d/zb9zpsYIMdLGt3EXi1B8MaBjw09ApzLaiIRiAgIQ=="
+    },
+    "assembly": {
+      "path": "third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz",
+      "sha256": "e89207171e44afd5e813aa5e7a0db8abc999b42338559d38b44b4db71da228ab",
+      "sri": "sha512-wxK49abnnAWLkCuI8EwL8cJENP2IfDmEm29UHi0w5t0/BL/c2IdTNbOTvQDo/8+hl0ZCJZtwqIqPZ3AnxJ7WNQ=="
+    }
+  }
+}

@@ -26,7 +26,7 @@ export const candidates: readonly Candidate[] = Object.freeze([
   ] },
   { moduleId: 'test/root', implementationId: 'test/root/main', subject: 'fixture/root', provides: [] },
   { moduleId: 'test/sentinel', implementationId: 'test/sentinel/main', subject: 'fixture/sentinel', provides: [] },
-].map(candidate => Object.freeze({ ...candidate, provides: Object.freeze(candidate.provides.map(Object.freeze)) })));
+].map(candidate => Object.freeze({ ...candidate, provides: Object.freeze(candidate.provides.map(capability => Object.freeze(capability))) })));
 
 export type Grant = Readonly<{
   subject: string;
