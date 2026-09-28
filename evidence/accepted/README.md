@@ -57,6 +57,16 @@ the archive SHA-256 is
 Iterator/result terminal, cross-generation cohort, bounded retirement inventory,
 replacement and production qualification remain separate checkpoints.
 
+`93fb18b-l2b1-fix-run.tar.gz` retains the accepted replay after fixing
+premature physical close of a busy TEST stream for clean source commit
+`93fb18b0d9df244b5eb6b37787408b6cbac52d4a` (tree
+`9ef6a8df1ea1c01eb8139de319c0dd75e74624d1`). Both exact pairs passed
+frozen offline install, typecheck, 75 tests, 23 admission cases and 37 focused
+lifecycle cases on Node 24.18.0. The manifest SHA-256 is
+`456832c952351e80d5807231e72778099056fb67d800fedd7fd75300905c85fd`;
+the archive SHA-256 is
+`c2d802e95099b23abf1a1371c000673b12cd1b02009e826408e22fa7175e6afe`.
+
 Inspect the accepted manifest without extracting the archive:
 
 ```sh
@@ -74,6 +84,9 @@ tar -xOzf evidence/accepted/4f6d88c-l2a-doc-run.tar.gz \
 
 tar -xOzf evidence/accepted/055c5e9-l2b1-run.tar.gz \
   evidence/runs/2026-09-28T21-18-22-392Z-17184/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/93fb18b-l2b1-fix-run.tar.gz \
+  evidence/runs/2026-09-28T21-37-06-056Z-42049/evidence.json | shasum -a 256
 ```
 
 These archives preserve evidence for the exact TEST subjects. They do not
