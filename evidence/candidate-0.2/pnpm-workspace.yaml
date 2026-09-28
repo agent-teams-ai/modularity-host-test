@@ -1,0 +1,8 @@
+packages:
+  - .
+
+overrides:
+  '@get-modular/core': file:third_party/archives/candidate-0.2/get-modular-core-0.2.0.tgz
+
+minimumReleaseAge: 0
+trustPolicy: off

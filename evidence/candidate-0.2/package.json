@@ -9,12 +9,11 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test --test-reporter=tap",
-    "evidence": "node scripts/evidence/run.mjs"
+    "test": "node --test --test-reporter=tap"
   },
   "dependencies": {
-    "@get-modular/assembly": "file:third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz",
-    "@get-modular/core": "file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz"
+    "@get-modular/assembly": "file:third_party/archives/candidate-0.2/get-modular-assembly-0.2.0.tgz",
+    "@get-modular/core": "file:third_party/archives/candidate-0.2/get-modular-core-0.2.0.tgz"
   },
   "devDependencies": {
     "@types/node": "24.19.0",
