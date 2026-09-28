@@ -10,6 +10,9 @@ export function deferred() {
   return { promise, resolve, reject };
 }
 export async function fixture(providerFactory, options = {}) {
+  // The recovery path reserves before even inert preparation, and therefore
+  // before any selected executable import, factory or acquisition.
+  const recovery = options.recovery ?? options.recoveryOwner?.reserve(options.clock);
   const composition = await compileComposition({ declarations, profile: {
     kind: 'get-modular.composition-profile', schemaVersion: 1, profileId: 'test/lifecycle', roots: ['test/root/main'],
     selections: [providerA, writer, reader, root].map(d => ({ moduleId: d.moduleId, implementationId: d.implementationId })),
@@ -20,7 +23,7 @@ export async function fixture(providerFactory, options = {}) {
     ],
   } });
   assert.equal(composition.ok, true);
-  const host = new TestHost(options.clock);
+  const host = recovery?.host ?? new TestHost(options.clock);
   const api = assemblyFor();
   const owner = Object.freeze({ reserve: () => host.reserve(), effect: value => host.effect(value), read: fn => host.read(fn),
     assertReady: () => host.assertOperationReady() });
@@ -45,5 +48,6 @@ export async function fixture(providerFactory, options = {}) {
   const prepared = await api.prepare({ composition, factories: [a, w, r, app], roots: { app } });
   assert.equal(prepared.status, 'prepared');
   const start = () => host.construct(signal => prepared.prepared.run({ signal }), out => out.status === 'succeeded' ? out.roots.app : undefined);
-  return { host, start, run: signal => prepared.prepared.run({ signal }) };
+  return { host, operationId: recovery?.operationId,
+    start, run: signal => prepared.prepared.run({ signal }) };
 }

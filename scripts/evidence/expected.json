@@ -117,9 +117,21 @@
     "deadline first stays pending while late terminal becomes readable",
     "cohort observer cancellation detaches without changing raw retirement",
     "late cohort observer joins the retained deadline and a new budget is explicit",
-    "cohort terminal first wins a same-turn deadline and removes timer"
+    "cohort terminal first wins a same-turn deadline and removes timer",
+    "recovery reserves 64 generations before executable work and refuses the 65th",
+    "existing cleanup runs at capacity and releases only proven slots",
+    "cleanup debt retains its slot after flight settlement and observer cancellation",
+    "deadline observation keeps the generation reserved until raw disposal settles",
+    "failed construction remains closable by ID after the returned handle is lost",
+    "257 terminal receipts evict the oldest physical completion",
+    "unknown recovery IDs never report released",
+    "abort reentry finds the prepublished ID and one close flight",
+    "cohort compacts successful sibling while failed member keeps debt",
+    "retirement inside a sibling stream leaves only an inert abort reason with debt",
+    "terminal receipt uses only safe Host-owned summary"
   ],
   "lifecycleStartIndex": 38,
+  "recoveryStartIndex": 118,
   "admissionChildren": [
     "positive", "wrong-target", "forged-owner", "wrong-token", "duplicate-selection",
     "unknown-selection", "unauthorized-injection", "namespace-lookalike", "unknown-subject",

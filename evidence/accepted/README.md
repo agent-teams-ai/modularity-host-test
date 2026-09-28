@@ -136,6 +136,18 @@ the archive SHA-256 is
 All 452 entries are free of AppleDouble/PAX metadata, and archived manifest
 bytes match the retained run.
 
+`4ec6f42-h13-recovery-run.tar.gz` retains the accepted H13 bounded recovery
+inventory replay for clean TEST source commit
+`4ec6f42adf33bbc8e250068d1b582c16797e6df2`
+(tree `c13a5f06c706156c3cde7a85bc5aa65df026c4f9`). Both exact package pairs
+passed frozen offline install, typecheck, 129 tests, 23 admission cases and 91
+focused lifecycle cases on Node 24.18.0. The manifest SHA-256 is
+`134c0f3ce7b50a8c91cf6d91d42c30882009b1536befdb8721c3d250211ba6c0`;
+the archive SHA-256 is
+`5432370d0389a8f6c53d0b3f347ed6e2cc913de2ca7aa6a56f63bb65bd282886`.
+All 496 entries are free of AppleDouble/PAX metadata, and archived manifest
+bytes match the retained run.
+
 
 Inspect the accepted manifest without extracting the archive:
 
@@ -175,6 +187,9 @@ tar -xOzf evidence/accepted/6c6740a-h04-review-run.tar.gz \
 
 tar -xOzf evidence/accepted/01b4696-h06-cohort-run.tar.gz \
   evidence/runs/2026-09-28T23-08-53-248Z-65580/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/4ec6f42-h13-recovery-run.tar.gz \
+  evidence/runs/2026-09-28T23-31-14-554Z-89018/evidence.json | shasum -a 256
 
 ```
 

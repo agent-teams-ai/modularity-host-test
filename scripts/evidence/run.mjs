@@ -18,7 +18,8 @@ const files = [];
 const sourcePaths = ['src', 'tests', 'scripts/evidence', 'evidence/candidate-0.2',
   'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'third_party',
   'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
-  'docs/lifecycle-kernel-h06-cohort.md', 'docs/evidence-replay.md'];
+  'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md',
+  'docs/evidence-replay.md'];
 const commitCoversWorktree = git('status', '--porcelain', '--untracked-files=all', '--', ...sourcePaths) === '';
 function scan(path) {
   for (const entry of readdirSync(join(source, path), { withFileTypes: true })) {
@@ -31,7 +32,8 @@ for (const path of ['src', 'tests', 'scripts/evidence', 'evidence/candidate-0.2'
 for (const path of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json',
   'third_party/pins.json', pins.consumerModuleStandard.path, pins.lifecycleKernel.path,
   'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
-  'docs/lifecycle-kernel-h06-cohort.md', 'docs/evidence-replay.md'])
+  'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md',
+  'docs/evidence-replay.md'])
   files.push({ path, sha256: sha256(read(join(source, path))) });
 files.sort((a, b) => a.path.localeCompare(b.path));
 const report = {
@@ -85,6 +87,10 @@ for (const [kind, names] of Object.entries(expected).filter(([, value]) => Array
 if (!Number.isSafeInteger(expected.lifecycleStartIndex) || expected.lifecycleStartIndex < 1 ||
     expected.lifecycleStartIndex >= expected.tests.length)
   failed('invalid lifecycle scenario boundary');
+if (!Number.isSafeInteger(expected.recoveryStartIndex) ||
+    expected.recoveryStartIndex <= expected.lifecycleStartIndex ||
+    expected.recoveryStartIndex >= expected.tests.length)
+  failed('invalid recovery scenario boundary');
 function checkPins(key) {
   const pin = pins[key];
   const archive = {};
@@ -252,11 +258,14 @@ function admissionChildren(root, pair) {
 function lifecycleRuns(root, pair) {
   const names = expected.tests.slice(expected.lifecycleStartIndex);
   const rows = [];
-  for (const name of names) {
+  for (const [index, name] of names.entries()) {
+    const testFile = index + expected.lifecycleStartIndex >= expected.recoveryStartIndex
+      ? 'tests/lifecycle/recovery-inventory.test.mjs'
+      : name.startsWith('terminal ') ? 'tests/lifecycle/stream-terminal.test.mjs'
+        : 'tests/lifecycle/lifecycle.test.mjs';
     const cmd = command(root, `${pair}.lifecycle.${rows.length + 1}`, process.execPath,
       ['--test', '--test-reporter=tap', `--test-name-pattern=^${name}$`,
-        name.startsWith('terminal ') ? 'tests/lifecycle/stream-terminal.test.mjs'
-          : 'tests/lifecycle/lifecycle.test.mjs'], 30000, { TEST_PRESERVE_MARKERS: '1' });
+        testFile], 30000, { TEST_PRESERVE_MARKERS: '1' });
     const totals = Object.fromEntries([...cmd.text.matchAll(/^# (tests|pass|fail|cancelled|skipped|todo) (\d+)$/gm)]
       .map(([, key, count]) => [key, Number(count)]));
     const actual = cmd.exitCode === 0 && cmd.text.split('\n').some(line =>
