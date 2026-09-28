@@ -139,7 +139,7 @@ test('terminal close failure retains debt while sibling closes', async () => {
   assert.equal(x.host.status().lifecycle.custody, 2);
 });
 
-test('ordinary and terminal stream close failures remain separately owned', async () => {
+test('terminal and ordinary stream close failures remain separately owned', async () => {
   const events = [], ordinaryCause = Error('ordinary-close'), terminalCause = Error('terminal-close');
   const x = await installed(events);
   const ordinary = { close() { events.push('ordinary'); throw ordinaryCause; } };
@@ -266,6 +266,62 @@ test('terminal cancel revokes late stream effect before owner retirement', async
   assert.deepEqual(x.host.effects, []);
   assert.equal((await x.host.close()).status, 'closed');
   assert.deepEqual(events, ['close', 'return', 'dispose']);
+});
+
+test('terminal cancelled parent cannot start a sibling stream effect', async () => {
+  const gate = deferred();
+  const x = await installed();
+  const sibling = x.host.retainTerminalStream({
+    next() { x.host.effect('delegated'); return { done: false, value: 1 }; },
+    close() {},
+  });
+  const parent = x.host.retainTerminalStream({
+    async next() { await gate.promise; await sibling.next(); return { done: false, value: 2 }; },
+    return() { return { done: true, value: undefined }; },
+    close() {},
+  });
+  const pending = parent.next();
+  const rejected = assert.rejects(pending, /host-revoked/);
+  const cancelled = parent.cancel();
+  gate.resolve();
+  await rejected;
+  await cancelled;
+  assert.deepEqual(x.host.effects, []);
+  assert.equal((await x.host.close()).status, 'closed');
+});
+
+test('terminal in-flight sibling keeps cancelled parent effect fence', async () => {
+  const gate = deferred();
+  const x = await installed();
+  const sibling = x.host.retainTerminalStream({
+    async next() { await gate.promise; x.host.effect('delegated-late'); return { done: false, value: 1 }; },
+    close() {},
+  });
+  const parent = x.host.retainTerminalStream({
+    next() { return sibling.next(); },
+    return() { return { done: true, value: undefined }; },
+    close() {},
+  });
+  const pending = parent.next();
+  const rejected = assert.rejects(pending, /host-revoked/);
+  const cancelled = parent.cancel();
+  gate.resolve();
+  await rejected;
+  await cancelled;
+  assert.deepEqual(x.host.effects, []);
+  assert.equal((await x.host.close()).status, 'closed');
+});
+
+test('terminal cancel cleanup cannot enter ordinary Host effect', async () => {
+  const x = await installed();
+  const resource = { next() { return { done: true, value: undefined }; },
+    close() { x.host.effect('cleanup-leak'); } };
+  const view = x.host.retainTerminalStream(resource);
+  await assert.rejects(view.cancel(), /host-revoked/);
+  assert.deepEqual(x.host.effects, []);
+  const terminal = await x.host.close();
+  assert.equal(terminal.status, 'cleanup-incomplete');
+  assert.strictEqual(terminal.debt, resource);
 });
 
 test('terminal native return validates mutated thenable ack before bridging', async () => {

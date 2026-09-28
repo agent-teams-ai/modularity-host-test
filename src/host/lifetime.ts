@@ -48,8 +48,14 @@ type TerminalStreamRecord = Omit<StreamRecord, 'runs'> & {
   closing: boolean;
   tickets: Set<Ticket>;
 };
-type CallContext = { kind: 'call'; generation: Generation; lease: CallLease; stream?: TerminalStreamRecord };
+type CallContext = { kind: 'call'; generation: Generation; lease: CallLease;
+  stream?: TerminalStreamRecord; parent?: CallContext };
 type CleanupContext = { kind: 'cleanup'; operationId: string; active: boolean };
+function hasClosingStream(context: CallContext | CleanupContext | undefined): boolean {
+  for (let call = context?.kind === 'call' ? context : undefined; call; call = call.parent)
+    if (call.stream?.closing) return true;
+  return false;
+}
 function ownMethod(resource: object, name: 'next' | 'result' | 'return' | 'close', required: boolean): (() => unknown) | undefined {
   const descriptor = Object.getOwnPropertyDescriptor(resource, name);
   if (!descriptor && !required) return undefined;
@@ -141,6 +147,8 @@ export class TestHost<R, O extends { readonly status: string }> {
     if (generation !== this.generation || this.lifecycle().phase !== 'active') throw new Error('host-revoked');
   }
   private withCall<T>(generation: Generation, action: (lease: CallLease) => T): T {
+    const current = this.context.getStore();
+    if (current?.kind === 'cleanup' || hasClosingStream(current)) throw new Error('host-revoked');
     this.assertReady(generation);
     const admitted = this.kernel.beginCall(generation);
     if (!admitted.ok) throw new Error('host-revoked');
@@ -153,7 +161,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   /** The check and sink write are one synchronous block. */
   effect(value: string): void {
     const current = this.context.getStore();
-    if (current?.kind === 'call' && current.stream?.closing) throw new Error('host-revoked');
+    if (current?.kind === 'cleanup' || hasClosingStream(current)) throw new Error('host-revoked');
     if (current?.kind === 'call' && current.generation === this.generation) {
       if (!this.kernel.checkCall(current.lease).ok) throw new Error('host-revoked');
       this.effects.push(value);
@@ -168,7 +176,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   }
   read<T>(read: () => T): T {
     const parent = this.context.getStore();
-    if (parent?.kind === 'call' && parent.stream?.closing) throw new Error('host-revoked');
+    if (parent?.kind === 'cleanup' || hasClosingStream(parent)) throw new Error('host-revoked');
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
     if (!admitted.ok) throw new Error('host-revoked');
@@ -186,7 +194,8 @@ export class TestHost<R, O extends { readonly status: string }> {
     try {
       if (!this.kernel.checkCall(admitted.value).ok) throw new Error('host-revoked');
       result = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value,
-        stream: parent?.kind === 'call' ? parent.stream : undefined }, read);
+        stream: parent?.kind === 'call' ? parent.stream : undefined,
+        parent: parent?.kind === 'call' ? parent : undefined }, read);
     } catch (cause) {
       settle();
       throw cause;
@@ -211,7 +220,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   }
   private operateTracked<T>(work: () => T | Promise<T>, stream?: StreamRecord): Promise<T> {
     const parent = this.context.getStore();
-    if (parent?.kind === 'call' && parent.stream?.closing) throw new Error('host-revoked');
+    if (parent?.kind === 'cleanup' || hasClosingStream(parent)) throw new Error('host-revoked');
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
     if (!admitted.ok) throw new Error('host-revoked');
@@ -222,7 +231,8 @@ export class TestHost<R, O extends { readonly status: string }> {
     let result: Promise<T>;
     try {
       const raw = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value,
-        stream: parent?.kind === 'call' ? parent.stream : undefined }, work);
+        stream: parent?.kind === 'call' ? parent.stream : undefined,
+        parent: parent?.kind === 'call' ? parent : undefined }, work);
       // Keep a native Promise as the raw work: Promise.resolve would consult a
       // hostile constructor and could turn a still-running call into a rejection.
       if (types.isPromise(raw)) result = raw as Promise<T>;
@@ -283,6 +293,8 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   /** A TEST-only retained consumer. Custody is independent of invocation authority. */
   retainStream(resource: StreamResource): Readonly<{ run<T>(work: () => T | Promise<T>): Promise<T> }> {
+    const context = this.context.getStore();
+    if (context?.kind === 'cleanup' || hasClosingStream(context)) throw new Error('stream-admission-refused');
     if (!this.isOpen() || this.lifecycle().phase !== 'active') throw new Error('stream-admission-refused');
     const custody = this.kernel.retainCustody(this.generation);
     if (!custody.ok) throw new Error(`stream-custody:${custody.reason}`);
@@ -296,6 +308,8 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   /** Fixed TEST stream protocol. Callback references are captured before publication. */
   retainTerminalStream<T, U>(resource: TerminalStreamResource<T, U>): TerminalStreamView<T, U> {
+    const context = this.context.getStore();
+    if (context?.kind === 'cleanup' || hasClosingStream(context)) throw new Error('stream-admission-refused');
     if (!this.isOpen() || this.lifecycle().phase !== 'active') throw new Error('stream-admission-refused');
     if (resource === null || typeof resource !== 'object') throw new Error('unsupported-stream-resource');
     const callbacks = {
@@ -335,6 +349,8 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   private streamCall<T>(record: TerminalStreamRecord, callback: () => unknown,
       validate: (value: unknown) => T, startsIteration = false): Promise<T> {
+    const parent = this.context.getStore();
+    if (parent?.kind === 'cleanup' || hasClosingStream(parent)) return Promise.reject(new Error('host-revoked'));
     if (record.closing || record.settled) return Promise.reject(new Error('stream-closed'));
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
@@ -356,7 +372,7 @@ export class TestHost<R, O extends { readonly status: string }> {
       if (!this.kernel.checkCall(admitted.value).ok) throw new Error('host-revoked');
       if (startsIteration) record.started = true;
       raw = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value,
-        stream: record }, callback);
+        stream: record, parent: parent?.kind === 'call' ? parent : undefined }, callback);
       if (raw !== null && (typeof raw === 'object' || typeof raw === 'function') &&
           !types.isPromise(raw) && Object.getPrototypeOf(raw) !== Object.prototype && Object.getPrototypeOf(raw) !== null)
         throw new Error('unsupported-stream-output');
