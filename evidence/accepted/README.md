@@ -53,7 +53,7 @@ Both exact pairs passed frozen offline install, typecheck, 73 tests, 23
 admission cases and 35 focused lifecycle cases on Node 24.18.0. The manifest
 SHA-256 is `b253d44b4f434ba7e8e6567df48517aa46962d0041a55a84a4350f75f48611cf`;
 the archive SHA-256 is
-`ddc44c8565ef5b21a1346f743dae68cbce697e4f332263b7b7ce68ba0fda9db0`.
+`91103b9b60558e23ea884b77c46b8b8b6aee5316d4dc840a6c54c6cd2cc305a0`.
 Iterator/result terminal, cross-generation cohort, bounded retirement inventory,
 replacement and production qualification remain separate checkpoints.
 
@@ -65,7 +65,7 @@ frozen offline install, typecheck, 75 tests, 23 admission cases and 37 focused
 lifecycle cases on Node 24.18.0. The manifest SHA-256 is
 `456832c952351e80d5807231e72778099056fb67d800fedd7fd75300905c85fd`;
 the archive SHA-256 is
-`c2d802e95099b23abf1a1371c000673b12cd1b02009e826408e22fa7175e6afe`.
+`db9b491482a6370a7d46a747b28b0f3dd0574e8cc3de33fad8be69ae45797ec4`.
 
 `d8e684b-l2b1-main-run.tar.gz` retains the accepted replay after PR #4
 merged, for clean source commit `d8e684bfe9aa2b0ce89dd2676bd9bff51fcdcc4f`
@@ -74,7 +74,7 @@ frozen offline install, typecheck, 75 tests, 23 admission cases and 37 focused
 lifecycle cases on Node 24.18.0. The manifest SHA-256 is
 `ad0a803127e2bb043be822a68239317158ab7986dd748095f7c35210d2a907e8`;
 the archive SHA-256 is
-`e86d599f0f72a853672727f7d6064fb3cf26e3455cb5c350a73320b375e4afd7`.
+`70e93a33368c30ff129fb1fe034665c23dcda6716913e2919de5bab9567838e0`.
 
 `5f78cf5-l2b1-current-pin-run.tar.gz` retains the accepted replay after
 advancing the reviewed Consumer Module Standard source pin to merged Get
@@ -85,7 +85,7 @@ frozen offline install, typecheck, 75 tests, 23 admission cases and 37 focused
 lifecycle cases on Node 24.18.0. The manifest SHA-256 is
 `c35073d9a10ff5bad2448bb948059b7fc9ab07c6f5859fc6b7bfa5be6d6fd7d5`;
 the archive SHA-256 is
-`343f4561b4a997e74468ff677152baa9804bce7ba825810d0e7a32627d0f765d`.
+`13d7d79de378a9214e1b8d2c5f6330e66a8c07da59712066bdeb9e1c38b27783`.
 
 `0dea754-l2b1-review-run.tar.gz` retains the accepted replay after review
 fixes for invalid self-observer deadlines and multiple failed stream closes.
@@ -95,7 +95,11 @@ frozen offline install, typecheck, 76 tests, 23 admission cases and 38 focused
 lifecycle cases on Node 24.18.0. The manifest SHA-256 is
 `28d84d03d62847dddd3df0ccd8ed8fc386ecc8ec2d2f75b520daa5d5c1a7c92a`;
 the archive SHA-256 is
-`8e25250fa216855b53398381fb853e51ba281b6a74608f6d524467362e08e5aa`.
+`984323aea8c9bf000659ba095dfe0cf8a4e2f866555ee9a6e3db57f1d5765210`.
+
+These L2b1 archives exclude macOS AppleDouble sidecars and extended attributes.
+Their manifest bytes are unchanged. On macOS, create retained archives with
+`COPYFILE_DISABLE=1 tar --no-xattrs` to keep the payload portable.
 
 Inspect the accepted manifest without extracting the archive:
 
