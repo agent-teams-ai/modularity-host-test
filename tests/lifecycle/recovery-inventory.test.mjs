@@ -32,6 +32,37 @@ test('recovery reserves 64 generations before executable work and refuses the 65
   assert.equal(recovery.reserve().operationId, 'test-operation-65');
 });
 
+// Regression: preparation throws before fixture returns, leaving its hidden reservation in the 64-slot inventory.
+test('fixture closes its own reservation when preparation fails before executable work', async () => {
+  const recovery = new TestRecoveryOwner();
+  const failure = Error('prepare-failure');
+  const before = readFileSync(process.env.TEST_MARKERS, { encoding: 'utf8', flag: 'a+' });
+  await assert.rejects(fixture(undefined, {
+    recoveryOwner: recovery,
+    prepare: async () => { throw failure; },
+  }), error => error === failure);
+  assert.deepEqual(recovery.read('test-operation-1'), {
+    status: 'closed', operationId: 'test-operation-1', outcomeCode: 'not-started',
+    summary: 'physical cleanup complete',
+  });
+  assert.equal(readFileSync(process.env.TEST_MARKERS, 'utf8'), before,
+    'no selected candidate was imported or constructed');
+  const slots = Array.from({ length: 64 }, () => recovery.reserve());
+  assert.equal(slots[0].operationId, 'test-operation-2');
+  assert.equal(slots.at(-1).operationId, 'test-operation-65');
+  assert.throws(() => recovery.reserve(), /recovery-capacity-refused/);
+
+  const callerOwner = new TestRecoveryOwner();
+  const callerReservation = callerOwner.reserve();
+  await assert.rejects(fixture(undefined, {
+    recovery: callerReservation, recoveryOwner: callerOwner,
+    prepare: async () => { throw failure; },
+  }), error => error === failure);
+  assert.equal(callerOwner.read(callerReservation.operationId).status, 'open',
+    'an externally passed reservation remains caller owned');
+  assert.equal((await callerOwner.close(callerReservation.operationId)).status, 'closed');
+});
+
 // Regression: a full inventory refuses cleanup for an already admitted generation.
 test('existing cleanup runs at capacity and releases only proven slots', async () => {
   const recovery = new TestRecoveryOwner();
