@@ -1,5 +1,5 @@
 {
-  "getModularSourceCommit": "e0e2290cfcbf8d8300beaa57aee9c8337429d67d",
+  "getModularSourceCommit": "461bff0c2bffd657e0dc129aadffb263d417f0e3",
   "consumerModuleStandard": {
     "path": "third_party/standards/common-assembly.md",
     "sourcePath": "docs/architecture/common-assembly.md",

@@ -151,7 +151,13 @@ export class TestHost<R, O extends { readonly status: string }> {
     catch (cause) { result = Promise.reject(cause); }
     // Both branches observe the result; the caller still receives its original promise.
     result.then(() => settle(), () => settle());
-    const settle = () => { this.kernel.release(admitted.value); ticket.settled = true; this.operations.delete(ticket); resolveTicket(undefined); };
+    const settle = () => {
+      if (ticket.settled) return;
+      this.kernel.release(admitted.value);
+      ticket.settled = true;
+      this.operations.delete(ticket);
+      resolveTicket(undefined);
+    };
     return result;
   }
   /** Captures this generation for extracted methods and fences post-await writes. */

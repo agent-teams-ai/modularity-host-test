@@ -26,7 +26,11 @@ its `Symbol.species` getter throws), `read` reports `read-observer-refused` with
 the original cause and retains the unresolved call ticket. The one-shot Host
 cannot prove raw settlement after that failure, so `close` stays pending and
 physical disposal does not start. This L2a Host has no recovery protocol for
-that hostile Promise case. `operate` holds a call lease until its raw work settles.
+that hostile Promise case. If the unobserved raw Promise later rejects, Node can
+report an unhandled rejection or terminate this TEST process. This is an explicit
+unsupported output shape and disqualifies this adapter from production use with
+arbitrary plugin Promises; the fixture only proves that cleanup is not falsely
+reported as complete. `operate` holds a call lease until its raw work settles.
 `close` publishes its
 single raw flight, retires the generation, then signals abort. It waits for raw
 construction and operation tickets, disposes the one owned resource, releases
@@ -50,9 +54,11 @@ tarball packed from clean Get Modular commit
 `c1f047fa0ce7396fa2430b4043524656dfe98dc0f8b5950749af9bf764238c8b`.
 The copied Consumer Module Standard has SHA-256
 `33b41d5babf0a431c97e8e596a56e6ec1557ba1a0b26d39bf23e13d9a19e1fbd`
-from the same commit. This replaces the prior standard bytes after reviewing
-the new optional dynamic Host section; it does not rewrite the historical
-Core/Assembly subjects or their source commits.
+from merged Get Modular commit `461bff0c2bffd657e0dc129aadffb263d417f0e3`.
+Comparison with candidate source `e0e2290` found identical full standard bytes;
+the private tarball still pins its original pack source. This replaces the prior
+standard bytes after reviewing the new optional dynamic Host section; it does
+not rewrite the historical Core/Assembly subjects or their source commits.
 
 Both frozen replay installations retain their own exact Core/Assembly pair and
 add the same kernel candidate as a separately pinned third package. The runner

@@ -33,6 +33,9 @@ Inspect the accepted manifest without extracting the archive:
 ```sh
 tar -xOzf evidence/accepted/2f098f0-run.tar.gz \
   evidence/runs/2026-09-28T14-24-12-184Z-2068615/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/1fb563c-l2a-run.tar.gz \
+  evidence/runs/2026-09-28T20-47-55-114Z-73422/evidence.json | shasum -a 256
 ```
 
 These archives preserve evidence for the exact TEST subjects. They do not
