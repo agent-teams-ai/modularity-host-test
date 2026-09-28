@@ -1,10 +1,14 @@
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { deferred, fixture } from './fixture.mjs';
-process.env.TEST_MARKERS = join(mkdtempSync(join(tmpdir(), 'test-host-stream-')), 'markers');
+const markerRoot = mkdtempSync(join(tmpdir(), 'test-host-stream-'));
+process.env.TEST_MARKERS = join(markerRoot, 'markers');
+after(() => {
+  if (process.env.TEST_PRESERVE_MARKERS !== '1') rmSync(markerRoot, { recursive: true, force: true });
+});
 
 function product(host) {
   const resourceId = 'shared', resourceIdentity = Symbol('stream-owner');

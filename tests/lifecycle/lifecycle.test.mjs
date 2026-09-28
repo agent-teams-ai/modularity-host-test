@@ -1,11 +1,15 @@
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fork } from 'node:child_process';
 import { deferred, fixture } from './fixture.mjs';
-process.env.TEST_MARKERS = join(mkdtempSync(join(tmpdir(), 'test-host-lifecycle-')), 'markers');
+const markerRoot = mkdtempSync(join(tmpdir(), 'test-host-lifecycle-'));
+process.env.TEST_MARKERS = join(markerRoot, 'markers');
+after(() => {
+  if (process.env.TEST_PRESERVE_MARKERS !== '1') rmSync(markerRoot, { recursive: true, force: true });
+});
 
 function product(host, resource, value = 'value') {
   const resourceId = 'shared';

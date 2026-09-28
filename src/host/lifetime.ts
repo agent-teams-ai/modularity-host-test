@@ -26,15 +26,16 @@ type Ticket = { settled: boolean; promise: Promise<unknown> };
 type Waiter = { wake(): void; remove(): void };
 type StreamRecord = { resource: StreamResource; custody: CustodyLease; runs: Set<Ticket>; close?: Promise<void>; settled: boolean };
 type StreamNext<T> = () => IteratorResult<T> | Promise<IteratorResult<T>>;
-type StreamResult<U> = () => U | Promise<U>;
+export type TerminalResultValue = string | number | boolean | bigint | symbol | null | undefined;
+type StreamResult<U extends TerminalResultValue> = () => U | Promise<U>;
 type StreamReturn<T> = () => IteratorResult<T> | Promise<IteratorResult<T>>;
-export type TerminalStreamResource<T, U> = {
+export type TerminalStreamResource<T, U extends TerminalResultValue> = {
   next: StreamNext<T>;
   result?: StreamResult<U>;
   return?: StreamReturn<T>;
   close(): void | Promise<void>;
 };
-export type TerminalStreamView<T, U> = Readonly<{
+export type TerminalStreamView<T, U extends TerminalResultValue> = Readonly<{
   next(): Promise<IteratorResult<T>>;
   result(): Promise<U>;
   return(): Promise<IteratorResult<T>>;
@@ -331,7 +332,7 @@ export class TestHost<R, O extends { readonly status: string }> {
   }
 
   /** Fixed TEST stream protocol. Callback references are captured before publication. */
-  retainTerminalStream<T, U>(resource: TerminalStreamResource<T, U>): TerminalStreamView<T, U> {
+  retainTerminalStream<T, U extends TerminalResultValue>(resource: TerminalStreamResource<T, U>): TerminalStreamView<T, U> {
     const context = this.context.getStore();
     if (context?.kind === 'cleanup' || hasClosingStream(context)) throw new Error('stream-admission-refused');
     if (!this.isOpen() || this.lifecycle().phase !== 'active') throw new Error('stream-admission-refused');

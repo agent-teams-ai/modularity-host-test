@@ -254,7 +254,7 @@ function lifecycleRuns(root, pair) {
     const cmd = command(root, `${pair}.lifecycle.${rows.length + 1}`, process.execPath,
       ['--test', '--test-reporter=tap', `--test-name-pattern=^${name}$`,
         name.startsWith('terminal ') ? 'tests/lifecycle/stream-terminal.test.mjs'
-          : 'tests/lifecycle/lifecycle.test.mjs'], 30000);
+          : 'tests/lifecycle/lifecycle.test.mjs'], 30000, { TEST_PRESERVE_MARKERS: '1' });
     const totals = Object.fromEntries([...cmd.text.matchAll(/^# (tests|pass|fail|cancelled|skipped|todo) (\d+)$/gm)]
       .map(([, key, count]) => [key, Number(count)]));
     const actual = cmd.exitCode === 0 && cmd.text.split('\n').some(line =>
