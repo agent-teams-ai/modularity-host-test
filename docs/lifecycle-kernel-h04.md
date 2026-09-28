@@ -25,6 +25,12 @@ blocks a later sibling call, and a sibling already in flight cannot commit an
 effect or publish a chunk/result after the parent is cancelled. Private close/return callbacks
 cannot enter normal Host effect, read, command or stream admission even when
 the generation remains active during a single-stream cancel.
+Every admitted nested call ticket is registered with each distinct ordinary or
+terminal consumer in its context ancestry before executing callback code.
+Cancel and retirement retain all those consumers until the nested raw work
+settles, including fire-and-forget read/command work and transitive A -> B ->
+read chains. Failed native observer installation leaves every membership as
+unresolved debt.
 
 The first public `return`/`cancel` or Host retirement closes admission
 synchronously and publishes one retained close flight before callbacks can
@@ -51,7 +57,7 @@ The pinned Consumer Module Standard bytes still match current upstream
 `33b41d5babf0a431c97e8e596a56e6ec1557ba1a0b26d39bf23e13d9a19e1fbd`).
 This Host-only TEST extension does not alter Core, Assembly, kernel API, shared
 module guidance or the accepted pin. The source-bound evidence runner includes
-the seventeen new H04 scenarios for both installed archive pairs and retains this
+the nineteen new H04 scenarios for both installed archive pairs and retains this
 document in its worktree digest. An accepted claim requires a retained replay
 from clean committed source; working-tree test passes alone are insufficient.
 

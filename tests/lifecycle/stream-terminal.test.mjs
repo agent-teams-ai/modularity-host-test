@@ -333,6 +333,62 @@ test('terminal in-flight sibling cannot publish a chunk after parent cancel', as
   assert.equal((await x.host.close()).status, 'closed');
 });
 
+test('terminal cancel retains detached nested read and command', async () => {
+  const readGate = deferred(), commandGate = deferred();
+  const x = await installed();
+  let readFlight, commandFlight;
+  const view = x.host.retainTerminalStream({
+    next() {
+      readFlight = x.host.read(() => readGate.promise);
+      commandFlight = x.host.operate(() => commandGate.promise);
+      return { done: false, value: 1 };
+    },
+    return() { return { done: true, value: undefined }; },
+    close() {},
+  });
+  await view.next();
+  const cancelled = view.cancel();
+  await tick();
+  assert.equal(x.host.status().streams, 1);
+  assert.equal(x.host.status().lifecycle.custody, 2);
+  readGate.resolve('read-done');
+  await readFlight;
+  await tick();
+  assert.equal(x.host.status().streams, 1);
+  commandGate.resolve('command-done');
+  await commandFlight;
+  await cancelled;
+  assert.equal((await x.host.close()).status, 'closed');
+});
+
+test('terminal transitive child read retains both ancestor streams', async () => {
+  const gate = deferred();
+  const x = await installed();
+  let readFlight, siblingCall;
+  const sibling = x.host.retainTerminalStream({
+    next() { readFlight = x.host.read(() => gate.promise); return { done: false, value: 1 }; },
+    return() { return { done: true, value: undefined }; },
+    close() {},
+  });
+  const parent = x.host.retainTerminalStream({
+    next() { siblingCall = sibling.next(); return { done: false, value: 2 }; },
+    return() { return { done: true, value: undefined }; },
+    close() {},
+  });
+  await parent.next();
+  await siblingCall;
+  const parentCancel = parent.cancel();
+  const siblingCancel = sibling.cancel();
+  await tick();
+  assert.equal(x.host.status().streams, 2);
+  assert.equal(x.host.status().lifecycle.custody, 3);
+  gate.resolve('read-done');
+  await readFlight;
+  await parentCancel;
+  await siblingCancel;
+  assert.equal((await x.host.close()).status, 'closed');
+});
+
 test('terminal cancel cleanup cannot enter ordinary Host effect', async () => {
   const x = await installed();
   const resource = { next() { return { done: true, value: undefined }; },

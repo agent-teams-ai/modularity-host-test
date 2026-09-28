@@ -65,6 +65,7 @@
     "retained call checks its lease at the post-await effect sink",
     "idle stream private close starts before raw drain and owned disposal",
     "busy stream closes only after its accepted run settles",
+    "ordinary stream waits for detached nested read and command before close",
     "stream run that requests retirement keeps its resource until settlement",
     "self-retirement returns requested and self-observe cannot join",
     "stream cleanup sees one published flight and self-wait receipt",
@@ -91,6 +92,8 @@
     "terminal cancelled parent cannot start a sibling stream effect",
     "terminal in-flight sibling keeps cancelled parent effect fence",
     "terminal in-flight sibling cannot publish a chunk after parent cancel",
+    "terminal cancel retains detached nested read and command",
+    "terminal transitive child read retains both ancestor streams",
     "terminal cancel cleanup cannot enter ordinary Host effect",
     "terminal native return validates mutated thenable ack before bridging"
   ],

@@ -724,6 +724,33 @@ test('busy stream closes only after its accepted run settles', async () => {
   assert.deepEqual(events, ['idle-close', 'run-settled', 'stream-close', 'owner-dispose']);
 });
 
+test('ordinary stream waits for detached nested read and command before close', async () => {
+  const readGate = deferred(), commandGate = deferred(), events = [];
+  const x = await fixture(async ({ host, owner }) => {
+    owner.reserve()({ dispose() { events.push('owner-dispose'); } });
+    return product(host);
+  });
+  assert.equal((await x.start()).status, 'published');
+  const stream = x.host.retainStream({ close() { events.push('stream-close'); } });
+  let readFlight, commandFlight;
+  await stream.run(() => {
+    readFlight = x.host.read(() => readGate.promise);
+    commandFlight = x.host.operate(() => commandGate.promise);
+    return 'run-done';
+  });
+  const retirement = x.host.close();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(events, []);
+  readGate.resolve('read-done');
+  await readFlight;
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(events, []);
+  commandGate.resolve('command-done');
+  await commandFlight;
+  assert.equal((await retirement).status, 'closed');
+  assert.deepEqual(events, ['stream-close', 'owner-dispose']);
+});
+
 // Regression: synchronous self-retirement must see the stream ticket before
 // run() returns to its caller; the callback still holds the physical resource.
 test('stream run that requests retirement keeps its resource until settlement', async () => {

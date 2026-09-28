@@ -49,8 +49,27 @@ type TerminalStreamRecord = Omit<StreamRecord, 'runs'> & {
   tickets: Set<Ticket>;
 };
 type CallContext = { kind: 'call'; generation: Generation; lease: CallLease;
-  stream?: TerminalStreamRecord; parent?: CallContext };
+  stream?: TerminalStreamRecord; ordinaryStream?: StreamRecord; parent?: CallContext };
 type CleanupContext = { kind: 'cleanup'; operationId: string; active: boolean };
+type ConsumerTickets = { ordinary: readonly StreamRecord[]; terminal: readonly TerminalStreamRecord[] };
+function consumerTickets(context: CallContext | CleanupContext | undefined,
+    ordinary?: StreamRecord, terminal?: TerminalStreamRecord): ConsumerTickets {
+  const ordinaryOwners = new Set<StreamRecord>(ordinary ? [ordinary] : []);
+  const terminalOwners = new Set<TerminalStreamRecord>(terminal ? [terminal] : []);
+  for (let call = context?.kind === 'call' ? context : undefined; call; call = call.parent) {
+    if (call.ordinaryStream) ordinaryOwners.add(call.ordinaryStream);
+    if (call.stream) terminalOwners.add(call.stream);
+  }
+  return { ordinary: [...ordinaryOwners], terminal: [...terminalOwners] };
+}
+function retainConsumerTicket(owners: ConsumerTickets, ticket: Ticket): void {
+  for (const stream of owners.ordinary) stream.runs.add(ticket);
+  for (const stream of owners.terminal) stream.tickets.add(ticket);
+}
+function releaseConsumerTicket(owners: ConsumerTickets, ticket: Ticket): void {
+  for (const stream of owners.ordinary) stream.runs.delete(ticket);
+  for (const stream of owners.terminal) stream.tickets.delete(ticket);
+}
 function hasClosingStream(context: CallContext | CleanupContext | undefined): boolean {
   for (let call = context?.kind === 'call' ? context : undefined; call; call = call.parent)
     if (call.stream?.closing) return true;
@@ -177,17 +196,20 @@ export class TestHost<R, O extends { readonly status: string }> {
   read<T>(read: () => T): T {
     const parent = this.context.getStore();
     if (parent?.kind === 'cleanup' || hasClosingStream(parent)) throw new Error('host-revoked');
+    const consumers = consumerTickets(parent);
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
     if (!admitted.ok) throw new Error('host-revoked');
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
     this.operations.add(ticket);
+    retainConsumerTicket(consumers, ticket);
     const settle = () => {
       if (ticket.settled) return;
       this.kernel.release(admitted.value);
       ticket.settled = true;
       this.operations.delete(ticket);
+      releaseConsumerTicket(consumers, ticket);
       resolveTicket(undefined);
     };
     let result: T;
@@ -221,17 +243,19 @@ export class TestHost<R, O extends { readonly status: string }> {
   private operateTracked<T>(work: () => T | Promise<T>, stream?: StreamRecord): Promise<T> {
     const parent = this.context.getStore();
     if (parent?.kind === 'cleanup' || hasClosingStream(parent)) throw new Error('host-revoked');
+    const consumers = consumerTickets(parent, stream);
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
     if (!admitted.ok) throw new Error('host-revoked');
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
     this.operations.add(ticket);
-    stream?.runs.add(ticket);
+    retainConsumerTicket(consumers, ticket);
     let result: Promise<T>;
     try {
       const raw = this.context.run({ kind: 'call', generation: this.generation, lease: admitted.value,
         stream: parent?.kind === 'call' ? parent.stream : undefined,
+        ordinaryStream: stream,
         parent: parent?.kind === 'call' ? parent : undefined }, work);
       // Keep a native Promise as the raw work: Promise.resolve would consult a
       // hostile constructor and could turn a still-running call into a rejection.
@@ -246,7 +270,7 @@ export class TestHost<R, O extends { readonly status: string }> {
       this.kernel.release(admitted.value);
       ticket.settled = true;
       this.operations.delete(ticket);
-      stream?.runs.delete(ticket);
+      releaseConsumerTicket(consumers, ticket);
       resolveTicket(undefined);
     };
     // Both branches observe the result; the caller still receives its original promise.
@@ -351,6 +375,7 @@ export class TestHost<R, O extends { readonly status: string }> {
       validate: (value: unknown) => T, startsIteration = false): Promise<T> {
     const parent = this.context.getStore();
     if (parent?.kind === 'cleanup' || hasClosingStream(parent)) return Promise.reject(new Error('host-revoked'));
+    const consumers = consumerTickets(parent, undefined, record);
     if (record.closing || record.settled) return Promise.reject(new Error('stream-closed'));
     this.assertReady(this.generation);
     const admitted = this.kernel.beginCall(this.generation);
@@ -358,13 +383,13 @@ export class TestHost<R, O extends { readonly status: string }> {
     let resolveTicket!: (value: unknown) => void;
     const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
     this.operations.add(ticket);
-    record.tickets.add(ticket);
+    retainConsumerTicket(consumers, ticket);
     const settle = () => {
       if (ticket.settled) return;
       ticket.settled = true;
       this.kernel.release(admitted.value);
       this.operations.delete(ticket);
-      record.tickets.delete(ticket);
+      releaseConsumerTicket(consumers, ticket);
       resolveTicket(undefined);
     };
     let raw: unknown;
