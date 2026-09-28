@@ -67,6 +67,15 @@ lifecycle cases on Node 24.18.0. The manifest SHA-256 is
 the archive SHA-256 is
 `c2d802e95099b23abf1a1371c000673b12cd1b02009e826408e22fa7175e6afe`.
 
+`d8e684b-l2b1-main-run.tar.gz` retains the accepted replay after PR #4
+merged, for clean source commit `d8e684bfe9aa2b0ce89dd2676bd9bff51fcdcc4f`
+(tree `6212e4c4425d6677b890d0fe4785a012702d15b2`). Both exact pairs passed
+frozen offline install, typecheck, 75 tests, 23 admission cases and 37 focused
+lifecycle cases on Node 24.18.0. The manifest SHA-256 is
+`ad0a803127e2bb043be822a68239317158ab7986dd748095f7c35210d2a907e8`;
+the archive SHA-256 is
+`e86d599f0f72a853672727f7d6064fb3cf26e3455cb5c350a73320b375e4afd7`.
+
 Inspect the accepted manifest without extracting the archive:
 
 ```sh
@@ -87,6 +96,9 @@ tar -xOzf evidence/accepted/055c5e9-l2b1-run.tar.gz \
 
 tar -xOzf evidence/accepted/93fb18b-l2b1-fix-run.tar.gz \
   evidence/runs/2026-09-28T21-37-06-056Z-42049/evidence.json | shasum -a 256
+
+tar -xOzf evidence/accepted/d8e684b-l2b1-main-run.tar.gz \
+  evidence/runs/2026-09-28T21-49-06-395Z-60030/evidence.json | shasum -a 256
 ```
 
 These archives preserve evidence for the exact TEST subjects. They do not
