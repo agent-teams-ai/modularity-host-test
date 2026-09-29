@@ -2,6 +2,7 @@ import { appendFileSync } from 'node:fs';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { types } from 'node:util';
 import { createLifecycleKernel, type CallLease, type CustodyLease, type Generation, type GenerationSnapshot } from '@get-modular/lifecycle-kernel';
+import { ExclusiveStopRecord, type StopPorts, type StopReadReceipt } from './exclusive-stop.ts';
 const mark = (event: string): void => {
   if (process.env.TEST_MARKERS) appendFileSync(process.env.TEST_MARKERS, `${event}\n`);
 };
@@ -122,6 +123,18 @@ export type Construction<R, O> = Readonly<
   | { status: 'cancelled'; raw: O }
   | { status: 'failed'; raw?: O; cause?: unknown }
 >;
+declare const stagedTokenBrand: unique symbol;
+export type StagedToken = Readonly<{ readonly [stagedTokenBrand]: true }>;
+export type StagedConstruction = Readonly<
+  | { status: 'constructed'; token: StagedToken }
+  | { status: 'cancelled' }
+  | { status: 'failed'; code: 'construction-failed' | 'missing-root' }
+>;
+export type Activation<R> = Readonly<
+  | { status: 'published'; root: R }
+  | { status: 'activation-refused'; code: 'invalid-token' | 'revoked' }
+>;
+export type LiveActivationAuthority = Readonly<{ canActivate(): boolean }>;
 type CohortBinding = Readonly<{
   operationId: string;
   request(): RetirementReceipt;
@@ -138,13 +151,17 @@ export class TestHost<R, O extends { readonly status: string }> {
   private controller: AbortController | undefined = new AbortController();
   private construction: Ticket | undefined;
   private constructionResult: Promise<Construction<R, O>> | undefined;
-  private constructionCode: 'not-started' | 'published' | 'cancelled' | 'failed' = 'not-started';
+  private stagedResult: Promise<StagedConstruction> | undefined;
+  private stagedToken: StagedToken | undefined;
+  private stagedRoot: R | undefined;
+  private constructionCode: 'not-started' | 'constructed' | 'published' | 'cancelled' | 'failed' = 'not-started';
   private readonly operations = new Set<Ticket>();
   private readonly streams = new Set<StreamRecord>();
   private readonly terminalStreams = new Set<TerminalStreamRecord>();
   private readonly context = callContext;
   private readonly cleanupScopes = new Set<CleanupContext>();
   private resource: OwnedResource | undefined;
+  private exclusiveStop: ExclusiveStopRecord | undefined;
   private custody: CustodyLease | undefined;
   private reserved = false;
   private retirement: Promise<CloseTerminal> | undefined;
@@ -158,10 +175,14 @@ export class TestHost<R, O extends { readonly status: string }> {
   private terminal: CloseTerminal | undefined;
   private readonly waiters = new Set<Waiter>();
   private readonly timer: Clock;
+  private activationAuthority: LiveActivationAuthority | undefined;
   private cohortOwner: CohortBinding | undefined;
   private readonly physicalCompletion = new Set<() => void>();
 
-  constructor(timer: Clock = clock) { this.timer = timer; }
+  constructor(timer: Clock = clock, activationAuthority?: LiveActivationAuthority) {
+    this.timer = timer;
+    this.activationAuthority = activationAuthority;
+  }
 
   /** Opaque generation identity for the fixed TEST cohort owner. */
   cohortGeneration(): Generation { return this.generation; }
@@ -176,7 +197,7 @@ export class TestHost<R, O extends { readonly status: string }> {
     if (this.terminal?.status === 'closed') { notify(); return; }
     this.physicalCompletion.add(notify);
   }
-  safeConstructionCode(): 'not-started' | 'published' | 'cancelled' | 'failed' {
+  safeConstructionCode(): 'not-started' | 'constructed' | 'published' | 'cancelled' | 'failed' {
     return this.constructionCode;
   }
   currentRetirementId(): string { return this.cohortOwner?.operationId ?? this.retirementId; }
@@ -185,6 +206,11 @@ export class TestHost<R, O extends { readonly status: string }> {
   compactClosed(): void {
     if (this.terminal?.status !== 'closed') throw new Error('physical-completion-unproven');
     this.resource = undefined;
+    this.exclusiveStop = undefined;
+    this.stagedToken = undefined;
+    this.stagedRoot = undefined;
+    this.stagedResult = undefined;
+    this.activationAuthority = undefined;
     this.controller = undefined;
     this.construction = undefined;
     this.constructionResult = undefined;
@@ -233,6 +259,39 @@ export class TestHost<R, O extends { readonly status: string }> {
       this.resource = resource;
       mark('owner:acquire');
     };
+  }
+
+  /** Trusted Host control plane. No stop proof is accepted from a caller. */
+  createExclusiveStop(ports: StopPorts): void {
+    if (!this.construction || this.construction.settled || this.exclusiveStop)
+      throw new Error('exclusive-stop-refused');
+    const register = this.reserve();
+    const record = new ExclusiveStopRecord(ports, callback => this.invokeStopPort(callback),
+      () => activeCleanupIn(this.context.getStore(), this.retirementOperation));
+    this.exclusiveStop = record;
+    try { register(record); }
+    catch (cause) {
+      // A TEST marker may fail after physical ownership has transferred.
+      if (this.resource !== record) this.exclusiveStop = undefined;
+      throw cause;
+    }
+  }
+  exclusiveStopAttempt(): string | undefined { return this.exclusiveStop?.attemptId(); }
+  reconcileExclusiveStop(attemptId: string): Promise<StopReadReceipt> {
+    return this.exclusiveStop?.reconcile(attemptId) ?? Promise.resolve(Object.freeze({ status: 'stale-attempt' }));
+  }
+  retryExclusiveStop(attemptId: string): Promise<StopReadReceipt> {
+    return this.exclusiveStop?.retry(attemptId) ?? Promise.resolve(Object.freeze({ status: 'stale-attempt' }));
+  }
+
+  private invokeStopPort<T>(callback: () => T | Promise<T>): Promise<T> {
+    const scope: CleanupContext = { kind: 'cleanup', operation: this.retirementOperation,
+      active: true, parent: this.context.getStore() };
+    this.cleanupScopes.add(scope);
+    let result: T | Promise<T>;
+    try { result = this.context.run(scope, callback); }
+    catch (cause) { scope.active = false; this.cleanupScopes.delete(scope); return Promise.reject(cause); }
+    return Promise.resolve(result).finally(() => { scope.active = false; this.cleanupScopes.delete(scope); });
   }
 
   private assertReady(generation: Generation): void {
@@ -562,6 +621,7 @@ export class TestHost<R, O extends { readonly status: string }> {
 
   construct(run: (signal: AbortSignal) => Promise<O>, rootOf: (outcome: O) => R | undefined): Promise<Construction<R, O>> {
     if (this.constructionResult) return this.constructionResult;
+    if (this.stagedResult) return Promise.reject(new Error('construction-refused'));
     if (this.lifecycle().phase !== 'staged') return Promise.reject(new Error('construction-refused'));
     const custody = this.kernel.retainCustody(this.generation);
     if (!custody.ok) return Promise.reject(new Error(`construction-custody:${custody.reason}`));
@@ -602,6 +662,67 @@ export class TestHost<R, O extends { readonly status: string }> {
     return result;
   }
 
+  /** Construction stays private until the exact token commits live authority. */
+  constructStaged(run: (signal: AbortSignal) => Promise<O>, rootOf: (outcome: O) => R | undefined): Promise<StagedConstruction> {
+    if (this.stagedResult) return this.stagedResult;
+    if (this.constructionResult || this.lifecycle().phase !== 'staged' || !this.activationAuthority)
+      return Promise.reject(new Error('construction-refused'));
+    const custody = this.kernel.retainCustody(this.generation);
+    if (!custody.ok) return Promise.reject(new Error(`construction-custody:${custody.reason}`));
+    this.custody = custody.value;
+    let resolveTicket!: (value: unknown) => void;
+    const ticket: Ticket = { settled: false, promise: new Promise(resolve => { resolveTicket = resolve; }) };
+    this.construction = ticket;
+    let resolveResult!: (value: StagedConstruction) => void;
+    const result = new Promise<StagedConstruction>(resolve => { resolveResult = resolve; });
+    this.stagedResult = result;
+    const settle = (value: StagedConstruction) => {
+      this.constructionCode = value.status;
+      resolveResult(value);
+      ticket.settled = true;
+      if (!this.resource && this.custody) {
+        this.kernel.release(this.custody);
+        this.custody = undefined;
+      }
+      resolveTicket(undefined);
+    };
+    let raw: Promise<O>;
+    try { raw = Promise.resolve(run(this.controller!.signal)); }
+    catch (cause) { raw = Promise.reject(cause); }
+    raw.then(outcome => {
+      if (outcome.status === 'cancelled' || !this.isOpen()) return settle(Object.freeze({ status: 'cancelled' }));
+      if (outcome.status !== 'succeeded') return settle(Object.freeze({ status: 'failed', code: 'construction-failed' }));
+      let root: R | undefined;
+      try { root = rootOf(outcome); }
+      catch { return settle(Object.freeze({ status: 'failed', code: 'construction-failed' })); }
+      if (root === undefined) return settle(Object.freeze({ status: 'failed', code: 'missing-root' }));
+      if (!this.isOpen()) return settle(Object.freeze({ status: 'cancelled' }));
+      this.stagedRoot = root;
+      const token = Object.freeze({}) as StagedToken;
+      this.stagedToken = token;
+      settle(Object.freeze({ status: 'constructed', token }));
+    }, () => settle(Object.freeze({ status: 'failed', code: 'construction-failed' })));
+    return result;
+  }
+
+  activateConstructed(token: StagedToken): Activation<R> {
+    if (!this.stagedToken || token !== this.stagedToken || this.stagedRoot === undefined)
+      return Object.freeze({ status: 'activation-refused', code: 'invalid-token' });
+    if (this.lifecycle().phase !== 'staged')
+      return Object.freeze({ status: 'activation-refused', code: 'revoked' });
+    try {
+      if (this.activationAuthority?.canActivate() !== true)
+        return Object.freeze({ status: 'activation-refused', code: 'revoked' });
+    } catch { return Object.freeze({ status: 'activation-refused', code: 'revoked' }); }
+    const activated = this.kernel.activate(this.generation);
+    if (!activated.ok) return Object.freeze({ status: 'activation-refused', code: 'revoked' });
+    const root = this.stagedRoot;
+    this.stagedRoot = undefined;
+    this.stagedToken = undefined;
+    this.constructionCode = 'published';
+    return Object.freeze({ status: 'published', root });
+  }
+
   close(): Promise<CloseTerminal> {
     if (this.cohortOwner && !this.retirementPrepared) {
       this.cohortOwner.request();
@@ -623,6 +744,8 @@ export class TestHost<R, O extends { readonly status: string }> {
     for (const scope of this.cleanupScopes) scope.operation = operation;
     this.retirement = new Promise(resolve => { this.resolveRetirement = resolve; });
     this.retirementPrepared = true;
+    this.stagedToken = undefined;
+    this.stagedRoot = undefined;
     const revoked = this.kernel.retire(this.generation);
     if (!revoked.ok) throw new Error(`kernel-retire:${revoked.reason}`);
     return this.retirement;

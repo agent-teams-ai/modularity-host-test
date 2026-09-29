@@ -1,4 +1,4 @@
-import { TestHost, type Clock, type CloseReceipt, type CloseTerminal } from './lifetime.ts';
+import { TestHost, type Clock, type CloseReceipt, type CloseTerminal, type LiveActivationAuthority } from './lifetime.ts';
 
 const UNRESOLVED_LIMIT = 64;
 const RECEIPT_LIMIT = 256;
@@ -7,7 +7,7 @@ type RetainedHost = TestHost<unknown, { readonly status: string }>;
 type Entry = { host: RetainedHost; flight?: Promise<CloseTerminal>; retirementId?: string };
 export type RecoveryReceipt = Readonly<{
   status: 'closed'; operationId: string;
-  outcomeCode: 'not-started' | 'published' | 'cancelled' | 'failed';
+  outcomeCode: 'not-started' | 'constructed' | 'published' | 'cancelled' | 'failed';
   summary: 'physical cleanup complete';
 }>;
 export type RecoveryRead = RecoveryReceipt | Readonly<{
@@ -21,10 +21,10 @@ export class TestRecoveryOwner {
   private readonly unresolved = new Map<string, Entry>();
   private readonly receipts = new Map<string, RecoveryReceipt>();
 
-  reserve(timer?: Clock): Readonly<{ operationId: string; host: RetainedHost }> {
+  reserve(timer?: Clock, activationAuthority?: LiveActivationAuthority): Readonly<{ operationId: string; host: RetainedHost }> {
     if (this.unresolved.size >= UNRESOLVED_LIMIT) throw new Error('recovery-capacity-refused');
     const operationId = `test-operation-${this.nextId++}`;
-    const host = new TestHost(timer);
+    const host = new TestHost(timer, activationAuthority);
     this.unresolved.set(operationId, { host });
     host.onPhysicalCompletion(() => {
       const entry = this.unresolved.get(operationId);
