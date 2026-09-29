@@ -44,9 +44,26 @@ export function projectProfile(snapshot: Admitted): CompositionProfile {
   };
 }
 
-export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = loaders,
+type RunOutcome = { status: 'succeeded'; roots: { app: Root }; created: readonly unknown[] }
+  | { status: 'failed' | 'cancelled'; code?: string; created: readonly unknown[] };
+export type PreparedAdmission = Readonly<{ ok: true; owner: TestHost<Root, RunOutcome>; snapshot: Admitted;
+  digest: string; order: readonly string[]; run(signal: AbortSignal): Promise<RunOutcome> }>;
+export type PreparationRefusal = Extract<RunResult, { phase: 'admission' | 'core' | 'mapping' | 'preparation' }>;
+export type PreparationOptions = Readonly<{
+  owner?: TestHost<Root, RunOutcome>;
+  /** Trusted Host live policy, rechecked around every executable boundary. */
+  fresh?: () => boolean;
+  /** TEST physical owner adapter, never supplied by candidate metadata. */
+  reserve?: (owner: TestHost<Root, RunOutcome>) => (resource: OwnedResource) => void;
+  /** Bound callback scope ends at the loader/factory's raw settlement. */
+  invoke?: <T>(callback: () => T | Promise<T>) => Promise<T>;
+}>;
+
+/** Complete selected graph preparation. No candidate loader is called here. */
+export async function prepareAdmission(input: unknown, rows: readonly LoaderRow[] = loaders,
   profileEdit?: (profile: CompositionProfile) => CompositionProfile,
-  authorities: TrustedAuthorities = { inventory: candidates, grants }): Promise<RunResult> {
+  authorities: TrustedAuthorities = { inventory: candidates, grants },
+  options: PreparationOptions = {}): Promise<PreparedAdmission | PreparationRefusal> {
   const decision = admitTrusted(input, authorities.inventory, authorities.grants);
   if (!decision.ok) return { phase: 'admission', reason: decision.reason };
   const selections = decision.snapshot.selections;
@@ -60,65 +77,69 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
     if (rows.filter(row => row.implementationId === selected.implementationId).length !== 1)
       return { phase: 'mapping', reason: 'selected-loader-cardinality' };
   }
-  const owner = new TestHost<Root, { status: 'succeeded'; roots: { app: Root }; created: readonly unknown[] }
-    | { status: 'failed' | 'cancelled'; code?: string; created: readonly unknown[] }>();
+  const owner = options.owner ?? new TestHost<Root, RunOutcome>();
+  const fresh = (): boolean => options.fresh?.() ?? true;
+  const requireFresh = (): void => { if (!fresh()) throw new Error('live-authority-revoked'); };
   const providerPort = Object.freeze({
-    reserve: (): ((resource: OwnedResource) => void) => owner.reserve(),
-    effect: (value: string) => owner.effect(value),
-    read: <T>(read: () => T): T => owner.read(read),
-    assertReady: () => owner.assertOperationReady(),
+    reserve: (): ((resource: OwnedResource) => void) => { requireFresh(); return options.reserve?.(owner) ?? owner.reserve(); },
+    effect: (value: string) => { requireFresh(); owner.effect(value); },
+    read: <T>(read: () => T): T => { requireFresh(); return owner.read(read); },
+    assertReady: () => { requireFresh(); owner.assertOperationReady(); },
   });
   const api = assemblyFor<Contracts>();
   const admitted = (id: string): boolean => selections.some(selection => selection.implementationId === id);
   const assertFactoryOpen = (): void => {
+    requireFresh();
     if (!owner.isOpen()) throw new Error('factory-authority-closed');
   };
   const load = async (id: LoaderId): Promise<unknown> => {
+    requireFresh();
     if (!admitted(id) || !owner.isOpen()) throw new Error('loader-authority-closed');
     const row = rows.find(item => item.implementationId === id);
     if (!row) throw new Error('missing-loader');
     marker(`${id}:loader`);
-    const module = await row.load();
+    const module = await (options.invoke ? options.invoke(() => row.load()) : row.load());
+    requireFresh();
     if (!admitted(id) || !owner.isOpen()) throw new Error('post-import-authority-closed');
     return module;
   };
-  let constructionStarted = false;
+  let preparedSuccessfully = false;
   try {
     const a = api.bindFactory(providerA, async (deps) => {
       const mod = await load('test/provider/a');
       if (!isModule<{ create: typeof import('../fixtures/candidates/a.mjs').create }>(mod)) throw new Error('bad-export');
       assertFactoryOpen();
-      return mod.create(deps, providerPort);
+      return options.invoke ? options.invoke(() => mod.create(deps, providerPort)) : mod.create(deps, providerPort);
     });
     const b = api.bindFactory(providerB, async (deps) => {
       const mod = await load('test/provider/b');
       if (!isModule<{ create: typeof import('../fixtures/candidates/b.mjs').create }>(mod)) throw new Error('bad-export');
       assertFactoryOpen();
-      return mod.create(deps, providerPort);
+      return options.invoke ? options.invoke(() => mod.create(deps, providerPort)) : mod.create(deps, providerPort);
     });
     const w = api.bindFactory(writer, async deps => {
       const mod = await load('test/writer/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/writer.mjs').create }>(mod)) throw new Error('bad-export');
       assertFactoryOpen();
-      return mod.create(deps);
+      return options.invoke ? options.invoke(() => mod.create(deps)) : mod.create(deps);
     });
     const r = api.bindFactory(reader, async deps => {
       const mod = await load('test/reader/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/reader.mjs').create }>(mod)) throw new Error('bad-export');
       assertFactoryOpen();
-      return mod.create(deps);
+      return options.invoke ? options.invoke(() => mod.create(deps)) : mod.create(deps);
     });
     const app = api.bindFactory(root, async deps => {
       const mod = await load('test/root/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/root.mjs').create }>(mod)) throw new Error('bad-export');
       assertFactoryOpen();
-      return mod.create(deps, providerPort);
+      return options.invoke ? options.invoke(() => mod.create(deps, providerPort)) : mod.create(deps, providerPort);
     });
     const s = api.bindFactory(sentinel, async () => {
       const mod = await load('test/sentinel/main');
       if (!isModule<{ create: typeof import('../fixtures/candidates/sentinel.mjs').create }>(mod)) throw new Error('bad-export');
       assertFactoryOpen();
-      return mod.create();
+      return options.invoke ? options.invoke(() => mod.create()) : mod.create();
     });
     const selectedHandles: AnyFactoryHandle<Contracts>[] = [];
     if (admitted('test/provider/a')) selectedHandles.push(a);
@@ -129,9 +150,28 @@ export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = 
     if (admitted('test/sentinel/main')) selectedHandles.push(s);
     const prepared = await api.prepare({ composition, factories: selectedHandles, roots: { app } });
     if (prepared.status !== 'prepared') return { phase: 'preparation', code: prepared.error.code };
+    preparedSuccessfully = true;
+    return { ok: true, owner, snapshot: decision.snapshot, digest: composition.digest,
+      order: composition.plan.dependencyOrder, run: (signal: AbortSignal) => prepared.prepared.run({ signal }) };
+  } catch {
+    return { phase: 'preparation', code: 'bind-or-prepare-threw' };
+  } finally {
+    if (!preparedSuccessfully && !options.owner) await owner.close();
+  }
+}
+
+export async function runAdmission(input: unknown, rows: readonly LoaderRow[] = loaders,
+  profileEdit?: (profile: CompositionProfile) => CompositionProfile,
+  authorities: TrustedAuthorities = { inventory: candidates, grants }): Promise<RunResult> {
+  const prepared = await prepareAdmission(input, rows, profileEdit, authorities);
+  if (!('ok' in prepared)) return prepared;
+  const { owner } = prepared;
+  const composition = { digest: prepared.digest, plan: { dependencyOrder: prepared.order } };
+  let constructionStarted = false;
+  try {
     let construction;
     constructionStarted = true;
-    try { construction = await owner.construct(signal => prepared.prepared.run({ signal }),
+    try { construction = await owner.construct(signal => prepared.run(signal),
       outcome => outcome.status === 'succeeded' ? outcome.roots.app : undefined); }
     catch { return { phase: 'construction', status: 'threw', created: 0, effects: owner.effects, digest: composition.digest, order: composition.plan.dependencyOrder }; }
     const outcome = construction.raw;

@@ -19,6 +19,7 @@ const sourcePaths = ['src', 'tests', 'scripts/evidence', 'evidence/candidate-0.2
   'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'third_party',
   'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
   'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md', 'docs/lifecycle-kernel-l2c0.md',
+  'docs/lifecycle-kernel-l2c1.md',
   'docs/evidence-replay.md'];
 const commitCoversWorktree = git('status', '--porcelain', '--untracked-files=all', '--', ...sourcePaths) === '';
 function scan(path) {
@@ -33,6 +34,7 @@ for (const path of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'ts
   'third_party/pins.json', pins.consumerModuleStandard.path, pins.lifecycleKernel.path,
   'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
   'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md', 'docs/lifecycle-kernel-l2c0.md',
+  'docs/lifecycle-kernel-l2c1.md',
   'docs/evidence-replay.md'])
   files.push({ path, sha256: sha256(read(join(source, path))) });
 files.sort((a, b) => a.path.localeCompare(b.path));
@@ -91,6 +93,10 @@ if (!Number.isSafeInteger(expected.recoveryStartIndex) ||
     expected.recoveryStartIndex <= expected.lifecycleStartIndex ||
     expected.recoveryStartIndex >= expected.tests.length)
   failed('invalid recovery scenario boundary');
+if (!Number.isSafeInteger(expected.replacementStartIndex) ||
+    expected.replacementStartIndex <= expected.recoveryStartIndex ||
+    expected.replacementStartIndex >= expected.tests.length)
+  failed('invalid replacement scenario boundary');
 function checkPins(key) {
   const pin = pins[key];
   const archive = {};
@@ -259,7 +265,9 @@ function lifecycleRuns(root, pair) {
   const names = expected.tests.slice(expected.lifecycleStartIndex);
   const rows = [];
   for (const [index, name] of names.entries()) {
-    const testFile = name.startsWith('l2c0 ') ? 'tests/lifecycle/staged-exclusive-stop.test.mjs'
+    const testFile = index + expected.lifecycleStartIndex >= expected.replacementStartIndex
+      ? 'tests/lifecycle/replacement.test.mjs'
+      : name.startsWith('l2c0 ') ? 'tests/lifecycle/staged-exclusive-stop.test.mjs'
       : index + expected.lifecycleStartIndex >= expected.recoveryStartIndex
       ? 'tests/lifecycle/recovery-inventory.test.mjs'
       : name.startsWith('terminal ') ? 'tests/lifecycle/stream-terminal.test.mjs'
