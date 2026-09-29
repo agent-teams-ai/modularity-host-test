@@ -18,7 +18,7 @@ const files = [];
 const sourcePaths = ['src', 'tests', 'scripts/evidence', 'evidence/candidate-0.2',
   'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'third_party',
   'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
-  'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md',
+  'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md', 'docs/lifecycle-kernel-l2c0.md',
   'docs/evidence-replay.md'];
 const commitCoversWorktree = git('status', '--porcelain', '--untracked-files=all', '--', ...sourcePaths) === '';
 function scan(path) {
@@ -32,7 +32,7 @@ for (const path of ['src', 'tests', 'scripts/evidence', 'evidence/candidate-0.2'
 for (const path of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json',
   'third_party/pins.json', pins.consumerModuleStandard.path, pins.lifecycleKernel.path,
   'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
-  'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md',
+  'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md', 'docs/lifecycle-kernel-l2c0.md',
   'docs/evidence-replay.md'])
   files.push({ path, sha256: sha256(read(join(source, path))) });
 files.sort((a, b) => a.path.localeCompare(b.path));
@@ -259,7 +259,8 @@ function lifecycleRuns(root, pair) {
   const names = expected.tests.slice(expected.lifecycleStartIndex);
   const rows = [];
   for (const [index, name] of names.entries()) {
-    const testFile = index + expected.lifecycleStartIndex >= expected.recoveryStartIndex
+    const testFile = name.startsWith('l2c0 ') ? 'tests/lifecycle/staged-exclusive-stop.test.mjs'
+      : index + expected.lifecycleStartIndex >= expected.recoveryStartIndex
       ? 'tests/lifecycle/recovery-inventory.test.mjs'
       : name.startsWith('terminal ') ? 'tests/lifecycle/stream-terminal.test.mjs'
         : 'tests/lifecycle/lifecycle.test.mjs';
