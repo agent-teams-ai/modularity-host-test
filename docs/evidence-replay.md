@@ -42,7 +42,8 @@ cover the [H04 stream terminal checkpoint](lifecycle-kernel-h04.md). Nineteen
 additional scenarios cover the [H06/H09 fixed cohort checkpoint](lifecycle-kernel-h06-cohort.md).
 Twelve additional scenarios cover the [H13 bounded recovery inventory](lifecycle-kernel-h13-recovery.md).
 Thirteen additional scenarios cover the [L2c0 staged construction and exclusive stop](lifecycle-kernel-l2c0.md).
-They do not certify replacement or durable recovery.
+Twenty-one additional scenarios cover [L2c1 synthetic exclusive replacement](lifecycle-kernel-l2c1.md).
+They do not certify durable recovery or production replacement.
 
 The Core/Assembly 0.2.0 candidate archives were packed from clean Get Modular
 source commit `6b31f20fe3e5fb8324812aa2ee907905751cde71`. The separate

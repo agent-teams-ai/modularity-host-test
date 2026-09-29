@@ -262,9 +262,10 @@ export class TestHost<R, O extends { readonly status: string }> {
   }
 
   /** Trusted Host control plane. No stop proof is accepted from a caller. */
-  createExclusiveStop(ports: StopPorts): void {
+  createExclusiveStop(ports: StopPorts): () => boolean {
     if (!this.construction || this.construction.settled || this.exclusiveStop)
       throw new Error('exclusive-stop-refused');
+    const ticket = this.construction;
     const register = this.reserve();
     const record = new ExclusiveStopRecord(ports, callback => this.invokeStopPort(callback),
       () => activeCleanupIn(this.context.getStore(), this.retirementOperation));
@@ -275,6 +276,8 @@ export class TestHost<R, O extends { readonly status: string }> {
       if (this.resource !== record) this.exclusiveStop = undefined;
       throw cause;
     }
+    // Delivery after settlement is detached from the construction ticket.
+    return () => this.construction === ticket && !ticket.settled && this.resource === record;
   }
   exclusiveStopAttempt(): string | undefined { return this.exclusiveStop?.attemptId(); }
   reconcileExclusiveStop(attemptId: string): Promise<StopReadReceipt> {

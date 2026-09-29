@@ -21,10 +21,11 @@ export class TestRecoveryOwner {
   private readonly unresolved = new Map<string, Entry>();
   private readonly receipts = new Map<string, RecoveryReceipt>();
 
-  reserve(timer?: Clock, activationAuthority?: LiveActivationAuthority): Readonly<{ operationId: string; host: RetainedHost }> {
+  reserve<R = unknown, O extends { readonly status: string } = { readonly status: string }>(
+    timer?: Clock, activationAuthority?: LiveActivationAuthority): Readonly<{ operationId: string; host: TestHost<R, O> }> {
     if (this.unresolved.size >= UNRESOLVED_LIMIT) throw new Error('recovery-capacity-refused');
     const operationId = `test-operation-${this.nextId++}`;
-    const host = new TestHost(timer, activationAuthority);
+    const host = new TestHost<R, O>(timer, activationAuthority);
     this.unresolved.set(operationId, { host });
     host.onPhysicalCompletion(() => {
       const entry = this.unresolved.get(operationId);
