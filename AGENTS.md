@@ -3,6 +3,8 @@
 This repository exists only for the bounded Get Modular Host test stand in
 `docs/implementation-plan.md`. Read the full plan before implementation.
 
+Train 0.3.0 adoption follows `docs/train-030-plan.md`; read it before that work.
+
 - Never run agent commands, launch/provisioning, terminal runtime, task
   assignment or smoke-flow tests on real user projects. All executable test
   fixtures must stay inside this explicit TEST repository or a fresh disposable
