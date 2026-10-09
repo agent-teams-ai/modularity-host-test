@@ -177,7 +177,13 @@
     "test/sessions/store r1: round-trips a value [fake]",
     "test/sessions/store r1: returns undefined for an unknown key [fake]",
     "test/sessions/store r1: refuses an empty key [fake]",
-    "sessions: the template test file leaves no active handles"
+    "sessions: the template test file leaves no active handles",
+    "close-within: a stuck cleanup escalates, then abandons, and the Host exits 1 with an unsettled report",
+    "close-within: a cleanup that honors escalate completes before the abandon deadline",
+    "close-within: the test file leaves no active handles",
+    "process-group: SIGTERM releases a cooperative leader and grandchild",
+    "process-group: escalate sends SIGKILL to a group that ignores SIGTERM",
+    "process-group: the test file leaves no active handles"
   ],
   "lifecycleStartIndex": 38,
   "recoveryStartIndex": 118,
