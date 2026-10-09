@@ -202,6 +202,12 @@ cases and 20 focused train scenarios on Linux with Node 24.21.0. The manifest SH
 `dee2029d575212ef8fa257a3f0116b8244afed031b4057d011d290d9d358e877`. The archive holds no AppleDouble or PAX
 metadata.
 
+Release merge `bb364ac8ca461b5e8277eeb3f7867b26187f99e8` has tree `aa76e952ef8ddf753985024ba48ff88df224bd04`; the
+archive source commit `9e529d69150c1738c29d56a05de7cada60547808` has tree `af44844998d44e5d6ce3477c5bbae12ec1cf4bce`;
+the release record shows the source check of the merged commit passed. The merged tree equals the tree of the final
+release PR head `87cb92324f1de7a0b5fd5631ac46f1f58002fde2`, whose source check is recorded in
+`research/releases/0.3.0-train/release-intent.md` of get-modular; the four package trees are identical in both commits.
+
 These archives preserve evidence for the exact TEST subjects. They do not
 qualify a production consumer, arbitrary JavaScript security or Node 26.
 
