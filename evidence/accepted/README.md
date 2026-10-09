@@ -193,6 +193,15 @@ tar -xOzf evidence/accepted/4ec6f42-h13-recovery-run.tar.gz \
 
 ```
 
+`a0eee02-train030-run.tar.gz` retains the accepted `pnpm evidence` run of the train 0.3.0 adoption for clean
+source commit `a0eee0253e0e519ae23d520921cc1b92b0bce697` (tree `8cccb69a6f3e5d27243ce299642d77eda670732a`). The
+retained Core and Assembly 0.3.0, resources 0.1.0 and conformance 0.1.0 archives and the private lifecycle-kernel
+candidate passed a frozen offline install, typecheck, 184 named tests, 23 admission cases, 126 focused lifecycle
+cases and 20 focused train scenarios on Linux with Node 24.21.0. The manifest SHA-256 is
+`e1f6d915c649d4903417f05325a466140ddcffee463500fd86265d5a36b988ae`; the archive SHA-256 is
+`dee2029d575212ef8fa257a3f0116b8244afed031b4057d011d290d9d358e877`. The archive holds no AppleDouble or PAX
+metadata.
+
 These archives preserve evidence for the exact TEST subjects. They do not
 qualify a production consumer, arbitrary JavaScript security or Node 26.
 
