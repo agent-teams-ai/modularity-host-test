@@ -5,22 +5,30 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@get-modular/core': file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz
+  '@get-modular/core': file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz
+  '@get-modular/assembly': file:third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz
+  '@get-modular/resources': file:third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz
 
 importers:
 
   .:
     dependencies:
       '@get-modular/assembly':
-        specifier: file:third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz
-        version: file:third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz
+        specifier: file:third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz
+        version: file:third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz
       '@get-modular/core':
-        specifier: file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz
-        version: file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz
+        specifier: file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz
+        version: file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz
       '@get-modular/lifecycle-kernel':
         specifier: file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz
         version: file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz
+      '@get-modular/resources':
+        specifier: file:third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz
+        version: file:third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz
     devDependencies:
+      '@get-modular/conformance':
+        specifier: file:third_party/archives/train-0.3/get-modular-conformance-0.1.0.tgz
+        version: file:third_party/archives/train-0.3/get-modular-conformance-0.1.0.tgz(@get-modular/assembly@file:third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz)(@get-modular/core@file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz)(@get-modular/resources@file:third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz)
       '@types/node':
         specifier: 24.19.0
         version: 24.19.0
@@ -30,18 +38,32 @@ importers:
 
 packages:
 
-  '@get-modular/assembly@file:third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz':
-    resolution: {integrity: sha512-wxK49abnnAWLkCuI8EwL8cJENP2IfDmEm29UHi0w5t0/BL/c2IdTNbOTvQDo/8+hl0ZCJZtwqIqPZ3AnxJ7WNQ==, tarball: file:third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz}
-    version: 0.1.0
-    engines: {node: '>=24.18.0 <25'}
+  '@get-modular/assembly@file:third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz':
+    resolution: {integrity: sha512-41GrHEavrA6BHeVassm5H/Nx3Av8nNIui5ShfiiTYxios100/Fj2bXI9ZiSyz8FiLT5VMv3SEVmoiO6UcRudeA==, tarball: file:third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz}
+    version: 0.3.0
+    engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
 
-  '@get-modular/core@file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz':
-    resolution: {integrity: sha512-0aqzW7sbh7O8aAPBGJIPZBbhgeYnk+HuZdVf27dimkQ3d/zb9zpsYIMdLGt3EXi1B8MaBjw09ApzLaiIRiAgIQ==, tarball: file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz}
+  '@get-modular/conformance@file:third_party/archives/train-0.3/get-modular-conformance-0.1.0.tgz':
+    resolution: {integrity: sha512-yIxQqJd/RRIxtO3uoo3MQXNdfeMk96qjzzW3ggfxTyfg9/UDUl7qfB3nOTWVkDN+Zg/gLFY+24grd1zGUQSWmw==, tarball: file:third_party/archives/train-0.3/get-modular-conformance-0.1.0.tgz}
     version: 0.1.0
-    engines: {node: '>=24.18.0 <25'}
+    engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
+    peerDependencies:
+      '@get-modular/assembly': ^0.3.0
+      '@get-modular/core': ^0.3.0
+      '@get-modular/resources': ^0.1.0
+
+  '@get-modular/core@file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz':
+    resolution: {integrity: sha512-we9Sr1pU+mK7MPDF1tZc9b9SC+wBp0bzIeahmaESXFplILfgE16avp+j2e3Zl7mYd9LyCeQk1c21UyGkd0p8RQ==, tarball: file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz}
+    version: 0.3.0
+    engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
 
   '@get-modular/lifecycle-kernel@file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz':
     resolution: {integrity: sha512-y35QlGeQdNJBrfDT+0O65Vfwxw0vvpXZRkxfzN3nRwNo5EC+ueXuZLw+86LQty6hUYUoKLI+hFfvX5L3GSbfCA==, tarball: file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz}
+    version: 0.1.0
+    engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
+
+  '@get-modular/resources@file:third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz':
+    resolution: {integrity: sha512-sIC+ZYI196qK11Dmz9s9U/Va4UAOU5G8m9beCp3zIIbEK0fKLAWGssd4l72aS0ycRBi5AhsbKFysKS9EVVax8g==, tarball: file:third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz}
     version: 0.1.0
     engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
 
@@ -178,13 +200,21 @@ packages:
 
 snapshots:
 
-  '@get-modular/assembly@file:third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz':
+  '@get-modular/assembly@file:third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz':
     dependencies:
-      '@get-modular/core': file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz
+      '@get-modular/core': file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz
 
-  '@get-modular/core@file:third_party/archives/published-0.1/get-modular-core-0.1.0.tgz': {}
+  '@get-modular/conformance@file:third_party/archives/train-0.3/get-modular-conformance-0.1.0.tgz(@get-modular/assembly@file:third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz)(@get-modular/core@file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz)(@get-modular/resources@file:third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz)':
+    dependencies:
+      '@get-modular/assembly': file:third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz
+      '@get-modular/core': file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz
+      '@get-modular/resources': file:third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz
+
+  '@get-modular/core@file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz': {}
 
   '@get-modular/lifecycle-kernel@file:third_party/archives/lifecycle-kernel-0.1.0-candidate/get-modular-lifecycle-kernel-0.1.0.tgz': {}
+
+  '@get-modular/resources@file:third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz': {}
 
   '@types/node@24.19.0':
     dependencies:
