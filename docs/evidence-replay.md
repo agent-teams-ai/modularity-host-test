@@ -25,9 +25,9 @@ an absent marker is never presented as a zero total. The cleanup probe separatel
 records its fixture-owned disposer counter.
 `accepted` requires the archive and manifest checks against `third_party/pins.json`, the lock path and SRI of each
 archive, one installed copy per package with identical conformance peer resolution, pinned compiler typecheck,
-all named tests with no skipped or extra test, all 23 direct admission child scenarios with their expected ordered
-markers, 126 focused lifecycle executions with per-process marker logs, the focused train scenarios of the
-session template boundary (`src/sessions/`), a retained import-fence marker from the child scenario, the `prepared` distinct-root
+all 184 named tests with no skipped or extra test, all 23 direct admission child scenarios with their expected ordered
+markers, 126 focused lifecycle executions with per-process marker logs, the 20 focused train scenarios of the
+session template (`src/sessions/`) and the Host recipes (`src/adapters/`), a retained import-fence marker from the child scenario, the `prepared` distinct-root
 preparation probe, and a real Assembly construction with retained cleanup debt (terminal-debt probe). It also
 requires a committed source snapshot so the recorded Git commit and tree cover the executed files. A failed
 install leaves `pending` and exits nonzero. Archive-only replay after an install
