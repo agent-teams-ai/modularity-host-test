@@ -195,3 +195,7 @@ tar -xOzf evidence/accepted/4ec6f42-h13-recovery-run.tar.gz \
 
 These archives preserve evidence for the exact TEST subjects. They do not
 qualify a production consumer, arbitrary JavaScript security or Node 26.
+
+Retired subjects. TEST-1 retired the live replays of the published 0.1.0 pair and the candidate 0.2.0 pair.
+Their archives, the candidate manifest and lock remain in Git history at commit
+`f7b578c83cb6a40b66519e555882682e2b4dd965`; the accepted runs above keep their manifests and hashes.

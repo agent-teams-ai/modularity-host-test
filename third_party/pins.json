@@ -16,33 +16,35 @@
     "sha256": "c1f047fa0ce7396fa2430b4043524656dfe98dc0f8b5950749af9bf764238c8b",
     "sri": "sha512-y35QlGeQdNJBrfDT+0O65Vfwxw0vvpXZRkxfzN3nRwNo5EC+ueXuZLw+86LQty6hUYUoKLI+hFfvX5L3GSbfCA=="
   },
-  "publishedPair": {
-    "version": "0.1.0",
-    "origin": "npm-published-archives",
-    "core": {
-      "path": "third_party/archives/published-0.1/get-modular-core-0.1.0.tgz",
-      "sha256": "50803ea69e2fb4078013a897f858908b4d73d26296336ab155a6118809dfb8ba",
-      "sri": "sha512-0aqzW7sbh7O8aAPBGJIPZBbhgeYnk+HuZdVf27dimkQ3d/zb9zpsYIMdLGt3EXi1B8MaBjw09ApzLaiIRiAgIQ=="
-    },
-    "assembly": {
-      "path": "third_party/archives/published-0.1/get-modular-assembly-0.1.0.tgz",
-      "sha256": "e89207171e44afd5e813aa5e7a0db8abc999b42338559d38b44b4db71da228ab",
-      "sri": "sha512-wxK49abnnAWLkCuI8EwL8cJENP2IfDmEm29UHi0w5t0/BL/c2IdTNbOTvQDo/8+hl0ZCJZtwqIqPZ3AnxJ7WNQ=="
-    }
-  },
-  "candidatePair": {
-    "version": "0.2.0",
-    "origin": "packed-from-clean-source-commit",
-    "sourceCommit": "6b31f20fe3e5fb8324812aa2ee907905751cde71",
-    "core": {
-      "path": "third_party/archives/candidate-0.2/get-modular-core-0.2.0.tgz",
-      "sha256": "c7fe3bdd549b206880be9c7a39beb9e0c422345840de61bde031d8515f2c7468",
-      "sri": "sha512-DkMbu55KnIeOEcwTsjA5uhJuoDiXWxGiSuUz66G83H7hodtKu1dffJPZOx4uktRHTbt183wYfoXk8SiHhoUp6A=="
-    },
-    "assembly": {
-      "path": "third_party/archives/candidate-0.2/get-modular-assembly-0.2.0.tgz",
-      "sha256": "ec0a636619c0cf19d049966879ebb575da8dd1e003463b93e193eb80ce4171e2",
-      "sri": "sha512-AO94ss0PMjKFSNJvQkDEA4IKhuH+w2aBzJUvPm+g4UanTmvcKi1ilVD/RzAKGgn68gV8O8bVpUUvO11Kx3j9Bw=="
+  "trainSet": {
+    "origin": "retained-release-archives",
+    "sourceCommit": "9e529d69150c1738c29d56a05de7cada60547808",
+    "sourceTree": "af44844998d44e5d6ce3477c5bbae12ec1cf4bce",
+    "packages": {
+      "core": {
+        "version": "0.3.0",
+        "path": "third_party/archives/train-0.3/get-modular-core-0.3.0.tgz",
+        "sha256": "bd84c087c7d6842907d08a1a2f6dc0afd250e297f9456e0f77b87630e0f5093e",
+        "sri": "sha512-we9Sr1pU+mK7MPDF1tZc9b9SC+wBp0bzIeahmaESXFplILfgE16avp+j2e3Zl7mYd9LyCeQk1c21UyGkd0p8RQ=="
+      },
+      "assembly": {
+        "version": "0.3.0",
+        "path": "third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz",
+        "sha256": "3a4312465485269971db08efb10759fb3a3d4d23266c7f5d9fe8069b4bb411c8",
+        "sri": "sha512-41GrHEavrA6BHeVassm5H/Nx3Av8nNIui5ShfiiTYxios100/Fj2bXI9ZiSyz8FiLT5VMv3SEVmoiO6UcRudeA=="
+      },
+      "resources": {
+        "version": "0.1.0",
+        "path": "third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz",
+        "sha256": "1172c89d9f863d0e1763293eb6153d0835c609fc01ea730004fcee293872cc7a",
+        "sri": "sha512-sIC+ZYI196qK11Dmz9s9U/Va4UAOU5G8m9beCp3zIIbEK0fKLAWGssd4l72aS0ycRBi5AhsbKFysKS9EVVax8g=="
+      },
+      "conformance": {
+        "version": "0.1.0",
+        "path": "third_party/archives/train-0.3/get-modular-conformance-0.1.0.tgz",
+        "sha256": "7923297944b83ee7a800742aac8474aae42e8708d8ca166fa7ce3f80fe6e0039",
+        "sri": "sha512-yIxQqJd/RRIxtO3uoo3MQXNdfeMk96qjzzW3ggfxTyfg9/UDUl7qfB3nOTWVkDN+Zg/gLFY+24grd1zGUQSWmw=="
+      }
     }
   }
 }
