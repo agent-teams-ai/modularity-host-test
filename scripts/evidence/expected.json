@@ -163,7 +163,21 @@
     "external old readback and retry callbacks see replacement self-wait",
     "external candidate readback callback sees replacement self-wait",
     "external rollback readback callback sees replacement self-wait",
-    "detached observer after settled stop callback is an independent deadline observer"
+    "detached observer after settled stop callback is an independent deadline observer",
+    "sessions: 1000 concurrent sessions of one prepared template release only their own records",
+    "sessions: a failure at test/sessions/store/memory releases its attempt in reverse order",
+    "sessions: a failure at test/sessions/cache/default releases its attempt in reverse order",
+    "sessions: a failure at test/sessions/session/default releases its attempt in reverse order",
+    "sessions: smoke fails and aborts every module and every attempt closes complete",
+    "sessions: a run without its declared inputs fails before any factory",
+    "sessions: isolate builds the cache against the store fake and releases it",
+    "test/sessions/store r1: round-trips a value [memory]",
+    "test/sessions/store r1: returns undefined for an unknown key [memory]",
+    "test/sessions/store r1: refuses an empty key [memory]",
+    "test/sessions/store r1: round-trips a value [fake]",
+    "test/sessions/store r1: returns undefined for an unknown key [fake]",
+    "test/sessions/store r1: refuses an empty key [fake]",
+    "sessions: the template test file leaves no active handles"
   ],
   "lifecycleStartIndex": 38,
   "recoveryStartIndex": 118,
@@ -192,5 +206,6 @@
     "reverse-many",
     "rejecting-reader"
   ],
-  "replacementStartIndex": 143
+  "replacementStartIndex": 143,
+  "trainStartIndex": 164
 }

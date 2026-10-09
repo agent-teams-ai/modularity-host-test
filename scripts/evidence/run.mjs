@@ -11,6 +11,11 @@ const id = new Date().toISOString().replace(/[:.]/g, '-') + '-' + process.pid;
 const out = join(source, 'evidence/runs', id);
 mkdirSync(out, { recursive: true });
 const scratch = realpathSync(mkdtempSync(join(tmpdir(), 'modularity-host-test-evidence-')));
+// node --test-name-pattern is a regular expression; suite names end with " [subject]".
+const exactName = name => `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`;
+const trainFile = name => name.startsWith('close-within: ') ? 'tests/sessions/close-within.test.mjs'
+  : name.startsWith('process-group: ') ? 'tests/sessions/process-group.test.mjs'
+    : 'tests/sessions/template.test.mjs';
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const sri = bytes => 'sha512-' + createHash('sha512').update(bytes).digest('base64');
 const read = path => readFileSync(path);
@@ -102,6 +107,10 @@ if (!Number.isSafeInteger(expected.replacementStartIndex) ||
     expected.replacementStartIndex <= expected.recoveryStartIndex ||
     expected.replacementStartIndex >= expected.tests.length)
   failed('invalid replacement scenario boundary');
+if (!Number.isSafeInteger(expected.trainStartIndex) ||
+    expected.trainStartIndex <= expected.replacementStartIndex ||
+    expected.trainStartIndex >= expected.tests.length)
+  failed('invalid train scenario boundary');
 const TRAIN = ['core', 'assembly', 'resources', 'conformance'];
 const TRAIN_ENGINES = '>=24.18.0 <25 || >=26.10.0 <27';
 // Compare records without key order: pnpm pack writes conformance peers in varying order.
@@ -283,7 +292,7 @@ function admissionChildren(root, pair) {
   return rows;
 }
 function lifecycleRuns(root, pair) {
-  const names = expected.tests.slice(expected.lifecycleStartIndex);
+  const names = expected.tests.slice(expected.lifecycleStartIndex, expected.trainStartIndex);
   const rows = [];
   for (const [index, name] of names.entries()) {
     const testFile = index + expected.lifecycleStartIndex >= expected.replacementStartIndex
@@ -294,7 +303,7 @@ function lifecycleRuns(root, pair) {
       : name.startsWith('terminal ') ? 'tests/lifecycle/stream-terminal.test.mjs'
         : 'tests/lifecycle/lifecycle.test.mjs';
     const cmd = command(root, `${pair}.lifecycle.${rows.length + 1}`, process.execPath,
-      ['--test', '--test-reporter=tap', `--test-name-pattern=^${name}$`,
+      ['--test', '--test-reporter=tap', `--test-name-pattern=${exactName(name)}`,
         testFile], 30000, { TEST_PRESERVE_MARKERS: '1' });
     const totals = Object.fromEntries([...cmd.text.matchAll(/^# (tests|pass|fail|cancelled|skipped|todo) (\d+)$/gm)]
       .map(([, key, count]) => [key, Number(count)]));
@@ -306,6 +315,23 @@ function lifecycleRuns(root, pair) {
     const events = cmd.markerFiles.flatMap(file => file.orderedEvents);
     rows.push({ id: name, expected: 'pass', actual, totals,
       markerFiles: cmd.markerFiles, markerCounts: markerCountsOf(events, false), command: { ...cmd, text: undefined } });
+  }
+  return rows;
+}
+function trainRuns(root, pair) {
+  const names = expected.tests.slice(expected.trainStartIndex);
+  const rows = [];
+  for (const name of names) {
+    const cmd = command(root, `${pair}.train.${rows.length + 1}`, process.execPath,
+      ['--test', '--test-reporter=tap', `--test-name-pattern=${exactName(name)}`, trainFile(name)], 60000);
+    const totals = Object.fromEntries([...cmd.text.matchAll(/^# (tests|pass|fail|cancelled|skipped|todo) (\d+)$/gm)]
+      .map(([, key, count]) => [key, Number(count)]));
+    const actual = cmd.exitCode === 0 && cmd.text.split('\n').some(line =>
+      line.startsWith('ok ') && line.endsWith(` - ${name}`)) ? 'pass' : 'fail';
+    if (actual !== 'pass' || totals.tests !== 1 || totals.pass !== 1 || totals.fail !== 0 ||
+        totals.skipped !== 0 || totals.cancelled !== 0 || totals.todo !== 0)
+      failed(`${pair}: focused train scenario ${name} did not run exactly once`);
+    rows.push({ id: name, expected: 'pass', actual, totals, command: { ...cmd, text: undefined } });
   }
   return rows;
 }
@@ -398,6 +424,7 @@ try {
       delete pair.test.text;
       pair.admission = admissionChildren(root, label);
       pair.lifecycle = lifecycleRuns(root, label);
+      pair.train = trainRuns(root, label);
       pair.importFence = importFence(root, label);
       pair.distinctRoot = probe(root, label, 'distinct-root-probe', { phase: 'preparation', status: 'prepared' });
       pair.terminalDebt = probe(root, label, 'terminal-debt-probe', {
@@ -430,6 +457,7 @@ try {
       delete pair.archiveOnlyTest.text;
       pair.archiveOnlyAdmission = admissionChildren(diagnostic, `${label}.archive-only`);
       pair.archiveOnlyLifecycle = lifecycleRuns(diagnostic, `${label}.archive-only`);
+      pair.archiveOnlyTrain = trainRuns(diagnostic, `${label}.archive-only`);
       pair.archiveOnlyImportFence = importFence(diagnostic, `${label}.archive-only`);
       pair.archiveOnlyTerminalDebt = probe(diagnostic, `${label}.archive-only`, 'terminal-debt-probe', {
         construction: 'published', raw: 'succeeded', terminal: 'cleanup-incomplete',
