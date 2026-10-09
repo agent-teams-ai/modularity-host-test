@@ -1,9 +1,12 @@
 {
-  "getModularSourceCommit": "24d6557a1b04b01a3a73c64b1d9a9afd83d89c8f",
+  "getModularSourceCommit": "81063add7de50ffe2b91cc74bf7271b298624c21",
   "consumerModuleStandard": {
+    "repository": "agent-teams-ai/get-modular",
     "path": "third_party/standards/common-assembly.md",
     "sourcePath": "docs/architecture/common-assembly.md",
-    "sha256": "33b41d5babf0a431c97e8e596a56e6ec1557ba1a0b26d39bf23e13d9a19e1fbd"
+    "anchor": "consumer-module-standard",
+    "acceptingDecision": "ADR-0026",
+    "sha256": "49d08b6d1762e94308157fb59b3aa82ac1630c91f529f6efcd4915dfffee7ba7"
   },
   "lifecycleKernel": {
     "version": "0.1.0",
