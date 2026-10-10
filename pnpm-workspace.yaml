@@ -2,6 +2,6 @@ packages:
   - .
 
 overrides:
-  '@get-modular/core': file:third_party/archives/train-0.3/get-modular-core-0.3.0.tgz
-  '@get-modular/assembly': file:third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz
-  '@get-modular/resources': file:third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz
+  '@get-modular/core': file:third_party/archives/prepare-pr163-c14294a/get-modular-core-0.3.0.tgz
+  '@get-modular/assembly': file:third_party/archives/prepare-pr163-c14294a/get-modular-assembly-0.3.0.tgz
+  '@get-modular/resources': file:third_party/archives/prepare-pr163-c14294a/get-modular-resources-0.1.0.tgz
