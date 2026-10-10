@@ -11,3 +11,4 @@ coverage/
 .corepack/
 .agents/
 evidence/runs/
+!third_party/archives/prepare-pr163-c14294a/get-modular-*.tgz
