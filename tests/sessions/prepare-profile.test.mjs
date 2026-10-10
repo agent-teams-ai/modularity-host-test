@@ -118,7 +118,8 @@ test('prepare: the fake in place of the memory store passes preparation and the 
   assert.deepEqual(h.calls, []);
   const { bindings } = preparation.composition.plan;
   assert.equal(bindings.length, 6);
-  // The two consumers of the store are rewired to the fake; the memory store's own two rows leave the plan with it.
+  // Four rows, not two: the two consumers are rewired to the fake, and the memory store's own two rows leave the plan with it.
+  // A missing row is a wiring change too, so the oracle compares the whole table.
   assert.deepEqual(oracleDiff(bindings), [
     `changed ${CACHE}#store`, `changed ${ROOT}#store`, `missing ${STORE}#journal`, `missing ${STORE}#session`,
   ]);
