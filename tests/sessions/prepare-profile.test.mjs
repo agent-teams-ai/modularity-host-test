@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { isDeepStrictEqual } from 'node:util';
 import { assemblyFor } from '@get-modular/assembly';
-import { scoped } from '@get-modular/resources';
+import { createScope, scoped } from '@get-modular/resources';
 import { composeSessions } from '../../src/sessions/compose.ts';
 import { cacheDeclaration, createCache } from '../../src/sessions/cache.ts';
 import { journalInput, sessionInput } from '../../src/sessions/inputs.ts';
@@ -89,13 +89,12 @@ test('prepare: a fake beside the memory store is unresolved for both store slots
   assert.equal(preparation.status, 'failed');
   assert.equal(preparation.error.code, 'assembly.prepare.unresolved-binding');
   assert.deepEqual(preparation.diagnostics, []);
-  assert.deepEqual(preparation.error.cause.map(slot => ({ ...slot })).sort((a, b) => key2(a).localeCompare(key2(b))), [
+  assert.deepEqual(preparation.error.cause.map(slot => ({ ...slot })).sort((a, b) => key(a).localeCompare(key(b))), [
     { consumerImplementationId: CACHE, slotId: 'store', capabilityId: 'test/sessions/store', cardinality: 'required', candidates },
     { consumerImplementationId: ROOT, slotId: 'store', capabilityId: 'test/sessions/store', cardinality: 'required', candidates },
   ]);
   assert.deepEqual(h.calls, []);
 });
-const key2 = slot => `${slot.consumerImplementationId}#${slot.slotId}`;
 
 // Regression: a missing provider falls through to a Core diagnostic or a runtime failure instead of a prepare-time list.
 test('prepare: without the memory store both store slots are unresolved with zero candidates', async () => {
@@ -103,7 +102,8 @@ test('prepare: without the memory store both store slots are unresolved with zer
   const preparation = await prepare(h, []);
   assert.equal(preparation.status, 'failed');
   assert.equal(preparation.error.code, 'assembly.prepare.unresolved-binding');
-  assert.deepEqual(preparation.error.cause.map(slot => ({ ...slot })).sort((a, b) => key2(a).localeCompare(key2(b))), [
+  assert.deepEqual(preparation.diagnostics, []);
+  assert.deepEqual(preparation.error.cause.map(slot => ({ ...slot })).sort((a, b) => key(a).localeCompare(key(b))), [
     { consumerImplementationId: CACHE, slotId: 'store', capabilityId: 'test/sessions/store', cardinality: 'required', candidates: [] },
     { consumerImplementationId: ROOT, slotId: 'store', capabilityId: 'test/sessions/store', cardinality: 'required', candidates: [] },
   ]);
@@ -115,7 +115,7 @@ test('prepare: the fake in place of the memory store passes preparation and the 
   const h = harness();
   const preparation = await prepare(h, [h.fake()]);
   assert.equal(preparation.status, 'prepared');
-  assert.deepEqual(h.calls, []);
+  assert.deepEqual(h.calls, [], 'preparation never calls a factory');
   const { bindings } = preparation.composition.plan;
   assert.equal(bindings.length, 6);
   // Four rows, not two: the two consumers are rewired to the fake, and the memory store's own two rows leave the plan with it.
@@ -124,5 +124,11 @@ test('prepare: the fake in place of the memory store passes preparation and the 
     `changed ${CACHE}#store`, `changed ${ROOT}#store`, `missing ${STORE}#journal`, `missing ${STORE}#session`,
   ]);
   const rewired = bindings.filter(binding => binding.slotId === 'store').map(binding => [key(binding), binding.providerImplementationIds]);
-  assert.deepEqual(rewired.sort(), [[`${CACHE}#store`, [FAKE]], [`${ROOT}#store`, [FAKE]]]);
+  assert.deepEqual(rewired.sort(), [[`${CACHE}#store`, [FAKE]], [`${ROOT}#store`, [FAKE]]]);  // Zero calls above prove nothing alone: running the prepared composition shows the counter does record factories.
+  const attempt = createScope({ name: 'attempt' });
+  const outcome = await preparation.prepared.run({ scope: attempt.resources,
+    inputs: { journal: { 'test/sessions/journal': { append: () => {} } }, session: { 'test/sessions/session-id': { id: 'counter' } } } });
+  assert.equal(outcome.status, 'succeeded');
+  assert.deepEqual(h.calls, [FAKE, CACHE, ROOT]);
+  assert.deepEqual(await attempt.control.close(), { complete: true, settled: true, debts: [] });
 });
