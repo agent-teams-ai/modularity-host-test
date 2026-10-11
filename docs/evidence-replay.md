@@ -1,13 +1,26 @@
 # Train 0.3.0 TEST evidence replay
 
-Run under Node 24.18.0 or 24.21.0 and pnpm 11.20.0 in this TEST repository:
+Run under the default Node 26.11.1 and pinned pnpm 11.20.0 in this TEST repository.
+Node 24.18.0 and 24.21.0 remain compatibility replay binaries:
 
 ```sh
-pnpm install --frozen-lockfile --offline
+pnpm install --frozen-lockfile --offline --engine-strict
 pnpm typecheck
 pnpm test
 pnpm evidence
 ```
+
+The owner authorized this default migration on 2026-10-11, superseding the Node 24
+default and Node 26 exclusions in earlier plans for current execution. The retained
+train checkpoint and retired pair receipts retain their original scope. Every
+currently pinned Get Modular archive, including the private lifecycle-kernel,
+declares `>=24.18.0 <25 || >=26.10.0 <27`. The consumer admits Node 26 from
+26.11.1 and preserves its Node 24 engine branch. This does not qualify other
+patches, dependency cohorts or production Hosts.
+
+The current CI workflow checks commit identity and has no Node runtime selection;
+it provides no runtime test result. Full evidence still requires a committed
+source snapshot; a diagnostic run of an uncommitted migration remains `pending`.
 
 `pnpm evidence` creates one disposable replay root in the system temporary directory, outside this repository,
 so module resolution cannot walk up into a developer's own `node_modules`. The root installs the four retained

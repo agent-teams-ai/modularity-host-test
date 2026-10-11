@@ -23,7 +23,7 @@ const read = path => readFileSync(path);
 const git = (...args) => execFileSync('git', args, { cwd: source, encoding: 'utf8' }).trim();
 const files = [];
 const sourcePaths = ['src', 'tests', 'scripts/evidence',
-  'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'third_party',
+  '.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'third_party',
   'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
   'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md', 'docs/lifecycle-kernel-l2c0.md',
   'docs/lifecycle-kernel-l2c1.md',
@@ -37,7 +37,7 @@ function scan(path) {
   }
 }
 for (const path of ['src', 'tests', 'scripts/evidence']) scan(path);
-for (const path of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json',
+for (const path of ['.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json',
   'third_party/pins.json', pins.consumerModuleStandard.path, pins.lifecycleKernel.path,
   'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
   'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md', 'docs/lifecycle-kernel-l2c0.md',
@@ -59,7 +59,7 @@ const report = {
   environment: { node: process.version, platform: process.platform, pnpm: null, typescript: null },
   limits: [
     'Synthetic fixed TEST Host only; no Agent Runtime, Extension Foundation, OpenClaw, or production conformance.',
-    'No arbitrary JavaScript sandbox, physical effect cancellation, crash recovery, Windows, or Node 26 support.',
+    'No arbitrary JavaScript sandbox, physical effect cancellation, crash recovery, Windows, or Node support beyond the exact recorded replay binary.',
     'Core/Assembly 0.4.0, resources 0.1.0 and conformance 0.2.0 are retained release archives packed before npm publication; this run is not publication evidence.',
     'The lifecycle-kernel 0.1.0 archive is a separately packed private candidate.',
     'The process-group recipe is proven only for a cooperative two-level POSIX tree that stays in its group.',
@@ -163,7 +163,7 @@ function copyTestRoot(destination) {
     cpSync(join(source, path), join(destination, path), { recursive: true,
       filter: name => !name.includes('/.scenarios') });
   cpSync(join(source, 'tsconfig.json'), join(destination, 'tsconfig.json'));
-  for (const path of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'])
+  for (const path of ['.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'])
     cpSync(join(source, path), join(destination, path));
   // pnpm 11's default release-age policy queries registry metadata even with --offline.
   // Only the disposable replay copy receives this overlay; archive SRI and lock stay exact.
@@ -364,8 +364,8 @@ try {
   if (!report.source.commitCoversWorktree)
     failed('source worktree is uncommitted; baseline commit/tree do not cover executed source snapshot');
   if (report.standard.sha256 !== pins.consumerModuleStandard.sha256) failed('CMS copy hash differs from pin');
-  // Both exact Node patches are inside the immutable Core/Assembly and kernel engine ranges.
-  if (!['v24.18.0', 'v24.21.0'].includes(process.version)) failed(`unreviewed Node binary ${process.version}`);
+  // Exact default and compatibility binaries are inside every pinned archive engine range.
+  if (!['v24.18.0', 'v24.21.0', 'v26.11.1'].includes(process.version)) failed(`unreviewed Node binary ${process.version}`);
   report.lifecycleKernel.archive = checkKernelPin();
   const pnpmVersion = command(source, 'pnpm-version', 'pnpm', ['--version']);
   report.environment.pnpm = pnpmVersion.text.trim();
