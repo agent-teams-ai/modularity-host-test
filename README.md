@@ -1,7 +1,7 @@
 # Modularity Host TEST
 
 An isolated consumer of Get Modular Core, Assembly, resources and
-conformance (train 0.3.0). The stand tests admission
+conformance (train 0.4.0). The stand tests admission
 before executable import and one Host's lifecycle ownership using fixed,
 synthetic in-memory fixtures. It does not qualify a production Host, arbitrary
 plugin code, Agent Runtime ownership checkpoints, or Node versions outside the

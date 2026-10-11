@@ -214,3 +214,7 @@ qualify a production consumer, arbitrary JavaScript security or Node 26.
 Retired subjects. TEST-1 retired the live replays of the published 0.1.0 pair and the candidate 0.2.0 pair.
 Their archives, the candidate manifest and lock remain in Git history at commit
 `f7b578c83cb6a40b66519e555882682e2b4dd965`; the accepted runs above keep their manifests and hashes.
+
+The train-0.3 archives (Core and Assembly 0.3.0, resources and conformance 0.1.0) are retired the same way when the
+0.4.0 train replaced them. They remain in Git history at commit
+`4501de4c0439cbb8e242c69354e29188360178ce`; the accepted runs above keep their manifests and hashes.
