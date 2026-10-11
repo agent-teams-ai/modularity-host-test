@@ -18,32 +18,32 @@
   },
   "trainSet": {
     "origin": "retained-release-archives",
-    "sourceCommit": "9e529d69150c1738c29d56a05de7cada60547808",
-    "sourceTree": "af44844998d44e5d6ce3477c5bbae12ec1cf4bce",
+    "sourceCommit": "269f02c67aa0091d12c3f47a3cec4cb52bb2720d",
+    "sourceTree": "0db42a5187f2d228cc71e714c6dc610fb12ad9d5",
     "packages": {
       "core": {
-        "version": "0.3.0",
-        "path": "third_party/archives/train-0.3/get-modular-core-0.3.0.tgz",
-        "sha256": "bd84c087c7d6842907d08a1a2f6dc0afd250e297f9456e0f77b87630e0f5093e",
-        "sri": "sha512-we9Sr1pU+mK7MPDF1tZc9b9SC+wBp0bzIeahmaESXFplILfgE16avp+j2e3Zl7mYd9LyCeQk1c21UyGkd0p8RQ=="
+        "version": "0.4.0",
+        "path": "third_party/archives/train-0.4/get-modular-core-0.4.0.tgz",
+        "sha256": "b986c8f1e8b7e08da695e6991016a6eda8587dfff6835a96da8af26aa86bc358",
+        "sri": "sha512-AzQWfqj/lHZz7C391hQo5ruM/1B8m7YnW+VQ6V4cAsnTANhw2VDKvHz4oLRcptT12LyMsvEY29OJbJqkrc3YGg=="
       },
       "assembly": {
-        "version": "0.3.0",
-        "path": "third_party/archives/train-0.3/get-modular-assembly-0.3.0.tgz",
-        "sha256": "3a4312465485269971db08efb10759fb3a3d4d23266c7f5d9fe8069b4bb411c8",
-        "sri": "sha512-41GrHEavrA6BHeVassm5H/Nx3Av8nNIui5ShfiiTYxios100/Fj2bXI9ZiSyz8FiLT5VMv3SEVmoiO6UcRudeA=="
+        "version": "0.4.0",
+        "path": "third_party/archives/train-0.4/get-modular-assembly-0.4.0.tgz",
+        "sha256": "8aaa5810a2a5ac11b6f63bcd1d81c38c8f1cb06a3b58379ca1471ccdf985b3dd",
+        "sri": "sha512-8gCPsPPy1uv3fngKTMmy5BEDDW2S9Afn1hzBs8ICtEOn8Oc1bJ9XTQiuSopH23TGN1W369ez9396jEa+KXaLzw=="
       },
       "resources": {
         "version": "0.1.0",
-        "path": "third_party/archives/train-0.3/get-modular-resources-0.1.0.tgz",
+        "path": "third_party/archives/train-0.4/get-modular-resources-0.1.0.tgz",
         "sha256": "1172c89d9f863d0e1763293eb6153d0835c609fc01ea730004fcee293872cc7a",
         "sri": "sha512-sIC+ZYI196qK11Dmz9s9U/Va4UAOU5G8m9beCp3zIIbEK0fKLAWGssd4l72aS0ycRBi5AhsbKFysKS9EVVax8g=="
       },
       "conformance": {
-        "version": "0.1.0",
-        "path": "third_party/archives/train-0.3/get-modular-conformance-0.1.0.tgz",
-        "sha256": "7923297944b83ee7a800742aac8474aae42e8708d8ca166fa7ce3f80fe6e0039",
-        "sri": "sha512-yIxQqJd/RRIxtO3uoo3MQXNdfeMk96qjzzW3ggfxTyfg9/UDUl7qfB3nOTWVkDN+Zg/gLFY+24grd1zGUQSWmw=="
+        "version": "0.2.0",
+        "path": "third_party/archives/train-0.4/get-modular-conformance-0.2.0.tgz",
+        "sha256": "0708bc299d1015d9c6d2c14ca827b2fd27f47cc749e11cbb847c0190780eda61",
+        "sri": "sha512-2DFUfAVsNc/VlDKeAt7iTtkQZopDeu5eiKl9EESr35nvfduIwwd0bdmKuOm3u3Iodeiv74kOv69InrEbfmQ9FA=="
       }
     }
   }

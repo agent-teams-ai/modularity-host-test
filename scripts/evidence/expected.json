@@ -183,7 +183,12 @@
     "close-within: the test file leaves no active handles",
     "process-group: SIGTERM releases a cooperative leader and grandchild",
     "process-group: escalate sends SIGKILL to a group that ignores SIGTERM",
-    "process-group: the test file leaves no active handles"
+    "process-group: the test file leaves no active handles",
+    "prepare: the template composition root completes all 8 rows, equal to the hand-written table",
+    "prepare: the oracle detects a changed, a missing and an unexpected row",
+    "prepare: a fake beside the memory store is unresolved for both store slots, with zero factory calls",
+    "prepare: without the memory store both store slots are unresolved with zero candidates",
+    "prepare: the fake in place of the memory store passes preparation and the oracle rejects the rows it changes"
   ],
   "lifecycleStartIndex": 38,
   "recoveryStartIndex": 118,

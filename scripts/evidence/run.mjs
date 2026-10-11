@@ -15,7 +15,8 @@ const scratch = realpathSync(mkdtempSync(join(tmpdir(), 'modularity-host-test-ev
 const exactName = name => `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`;
 const trainFile = name => name.startsWith('close-within: ') ? 'tests/sessions/close-within.test.mjs'
   : name.startsWith('process-group: ') ? 'tests/sessions/process-group.test.mjs'
-    : 'tests/sessions/template.test.mjs';
+    : name.startsWith('prepare: ') ? 'tests/sessions/prepare-profile.test.mjs'
+      : 'tests/sessions/template.test.mjs';
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const sri = bytes => 'sha512-' + createHash('sha512').update(bytes).digest('base64');
 const read = path => readFileSync(path);
@@ -59,7 +60,7 @@ const report = {
   limits: [
     'Synthetic fixed TEST Host only; no Agent Runtime, Extension Foundation, OpenClaw, or production conformance.',
     'No arbitrary JavaScript sandbox, physical effect cancellation, crash recovery, Windows, or Node 26 support.',
-    'Core/Assembly 0.3.0, resources 0.1.0 and conformance 0.1.0 are retained release archives packed before npm publication; this run is not publication evidence.',
+    'Core/Assembly 0.4.0, resources 0.1.0 and conformance 0.2.0 are retained release archives packed before npm publication; this run is not publication evidence.',
     'The lifecycle-kernel 0.1.0 archive is a separately packed private candidate.',
     'The process-group recipe is proven only for a cooperative two-level POSIX tree that stays in its group.',
     'Archive-only diagnostic replay is not an accepted frozen-lock installation or typecheck gate.',
@@ -369,7 +370,7 @@ try {
   const pnpmVersion = command(source, 'pnpm-version', 'pnpm', ['--version']);
   report.environment.pnpm = pnpmVersion.text.trim();
   if (pnpmVersion.exitCode !== 0 || report.environment.pnpm !== '11.20.0') failed('pnpm 11.20.0 unavailable');
-  for (const [, label] of [['trainSet', 'train-0.3']]) {
+  for (const [, label] of [['trainSet', 'train-0.4']]) {
     const root = join(temp, label);
     const pair = report.pairs[label] = { origin: pins.trainSet.origin,
       sourceCommit: pins.trainSet.sourceCommit, sourceTree: pins.trainSet.sourceTree, pins: checkTrainSet(),
