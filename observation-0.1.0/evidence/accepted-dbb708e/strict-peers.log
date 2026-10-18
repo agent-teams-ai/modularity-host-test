@@ -1,0 +1,2 @@
+$ pnpm peers check --lockfile-only
+No peer dependency issues found

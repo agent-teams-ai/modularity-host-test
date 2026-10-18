@@ -6,17 +6,24 @@ qualification archives are separate inputs and are not used by this fixture.
 
 ## Current checkpoint
 
-The exact inputs are prepared from Get Modular commit `b2815314182221baac6b08750f86ef2644d2cdb8`: Core and Assembly
+The exact inputs are prepared from Get Modular commit `d345e14970eca4ed1c69831d2a59f4754da0b0e9`: Core and Assembly
 0.6.0, resources 0.2.0, conformance 0.4.0 and observation 0.1.0. Observation's actual resources peer is `^0.2.0`.
-The five archive hashes, copied writer inputs and isolated lockfile are retained here. Offline installation and
-frozen-lockfile reproduction passed with strict engine and peer checks. Full qualification passed on committed
-consumer source `972dc2b9dfe9470a5e34ed4f28d75ecfc0fbec73`, on Linux x64 with Node 24.21.0 and 26.11.1 and TypeScript
-7.0.2 in NodeNext and Bundler modes. Both runtime rows and all 33 writer tasks passed their exact gates; the single
-smoke passed all 11 construction/injection rows. See the [accepted execution record](evidence/accepted-972dc2b/RECORD.md)
-and its [machine-readable result](evidence/accepted-972dc2b/result.json).
+The five archive hashes, copied writer inputs and isolated lockfile are retained here. A fresh offline lock install
+and frozen-lockfile reproduction passed with strict engine and peer checks. Full qualification passed on committed
+consumer source `dbb708e97a9cb20afe959d06dd85460fa0bf1349`, on Linux x64 with Node 24.21.0 and 26.11.1 and TypeScript
+7.0.2 in NodeNext and Bundler modes. Each Node executed five runtime predicates and all 33 writer tasks with their
+unchanged expected gates; the single smoke passed all 11 construction/injection rows. See the
+[accepted execution record](evidence/accepted-dbb708e/RECORD.md) and its
+[machine-readable result](evidence/accepted-dbb708e/result.json).
 
-The accepted run retains its exact input pins, lockfile, copied writer inputs, consumer source and result record in
-this directory. A source or fixture correction requires recording the affected evidence again.
+This candidate includes the independently verified loader-await context correction. Four archive hashes are
+unchanged from the preceding set; observation has new bytes. All five archives were packed from the same new
+candidate, and the existing consumer executable source and semantic oracles were unchanged for this execution.
+
+The prior result on consumer `972dc2b9dfe9470a5e34ed4f28d75ecfc0fbec73` and candidate
+`b2815314182221baac6b08750f86ef2644d2cdb8` remains byte-identical under
+[evidence/accepted-972dc2b](evidence/accepted-972dc2b/RECORD.md). It describes that earlier input set separately.
+A later source or fixture correction requires recording the affected evidence again.
 
 ## Inputs and commands
 

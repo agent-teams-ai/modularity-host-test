@@ -1,0 +1,5 @@
+$ pnpm core:build && node architecture/tooling/build-assembly.mjs
+$ node architecture/tooling/build-core.mjs
+$ node architecture/tooling/build-leaf-package.mjs resources
+$ node architecture/tooling/build-leaf-package.mjs conformance
+$ node architecture/tooling/build-leaf-package.mjs observation

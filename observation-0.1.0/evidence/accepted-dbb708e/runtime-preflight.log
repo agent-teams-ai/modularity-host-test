@@ -1,0 +1,2 @@
+$ node architecture/checks/node-version.mjs
+Node 26.11.1 satisfies tooling >=24.21.0 <25 || >=26.10.0 <27.
