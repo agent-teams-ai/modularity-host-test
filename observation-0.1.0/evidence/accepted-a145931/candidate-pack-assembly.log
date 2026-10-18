@@ -1,0 +1,32 @@
+package: @get-modular/assembly@0.6.0
+Tarball Contents
+CHANGELOG.md
+dist/composition/root.d.ts
+dist/composition/root.js
+dist/features/construction/contract.d.ts
+dist/features/construction/contract.js
+dist/features/construction/derive-profile.d.ts
+dist/features/construction/derive-profile.js
+dist/features/construction/entry.d.ts
+dist/features/construction/entry.js
+dist/features/construction/factory.d.ts
+dist/features/construction/factory.js
+dist/features/construction/group.d.ts
+dist/features/construction/group.js
+dist/features/construction/ports.d.ts
+dist/features/construction/ports.js
+dist/features/construction/prepare.d.ts
+dist/features/construction/prepare.js
+dist/features/construction/run.d.ts
+dist/features/construction/run.js
+dist/features/construction/snapshot.d.ts
+dist/features/construction/snapshot.js
+dist/features/construction/types.d.ts
+dist/features/construction/types.js
+dist/index.d.ts
+dist/index.js
+LICENSE
+package.json
+README.md
+Tarball Details
+/tmp/observation-ordinary-ts-e2e/new-archives/get-modular-assembly-0.6.0.tgz

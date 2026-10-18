@@ -1,0 +1,16 @@
+core: exact archive bytes identical (52 files)
+  retained-before sha256: bac6f9e899b235124faf9d8eea9842eaaba5bb1ba543adb626fe21d6e3a5870f
+  fresh-candidate sha256: bac6f9e899b235124faf9d8eea9842eaaba5bb1ba543adb626fe21d6e3a5870f
+assembly: exact archive bytes identical (28 files)
+  retained-before sha256: ac96072e21d7a6a4264685c25e8c5ee487cbe0302ede58ec384d34ad4ddf8f63
+  fresh-candidate sha256: ac96072e21d7a6a4264685c25e8c5ee487cbe0302ede58ec384d34ad4ddf8f63
+resources: exact archive bytes identical (16 files)
+  retained-before sha256: d9f6363d9c848be90c15e5d20acf07226e3b29ed55ae8af3d6ee0274e5a123d5
+  fresh-candidate sha256: d9f6363d9c848be90c15e5d20acf07226e3b29ed55ae8af3d6ee0274e5a123d5
+conformance: only known peerDependencies key ordering differs; other 39 file bytes identical; original pinned archive retained
+  retained-before sha256: 9b0b7c3bd1f64ebed48ddf6ac51782aab0cf70d72a1fb9fac99b591b3ade888b
+  fresh-candidate sha256: 0f9055ff4104dcf7eb9b2a8a20111b289476f40d2814488d3e9d0a48b2a830b4
+observation: only package/package.json test command changes tests/*.test.mts -> tests/*.test.ts; other 39 files identical
+  retained-before sha256: 2a72ad3080ecf72277ab707581633391b6af28cbed36a98f8eff2306563f5c91
+  fresh-candidate sha256: a0685247e9e00ec02c2abaeab1d4aceb2041468e5317d8bf5e786edf99ec02e5
+All archive comparisons passed; runtime and declaration file bytes are unchanged.

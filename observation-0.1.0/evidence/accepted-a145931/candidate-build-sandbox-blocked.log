@@ -1,0 +1,31 @@
+v26.11.1
+11.20.0
+typescript typescript 7.0.2 /workspace/scratch/e04865d5cacb/get-modular-release/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/package.json
+typescript-minimum typescript 7.0.2 /workspace/scratch/e04865d5cacb/get-modular-release/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/package.json
+Scope: all 7 workspace projects
+[ERR_SQLITE_ERROR] unable to open database file
+
+pnpm: unable to open database file
+    at file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:102246:19
+    at sqliteRetry (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:102156:14)
+    at StoreIndex.openDatabase (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:102245:9)
+    at new StoreIndex (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:102230:14)
+    at createNewStoreController (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:164610:83)
+    at async installDeps (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:200604:17)
+    at async Object.handler5 (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:201759:3)
+    at async file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:315095:19
+    at async main4 (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:315063:30)
+    at async runPnpm (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:315358:5)
+[ERROR] Command failed with exit code 1: pnpm install
+
+pnpm: Command failed with exit code 1: pnpm install
+    at getFinalError (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:89001:14)
+    at makeError (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:91308:21)
+    at getSyncResult (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:93152:10)
+    at spawnSubprocessSync (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:93112:14)
+    at execaCoreSync (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:93042:23)
+    at callBoundExeca (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:95570:23)
+    at boundExeca (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:95547:49)
+    at sync2 (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:95702:14)
+    at runPnpmCli (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:252538:5)
+    at runDepsStatusCheck (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:254302:7)

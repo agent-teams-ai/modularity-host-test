@@ -1,0 +1,44 @@
+package: @get-modular/observation@0.1.0
+Tarball Contents
+CHANGELOG.md
+dist/composition/root.d.ts
+dist/composition/root.js
+dist/composition/testing.d.ts
+dist/composition/testing.js
+dist/features/delivery/context.d.ts
+dist/features/delivery/context.js
+dist/features/delivery/pending.d.ts
+dist/features/delivery/pending.js
+dist/features/delivery/platform.d.ts
+dist/features/delivery/platform.js
+dist/features/errors/errors.d.ts
+dist/features/errors/errors.js
+dist/features/store/admission.d.ts
+dist/features/store/admission.js
+dist/features/store/arguments.d.ts
+dist/features/store/arguments.js
+dist/features/store/engine.d.ts
+dist/features/store/engine.js
+dist/features/store/load.d.ts
+dist/features/store/load.js
+dist/features/store/registry.d.ts
+dist/features/store/registry.js
+dist/features/store/store.d.ts
+dist/features/store/store.js
+dist/features/store/types.d.ts
+dist/features/store/types.js
+dist/features/store/values.d.ts
+dist/features/store/values.js
+dist/features/store/watch.d.ts
+dist/features/store/watch.js
+dist/features/testing/waits.d.ts
+dist/features/testing/waits.js
+dist/index.d.ts
+dist/index.js
+dist/testing.d.ts
+dist/testing.js
+LICENSE
+package.json
+README.md
+Tarball Details
+/tmp/observation-ordinary-ts-e2e/new-archives/get-modular-observation-0.1.0.tgz

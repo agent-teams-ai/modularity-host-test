@@ -1,0 +1,14 @@
+Scope: all 7 workspace projects
+[ERR_SQLITE_ERROR] unable to open database file
+
+pnpm: unable to open database file
+    at file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:102246:19
+    at sqliteRetry (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:102156:14)
+    at StoreIndex.openDatabase (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:102245:9)
+    at new StoreIndex (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:102230:14)
+    at createNewStoreController (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:164610:83)
+    at async installDeps (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:200604:17)
+    at async Object.handler5 (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:201759:3)
+    at async file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:315095:19
+    at async main4 (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:315063:30)
+    at async runPnpm (file:///tmp/observation-toolchain/pnpm/package/dist/pnpm.mjs:315358:5)
