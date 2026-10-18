@@ -36,9 +36,11 @@ Before planning, implementing or reviewing changes, read the
 with this repository's instructions and owned contracts.
 
 Write new maintained source, tests and tooling in TypeScript 7.0.2 or newer;
-use `.ts`, or `.mts` when an explicit ESM file is needed. Include that source in
-the owning strict typecheck and normal verification command. Running a file
-through Node's type stripping is not type checking. Follow the standard's
+use ordinary `.ts` files. Configure ESM through the owning package's
+`"type": "module"`; do not introduce `.mts` as an alternative authoring format.
+Include that source in the owning strict typecheck and normal verification
+command. Running a file through Node's type stripping is not type checking.
+Follow the standard's
 [TypeScript rule](https://github.com/agent-teams-ai/.github/blob/main/docs/engineering-quality-standard.md#typescript-for-javascript-runtimes)
 for scope, migration and necessary JavaScript exceptions. Preserve pinned
 archives, copied qualification inputs and historical evidence byte for byte.
