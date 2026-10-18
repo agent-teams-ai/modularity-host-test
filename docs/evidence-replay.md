@@ -1,4 +1,4 @@
-# Train 0.4.0 TEST evidence replay
+# Train 0.5.0 TEST evidence replay
 
 Run under the default Node 26.11.1 and pinned pnpm 11.20.0 in this TEST repository.
 Node 24.18.0 and 24.21.0 remain compatibility replay binaries:
@@ -24,7 +24,7 @@ source snapshot; a diagnostic run of an uncommitted migration remains `pending`.
 
 `pnpm evidence` creates one disposable replay root in the system temporary directory, outside this repository,
 so module resolution cannot walk up into a developer's own `node_modules`. The root installs the four retained
-Get Modular train archives (Core and Assembly 0.4.0, resources 0.1.0 and conformance 0.2.0) and the separately pinned
+Get Modular train archives (Core and Assembly 0.5.0, resources 0.1.0 and conformance 0.3.0) and the separately pinned
 private `@get-modular/lifecycle-kernel` candidate tarball with a frozen offline install. The runner copies only this
 TEST stand's source and tests, and disables pnpm's registry-backed release-age check (`minimumReleaseAge: 0`,
 `trustPolicy: off`) in that disposable copy only. A preseeded writable store may be supplied as
@@ -38,9 +38,9 @@ an absent marker is never presented as a zero total. The cleanup probe separatel
 records its fixture-owned disposer counter.
 `accepted` requires the archive and manifest checks against `third_party/pins.json`, the lock path and SRI of each
 archive, one installed copy per package with identical conformance peer resolution, pinned compiler typecheck,
-all 189 named tests with no skipped or extra test, all 23 direct admission child scenarios with their expected ordered
-markers, 126 focused lifecycle executions with per-process marker logs, the 25 focused train scenarios of the
-session template (`src/sessions/`) and the Host recipes (`src/adapters/`), a retained import-fence marker from the child scenario, the `prepared` distinct-root
+all 217 named tests with no skipped or extra test, all 23 direct admission child scenarios with their expected ordered
+markers, 126 focused lifecycle executions with per-process marker logs, 53 focused train scenarios of the feature
+layout, session template and Host recipes, a retained import-fence marker from the child scenario, the `prepared` distinct-root
 preparation probe, and a real Assembly construction with retained cleanup debt (terminal-debt probe). It also
 requires a committed source snapshot so the recorded Git commit and tree cover the executed files. A failed
 install leaves `pending` and exits nonzero. Archive-only replay after an install
@@ -56,19 +56,20 @@ Twenty-one additional scenarios cover [L2c1 synthetic exclusive replacement](lif
 They do not certify durable recovery or production replacement.
 
 The Core, Assembly, resources and conformance archives are the retained release archives packed from get-modular
-commit `269f02c67aa0091d12c3f47a3cec4cb52bb2720d` before npm publication. The separate
+commit `74ce8cf14695660926fdc5575d8f4d957535213a` before npm publication. The separate
 private lifecycle-kernel tarball was packed from clean commit
 `e0e2290cfcbf8d8300beaa57aee9c8337429d67d`. The current Consumer Module Standard is pinned to merged Get Modular commit
-`81063add7de50ffe2b91cc74bf7271b298624c21` (#142); `docs/train-030-01.md` classifies the delta. These are not npm publication
+`99816e452630715558306db2370baa2af49575e6`; `docs/train-050-01.md` classifies the delta. These are not npm publication
 evidence. This fixed synthetic Host says nothing about Agent Runtime, Extension
 Foundation or OpenClaw product conformance.
 
-Consumer Module Standard pin state. The pinned copy (`49d08b6d`, get-modular `81063add`) still prescribes
-`prepare({ composition })`, while `src/sessions/compose.ts` already follows the 0.4.0 revision (get-modular #164,
-sha256 `859fbca1...`). Adopted: `profileId` completion and the full oracle. Remaining: the D1 oxlint rule, the C
-template module and the D2 `checkNamespaces` test. Moving the pin is deferred to the Get Modular 0.5.0 adoption.
+Consumer Module Standard pin state. The pinned copy (`e5cb510c`, get-modular `99816e4`) adopts module entries,
+static groups, `prepare({ modules })`, the full provider oracle and feature layout. The TEST stand adopts the D1
+oxlint rule, the `counter` feature and the D2 `checkNamespaces` test. FMS nested rules remain review-only under QN8.
+
+The replay root runs `pnpm lint` and `pnpm layout` after typecheck; either non-zero result fails the replay.
 
 The published 0.1.0 pair and the candidate 0.2.0 pair are retired package subjects; see
 `evidence/accepted/README.md`. The historical selected accepted run and four deliberate mutant failures are
-preserved under `evidence/accepted/` with archive and manifest hashes. The generated
+preserved under `evidence/accepted/` with archive and manifest hashes. The
 `evidence/runs/` directory remains ignored so exploratory runs do not enter PRs.

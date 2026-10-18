@@ -1,5 +1,5 @@
 import { compileComposition, type CompositionProfile, type CompileCompositionResult } from '@get-modular/core';
-import { assemblyFor, type AssemblyOutcome, type AnyFactoryHandle } from '@get-modular/assembly';
+import { assemblyFor, type AssemblyOutcome, type AnyModuleEntry, implement } from '@get-modular/assembly';
 import { admitTrusted, type Admitted } from './policy.ts';
 import { candidates, grants, type Candidate, type Grant } from '../inventory/trusted.ts';
 import { declarations, providerA, providerB, writer, reader, root, sentinel, type Contracts, type Root } from '../fixtures/graph.ts';
@@ -105,50 +105,50 @@ export async function prepareAdmission(input: unknown, rows: readonly LoaderRow[
   };
   let preparedSuccessfully = false;
   try {
-    const a = api.bindFactory(providerA, async (deps) => {
-      const mod = await load('test/provider/a');
-      if (!isModule<{ create: typeof import('../fixtures/candidates/a.mjs').create }>(mod)) throw new Error('bad-export');
-      assertFactoryOpen();
-      return options.invoke ? options.invoke(() => mod.create(deps, providerPort)) : mod.create(deps, providerPort);
-    });
-    const b = api.bindFactory(providerB, async (deps) => {
-      const mod = await load('test/provider/b');
-      if (!isModule<{ create: typeof import('../fixtures/candidates/b.mjs').create }>(mod)) throw new Error('bad-export');
-      assertFactoryOpen();
-      return options.invoke ? options.invoke(() => mod.create(deps, providerPort)) : mod.create(deps, providerPort);
-    });
-    const w = api.bindFactory(writer, async deps => {
-      const mod = await load('test/writer/main');
-      if (!isModule<{ create: typeof import('../fixtures/candidates/writer.mjs').create }>(mod)) throw new Error('bad-export');
-      assertFactoryOpen();
-      return options.invoke ? options.invoke(() => mod.create(deps)) : mod.create(deps);
-    });
-    const r = api.bindFactory(reader, async deps => {
-      const mod = await load('test/reader/main');
-      if (!isModule<{ create: typeof import('../fixtures/candidates/reader.mjs').create }>(mod)) throw new Error('bad-export');
-      assertFactoryOpen();
-      return options.invoke ? options.invoke(() => mod.create(deps)) : mod.create(deps);
-    });
-    const app = api.bindFactory(root, async deps => {
-      const mod = await load('test/root/main');
-      if (!isModule<{ create: typeof import('../fixtures/candidates/root.mjs').create }>(mod)) throw new Error('bad-export');
-      assertFactoryOpen();
-      return options.invoke ? options.invoke(() => mod.create(deps, providerPort)) : mod.create(deps, providerPort);
-    });
-    const s = api.bindFactory(sentinel, async () => {
-      const mod = await load('test/sentinel/main');
-      if (!isModule<{ create: typeof import('../fixtures/candidates/sentinel.mjs').create }>(mod)) throw new Error('bad-export');
-      assertFactoryOpen();
-      return options.invoke ? options.invoke(() => mod.create()) : mod.create();
-    });
-    const selectedHandles: AnyFactoryHandle<Contracts>[] = [];
+    const a = implement<Contracts>()(providerA, async (deps) => {
+          const mod = await load('test/provider/a');
+          if (!isModule<{ create: typeof import('../fixtures/candidates/a.mjs').create }>(mod)) throw new Error('bad-export');
+          assertFactoryOpen();
+          return options.invoke ? options.invoke(() => mod.create(deps, providerPort)) : mod.create(deps, providerPort);
+        });
+    const b = implement<Contracts>()(providerB, async (deps) => {
+          const mod = await load('test/provider/b');
+          if (!isModule<{ create: typeof import('../fixtures/candidates/b.mjs').create }>(mod)) throw new Error('bad-export');
+          assertFactoryOpen();
+          return options.invoke ? options.invoke(() => mod.create(deps, providerPort)) : mod.create(deps, providerPort);
+        });
+    const w = implement<Contracts>()(writer, async deps => {
+          const mod = await load('test/writer/main');
+          if (!isModule<{ create: typeof import('../fixtures/candidates/writer.mjs').create }>(mod)) throw new Error('bad-export');
+          assertFactoryOpen();
+          return options.invoke ? options.invoke(() => mod.create(deps)) : mod.create(deps);
+        });
+    const r = implement<Contracts>()(reader, async deps => {
+          const mod = await load('test/reader/main');
+          if (!isModule<{ create: typeof import('../fixtures/candidates/reader.mjs').create }>(mod)) throw new Error('bad-export');
+          assertFactoryOpen();
+          return options.invoke ? options.invoke(() => mod.create(deps)) : mod.create(deps);
+        });
+    const app = implement<Contracts>()(root, async deps => {
+          const mod = await load('test/root/main');
+          if (!isModule<{ create: typeof import('../fixtures/candidates/root.mjs').create }>(mod)) throw new Error('bad-export');
+          assertFactoryOpen();
+          return options.invoke ? options.invoke(() => mod.create(deps, providerPort)) : mod.create(deps, providerPort);
+        });
+    const s = implement<Contracts>()(sentinel, async () => {
+          const mod = await load('test/sentinel/main');
+          if (!isModule<{ create: typeof import('../fixtures/candidates/sentinel.mjs').create }>(mod)) throw new Error('bad-export');
+          assertFactoryOpen();
+          return options.invoke ? options.invoke(() => mod.create()) : mod.create();
+        });
+    const selectedHandles: AnyModuleEntry<Contracts>[] = [];
     if (admitted('test/provider/a')) selectedHandles.push(a);
     if (admitted('test/provider/b')) selectedHandles.push(b);
     if (admitted('test/writer/main')) selectedHandles.push(w);
     if (admitted('test/reader/main')) selectedHandles.push(r);
     if (admitted('test/root/main')) selectedHandles.push(app);
     if (admitted('test/sentinel/main')) selectedHandles.push(s);
-    const prepared = await api.prepare({ composition, factories: selectedHandles, roots: { app } });
+    const prepared = await api.prepare({ composition, modules: selectedHandles, roots: { app } });
     if (prepared.status !== 'prepared') return { phase: 'preparation', code: prepared.error.code };
     preparedSuccessfully = true;
     return { ok: true, owner, snapshot: decision.snapshot, digest: composition.digest,

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { compileComposition } from '@get-modular/core';
-import { assemblyFor } from '@get-modular/assembly';
+import { assemblyFor, implement } from '@get-modular/assembly';
 import { declarations, providerA, providerB, writer, reader, root, sentinel } from '../../src/fixtures/graph.ts';
 
 async function fixture() {
@@ -23,12 +23,12 @@ async function fixture() {
     await import('../../src/fixtures/candidates/a.mjs');
     throw Error('factory must not execute during preparation');
   };
-  const a = api.bindFactory(providerA, unused);
-  const b = api.bindFactory(providerB, unused);
-  const w = api.bindFactory(writer, unused);
-  const r = api.bindFactory(reader, unused);
-  const app = api.bindFactory(root, unused);
-  const s = api.bindFactory(sentinel, unused);
+  const a = implement()(providerA, unused);
+  const b = implement()(providerB, unused);
+  const w = implement()(writer, unused);
+  const r = implement()(reader, unused);
+  const app = implement()(root, unused);
+  const s = implement()(sentinel, unused);
   return { api, composition, a, b, w, r, app, s, observed };
 }
 // Regression: preparation trusts a modified compiler envelope instead of rechecking it.
@@ -38,7 +38,7 @@ for (const [name, change, code] of [
 ]) {
   test(`${name} is refused by Assembly`, async () => {
     const x = await fixture();
-    const result = await x.api.prepare({ composition: change(x), factories: [x.a, x.w, x.r, x.app], roots: { app: x.app } });
+    const result = await x.api.prepare({ composition: change(x), modules: [x.a, x.w, x.r, x.app], roots: { app: x.app } });
     assert.equal(result.status, 'failed'); assert.equal(result.error.code, code);
     assert.deepEqual(x.observed, { factories: 0, loaders: 0 });
   });
@@ -51,14 +51,14 @@ for (const [name, select, code] of [
 ]) {
   test(`${name} is refused by Assembly`, async () => {
     const x = await fixture();
-    const result = await x.api.prepare({ composition: x.composition, factories: select(x), roots: { app: x.app } });
+    const result = await x.api.prepare({ composition: x.composition, modules: select(x), roots: { app: x.app } });
     assert.equal(result.status, 'failed'); assert.equal(result.error.code, code);
     assert.deepEqual(x.observed, { factories: 0, loaders: 0 });
   });
 }
 test('incomplete roots refuse preparation', async () => {
   const x = await fixture();
-  const result = await x.api.prepare({ composition: x.composition, factories: [x.a, x.w, x.r, x.app], roots: {} });
+  const result = await x.api.prepare({ composition: x.composition, modules: [x.a, x.w, x.r, x.app], roots: {} });
   assert.equal(result.status, 'failed'); assert.equal(result.error.code, 'assembly.prepare.roots');
   assert.deepEqual(x.observed, { factories: 0, loaders: 0 });
 });

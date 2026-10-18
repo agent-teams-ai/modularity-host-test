@@ -218,3 +218,7 @@ Their archives, the candidate manifest and lock remain in Git history at commit
 The train-0.3 archives (Core and Assembly 0.3.0, resources and conformance 0.1.0) are retired the same way when the
 0.4.0 train replaced them. They remain in Git history at commit
 `4501de4c0439cbb8e242c69354e29188360178ce`; the accepted runs above keep their manifests and hashes.
+
+The train-0.4 archives (Core and Assembly 0.4.0, resources 0.1.0 and conformance 0.2.0) are retired when the
+0.5.0 train replaced them. They remain in Git history at commit
+`695b91f527b1aa1bea8835a2fdf7e486ff222034`; the accepted runs above keep their manifests and hashes.

@@ -1,7 +1,7 @@
 // Regression: Assembly 0.1 compares root handles with implementation IDs;
 // 0.2 must accept a Core profile root whose module ID differs.
 import { defineModule, compileComposition } from '@get-modular/core';
-import { assemblyFor } from '@get-modular/assembly';
+import { assemblyFor, implement } from '@get-modular/assembly';
 
 const root = defineModule({
   kind: 'get-modular.module-declaration', schemaVersion: 1,
@@ -20,8 +20,8 @@ if (!composition.ok) {
   process.exitCode = 2;
 } else {
   const api = assemblyFor();
-  const handle = api.bindFactory(root, async () => ({ instance: {}, capabilities: {} }));
-  const prepared = await api.prepare({ composition, factories: [handle], roots: { app: handle } });
+  const handle = implement()(root, async () => ({ instance: {}, capabilities: {} }));
+  const prepared = await api.prepare({ composition, modules: [handle], roots: { app: handle } });
   console.log(JSON.stringify(prepared.status === 'prepared'
     ? { phase: 'preparation', status: 'prepared' }
     : { phase: 'preparation', status: prepared.status, code: prepared.error.code }));

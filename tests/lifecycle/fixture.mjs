@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { compileComposition } from '@get-modular/core';
-import { assemblyFor } from '@get-modular/assembly';
+import { assemblyFor, implement } from '@get-modular/assembly';
 import { TestHost } from '../../src/host/lifetime.ts';
 import { declarations, providerA, writer, reader, root } from '../../src/fixtures/graph.ts';
 
@@ -41,13 +41,13 @@ export async function fixture(providerFactory, options = {}) {
       if (!host.isOpen()) throw Error('factory-authority-closed');
       return port === undefined ? module.create(deps) : module.create(deps, port);
     };
-    const a = api.bindFactory(providerA, async deps => providerFactory
-      ? providerFactory({ host, owner, deps, load })
-      : create(options.providerPath ?? '../../src/fixtures/candidates/a.mjs', deps, owner));
-    const w = api.bindFactory(writer, async deps => create('../../src/fixtures/candidates/writer.mjs', deps));
-    const r = api.bindFactory(reader, async deps => create('../../src/fixtures/candidates/reader.mjs', deps));
-    const app = api.bindFactory(root, async deps => create('../../src/fixtures/candidates/root.mjs', deps, owner));
-    const request = { composition, factories: [a, w, r, app], roots: { app } };
+    const a = implement()(providerA, async deps => providerFactory
+          ? providerFactory({ host, owner, deps, load })
+          : create(options.providerPath ?? '../../src/fixtures/candidates/a.mjs', deps, owner));
+    const w = implement()(writer, async deps => create('../../src/fixtures/candidates/writer.mjs', deps));
+    const r = implement()(reader, async deps => create('../../src/fixtures/candidates/reader.mjs', deps));
+    const app = implement()(root, async deps => create('../../src/fixtures/candidates/root.mjs', deps, owner));
+    const request = { composition, modules: [a, w, r, app], roots: { app } };
     const prepared = await (options.prepare ? options.prepare(api, request) : api.prepare(request));
     assert.equal(prepared.status, 'prepared');
     const start = () => host.construct(signal => prepared.prepared.run({ signal }), out => out.status === 'succeeded' ? out.roots.app : undefined);
