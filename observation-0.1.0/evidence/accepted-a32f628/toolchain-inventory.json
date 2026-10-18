@@ -1,0 +1,35 @@
+{
+  "sourceCommit": "a32f628a11a8cd9e871d985ab09bcfbcaa708b1b",
+  "compilerAliases": {
+    "typescript": {
+      "manifest": "/workspace/scratch/e04865d5cacb/modularity-host-test-native/observation-0.1.0/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/package.json",
+      "name": "typescript",
+      "version": "7.0.2"
+    },
+    "typescript-minimum": {
+      "manifest": "/workspace/scratch/e04865d5cacb/modularity-host-test-native/observation-0.1.0/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/package.json",
+      "name": "typescript",
+      "version": "7.0.2"
+    },
+    "oxlint": {
+      "manifest": "/workspace/scratch/e04865d5cacb/modularity-host-test-native/observation-0.1.0/node_modules/.pnpm/oxlint@1.83.0/node_modules/oxlint/package.json",
+      "name": "oxlint",
+      "version": "1.83.0"
+    }
+  },
+  "foundationCliPresent": false,
+  "priorEvidenceFilesUnchanged": 103,
+  "installedPackageMetadata": {
+    "@get-modular/assembly": "0.6.0",
+    "@get-modular/conformance": "0.4.0",
+    "@get-modular/core": "0.6.0",
+    "@get-modular/observation": "0.1.0",
+    "@get-modular/resources": "0.2.0",
+    "@oxlint/binding-linux-x64-gnu": "1.83.0",
+    "@types/node": "24.19.1",
+    "@typescript/typescript-linux-x64": "7.0.2",
+    "oxlint": "1.83.0",
+    "typescript": "7.0.2",
+    "undici-types": "7.24.6"
+  }
+}

@@ -1,0 +1,36 @@
+Scope: all 7 workspace projects
+✓ Lockfile passes supply-chain policies (verified 14h ago)
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +295
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Progress: resolved 295, reused 295, downloaded 0, added 295, done
+
+devDependencies:
++ @agent-teams/docs-protocol 0.6.2
++ @agent-teams/engineering-foundation 1.7.4
++ @changesets/cli 3.0.2
++ @get-modular/assembly 0.6.0 <- packages/assembly
++ @get-modular/conformance 0.4.0 <- packages/conformance
++ @get-modular/core 0.6.0 <- packages/core
++ @get-modular/lifecycle-kernel 0.1.0 <- packages/lifecycle-kernel
++ @get-modular/observation 0.1.0 <- packages/observation
++ @get-modular/resources 0.2.0 <- packages/resources
++ @types/node 24.19.1
++ ajv 8.20.0
++ canonicalize 4.0.0
++ cspell 10.0.1
++ json-canonicalize 3.0.0
++ jsonc-parser 3.3.1
++ markdownlint-cli2 0.23.2
++ oxlint 1.83.0
++ oxlint-tsgolint 7.0.2001
++ tar 7.5.22
++ typescript 7.0.2
++ typescript-minimum <- typescript 7.0.2
++ yaml 2.9.0
+
+Done in 963ms using pnpm v11.20.0

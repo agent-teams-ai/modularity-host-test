@@ -6,6 +6,18 @@ qualification archives are separate inputs and are not used by this fixture.
 
 ## Current checkpoint
 
+The latest exact-input successor is Get Modular candidate `3b42d2641055c36c13ff0e2b7fae6cc02a945514`,
+containing the reviewed close-report correction from implementation `3f5f3b303e99e4b8f919486d91d954f7f78e204d`.
+Consumer input commit `a32f628a11a8cd9e871d985ab09bcfbcaa708b1b` passed the unchanged ten-stage route:
+both named Node runtime rows, both TypeScript 7.0.2 resolver checks, all 33 writer outcomes on each Node,
+and one 11-row unchanged-root smoke. Four archives retain their prior exact hashes; observation changes only
+its emitted store engine. See the [latest execution record](evidence/accepted-a32f628/RECORD.md) and
+[machine-readable result](evidence/accepted-a32f628/result.json).
+The prior records below retain their own exact subjects and bytes. This successor is candidate TEST evidence;
+main admission, final source gates, release CI, post-merge comparison and publication remain separate steps.
+
+### Preceding ordinary TypeScript checkpoint
+
 The exact inputs are prepared from Get Modular commit `34bb4fae3d6a613f13cdbab9ca50b0bfdf4054e7`: Core and Assembly
 0.6.0, resources 0.2.0, conformance 0.4.0 and observation 0.1.0. Observation's actual resources peer is `^0.2.0`.
 The five archive hashes, copied writer inputs and isolated lockfile are retained here. A fresh offline lock install
@@ -38,7 +50,7 @@ A later source or fixture correction requires recording the affected evidence ag
 
 Use Node 24.21.0 and 26.11.1, pnpm 11.20.0 and the pinned TypeScript aliases. Both compiler aliases currently select
 7.0.2, so the runner compiles once per distinct compiler version and separately for NodeNext and Bundler. Both
-consumer typechecks use `skipLibCheck: false`. The code is emitted by the same pinned compiler before execution.
+consumer type checks use `skipLibCheck: false`. The code is emitted by the same pinned compiler before execution.
 
 The release coordinator supplies these packages under `third_party/archives/`:
 

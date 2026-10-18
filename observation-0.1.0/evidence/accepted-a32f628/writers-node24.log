@@ -1,0 +1,44 @@
+✔ O-08 T29 T75 T103 T108 exact archived writer references pass and every negative fails its exact gates (2716.248304ms)
+ℹ writer compile TypeScript 7.0.2 NodeNext: 4 attributed diagnostics
+ℹ writer compile TypeScript 7.0.2 Bundler: 4 attributed diagnostics
+ℹ reference/a-logger: PASS
+ℹ reference/b-catalog: PASS
+ℹ reference/c-pricing-context: PASS
+ℹ reference/d-greeter: PASS
+ℹ reference/e-async-factory: PASS
+ℹ reference/e-sessions: PASS
+ℹ reference/f-watch-and-load: PASS
+ℹ reference/g-hierarchy: PASS
+ℹ reference/h-requests: PASS
+ℹ reference/i-errors: PASS
+ℹ alternative/h-requests: PASS
+ℹ negative-b-behaviour-1/a-logger: FAIL (behaviour)
+ℹ negative-b-behaviour-1/b-catalog: FAIL (behaviour)
+ℹ negative-b-behaviour-1/c-pricing-context: FAIL (behaviour)
+ℹ negative-b-behaviour-1/d-greeter: FAIL (behaviour)
+ℹ negative-b-behaviour-1/e-async-factory: FAIL (behaviour)
+ℹ negative-b-behaviour-1/e-sessions: FAIL (rules, behaviour)
+ℹ negative-b-behaviour-1/f-watch-and-load: FAIL (behaviour)
+ℹ negative-b-behaviour-1/g-hierarchy: FAIL (behaviour)
+ℹ negative-b-behaviour-1/h-requests: FAIL (behaviour)
+ℹ negative-b-behaviour-1/i-errors: FAIL (behaviour)
+ℹ negative-b-behaviour-2/e-async-factory: FAIL (behaviour)
+ℹ negative-b-behaviour-2/g-hierarchy: FAIL (behaviour)
+ℹ negative-b-behaviour-2/h-requests: FAIL (behaviour)
+ℹ negative-b-behaviour-2/i-errors: FAIL (behaviour)
+ℹ negative-b-behaviour-3/h-requests: FAIL (behaviour)
+ℹ negative-b-behaviour-4/h-requests: FAIL (behaviour)
+ℹ negative-b-behaviour-5/e-async-factory: FAIL (behaviour)
+ℹ negative-b-behaviour-6/e-async-factory: FAIL (behaviour)
+ℹ negative-b-behaviour-7/h-requests: FAIL (behaviour)
+ℹ negative-rules-compile/a-logger: FAIL (compile)
+ℹ negative-rules-compile/b-catalog: FAIL (rules, compile)
+ℹ negative-rules-compile/d-greeter: FAIL (rules, compile)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2781.455915

@@ -1,0 +1,2 @@
+$ pnpm core:build && node architecture/tooling/build-assembly.mjs
+$ node architecture/tooling/build-core.mjs

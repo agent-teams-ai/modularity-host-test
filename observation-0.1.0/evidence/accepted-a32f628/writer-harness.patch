@@ -1,0 +1,29 @@
+--- pinned/harness.mjs
++++ materialized/harness.mjs
+@@ -3,18 +3,23 @@
+ import { createScope } from "@get-modular/resources";
+ import { createStore } from "@get-modular/observation";
+ import * as testing from "@get-modular/observation/testing";
+-import { storeStats as stats } from "../node_modules/@get-modular/observation/dist/features/store/registry.js";
++import { publicStats, derivedKeys } from "../public-stats.mjs";
+ 
+ export async function harness(name) {
+   const failures = [];
+   const hostErrors = []; // the Host's error port: every store in a scenario reports here
+   const host = createScope({ name: "host" });
++  const ownedKeys = new WeakMap();
++  const stats = store => publicStats(store, ownedKeys.get(store) ?? derivedKeys[name]);
+   const tick = () => new Promise((resolve) => { setImmediate(resolve); });
+   return {
+     /** A test subscriber follows exactly its starting snapshot. */
+     follow: (facet, resources, keys, name, onChange) => facet.watch(facet.read(keys), { resources, name, onChange }),
+-    createStore: (initial, storeName = "settings") =>
+-      createStore(initial, { name: storeName, resources: host.resources, reportError: (report) => { hostErrors.push(report); } }),
++    createStore: (initial, storeName = "settings") => {
++      const store = createStore(initial, { name: storeName, resources: host.resources, reportError: (report) => { hostErrors.push(report); } });
++      ownedKeys.set(store, Object.keys(initial));
++      return store;
++    },
+     stats,
+     hostErrors,
+     errorsPort: { report: (report) => { hostErrors.push(report); return undefined; } },

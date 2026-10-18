@@ -1,0 +1,503 @@
+{
+  "format": 1,
+  "candidateSourceCommit": "3b42d2641055c36c13ff0e2b7fae6cc02a945514",
+  "executedConsumerCommit": "a32f628a11a8cd9e871d985ab09bcfbcaa708b1b",
+  "resultSha256": "c101422b7e9cd73cff0316cf2aed5ddf5ad998bcdaa6e450daafee6b11fba65e",
+  "lockSha256": "5119dcd348d1db5716ebe19fb5e394071246a25444f11d80676b5dcf2aa6cf41",
+  "completedCommandStages": 10,
+  "installedArchiveFilesVerified": 176,
+  "sourceHashesCompared": 25,
+  "changedSourceHashPaths": [
+    "third_party/writer-inputs.json"
+  ],
+  "copiedWriterInputHashes": 78,
+  "writerHarnessPatchUnchanged": true,
+  "historicalEvidenceFileHashesUnchanged": {
+    "evidence/accepted-4d10a1f/RECORD.md": "0005486b097aee1ffeee43a9f15af06e12799072a1fd9f4b201df3d1318da702",
+    "evidence/accepted-4d10a1f/candidate-build.log": "418b6e7867f7623f615dd7a4af8db359ba3e4389bf0bd29b5c6d05f5399fb8d9",
+    "evidence/accepted-4d10a1f/candidate-install.log": "24807b5c4c3d36d01a93eb1b5961972e7c36ff09a4be40fe4d7c9428b0241b69",
+    "evidence/accepted-4d10a1f/candidate-pack-assembly.log": "c775f48c2f563851f52b6cb51e06beb5fb9369842a04483b6bd811ec7f0fea9f",
+    "evidence/accepted-4d10a1f/candidate-pack-conformance.log": "f8b86db3525c2cdb519cb3138036cfa21a1b737b78d606f2217cfb96b91175ba",
+    "evidence/accepted-4d10a1f/candidate-pack-core.log": "aa202a07c39985d189b19e0c50eea5533f16555b88bd078747f3bdaaa464548c",
+    "evidence/accepted-4d10a1f/candidate-pack-observation.log": "13e5a65eab9ab8a752c9d7f73866e8150d1de8a6462212e7ad1efaeec3633c0f",
+    "evidence/accepted-4d10a1f/candidate-pack-resources.log": "92d5dd193849062f3877403a8fc21655459e14de0807ff991da899081a96cd3a",
+    "evidence/accepted-4d10a1f/check.log": "a02b3313f9f86e50b4bd0c384de55e49999bec9017eb0250919defe1f7e366cc",
+    "evidence/accepted-4d10a1f/clean-pack-assembly.log": "206742d80e38c68b229edf10d55bf4430f14ede7e84e984df31c8dafd91c3905",
+    "evidence/accepted-4d10a1f/clean-pack-comparison.log": "f4609e092de79baef67579b88627ee2ff16540bc8561cc50c5bf1730b51f65e5",
+    "evidence/accepted-4d10a1f/clean-pack-conformance.log": "ae0a6886721f60d09d91c93b2b961f41aecca2d9e835792eb5acbae29425ff28",
+    "evidence/accepted-4d10a1f/clean-pack-core.log": "05e37ce87924bf4d3dd693e241f6d68e7481792ca45bfdcf83deb9d7db7c843d",
+    "evidence/accepted-4d10a1f/clean-pack-observation.log": "b0dbcdbcfd7d6b36bdde2375a63ed646d0602efb8390d532f9ccde9612b23b97",
+    "evidence/accepted-4d10a1f/clean-pack-resources.log": "1137129a471e3810f60ab9721138c47dd9540e83a73a5db2804e217d0f3da97d",
+    "evidence/accepted-4d10a1f/consumer-prepare.log": "89746fa9afaf9714c2714ba062e0e62d55fd02bb3c451e86052e32993f3f9bd9",
+    "evidence/accepted-4d10a1f/consumer-strict-peers.log": "5ecf82a3fc1f9007eeea79ce3bf0d9c587150219ef245bb5a5a23609cdb562fb",
+    "evidence/accepted-4d10a1f/emit.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-4d10a1f/frozen-install.log": "bc0c1a18e8609b805fb0392ee2c957ffc0311807269d2ac97929c0e00acd1f10",
+    "evidence/accepted-4d10a1f/offline-install.log": "6d64cffaaccc6bf82485ea21574371aee94394e6f305f9c412f0692ca0a035bb",
+    "evidence/accepted-4d10a1f/result.json": "581e2c5e56d3914b3c13b4904706c98c731a9c3ddad5df6cd25ec469875a4554",
+    "evidence/accepted-4d10a1f/runtime-node24.log": "4270d9fe525183bf4db3112ea6c0bcc972a286633123aabb7acc7e5326f157b5",
+    "evidence/accepted-4d10a1f/runtime-node26.log": "b18786df401c42da3541352c01f236b98b3b843ec2d5c8e3144ca09eed50d69c",
+    "evidence/accepted-4d10a1f/smoke.log": "b01b3e71169632c63d68f21a9e36d4f154ec32564d14e683e6915f997678e1f8",
+    "evidence/accepted-4d10a1f/types-7.0.2-Bundler.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-4d10a1f/types-7.0.2-NodeNext.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-4d10a1f/version-v24.21.0.log": "f2ec568164f99546161909b0189b57bb5be3e80f8e2ccd8a51a4aed8c4055a04",
+    "evidence/accepted-4d10a1f/version-v26.11.1.log": "ff9f714664f5d87ac6548bb3700b0c18bd57add52ac986b01d4aec21543ccfda",
+    "evidence/accepted-4d10a1f/writer-harness.patch": "3967150d9bfa8d4b4924ff034caeea7caa97ae546c3d79ec298aae68fafd459a",
+    "evidence/accepted-4d10a1f/writers-node24.log": "2c5b50420121c16f9330495a36f2ca4877f4dcbbd7eac0ee25eb0389cc104799",
+    "evidence/accepted-4d10a1f/writers-node26.log": "86dafa6d38f61642f656a580107aad9a706329763f9858ff9527c332a8368bfa",
+    "evidence/accepted-972dc2b/RECORD.md": "e627cb38058d6ff84be192019627694320c43cc41cef63bc41344edb3b956b47",
+    "evidence/accepted-972dc2b/check.log": "a02b3313f9f86e50b4bd0c384de55e49999bec9017eb0250919defe1f7e366cc",
+    "evidence/accepted-972dc2b/emit.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-972dc2b/frozen-install.log": "74d7c620b950686231743c1980995be35982469d5aa1e443c8580be2d329add0",
+    "evidence/accepted-972dc2b/offline-install.log": "58156bd604045cd4f076800c28af085922180ece71c4d00d4f369a70f83b7004",
+    "evidence/accepted-972dc2b/result.json": "bff944d47ae295dbf0db6d97b74b4a8edce65d9a38454df9aaaa8fc3b9215584",
+    "evidence/accepted-972dc2b/runtime-node24.log": "4d092a41cc4b48dd791dbbb5587aa2d0040aff35f4c63cc43756bfdec1392070",
+    "evidence/accepted-972dc2b/runtime-node26.log": "7bebc47aa347ebf76a9870a5dd1ee2e055991a8020f1e8600d941045da4dffd8",
+    "evidence/accepted-972dc2b/smoke.log": "20446a9a30747e1cb2ca2793146b32fd40703a3a8306a6ab3ac50c38dad3a8fb",
+    "evidence/accepted-972dc2b/tool-metadata-preparation.log": "31677488ce56518ace6e33441aea0292f65d0fcb273fa7cb5fbfa295b27e9771",
+    "evidence/accepted-972dc2b/types-7.0.2-Bundler.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-972dc2b/types-7.0.2-NodeNext.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-972dc2b/version-v24.21.0.log": "f2ec568164f99546161909b0189b57bb5be3e80f8e2ccd8a51a4aed8c4055a04",
+    "evidence/accepted-972dc2b/version-v26.11.1.log": "ff9f714664f5d87ac6548bb3700b0c18bd57add52ac986b01d4aec21543ccfda",
+    "evidence/accepted-972dc2b/writer-harness.patch": "3967150d9bfa8d4b4924ff034caeea7caa97ae546c3d79ec298aae68fafd459a",
+    "evidence/accepted-972dc2b/writers-node24.log": "9f8e4c2d1c149457db59e8f45dbaffc9aad638269637406fdb140a15a2d6acc4",
+    "evidence/accepted-972dc2b/writers-node26.log": "7061fa3ecdc7f1e0879014bfd32643a37ff760c6aded462b9a238d58ef194276",
+    "evidence/accepted-a145931/RECORD.md": "28c6995ad325d25a3fb010ee47d11a1159866d8af4abdf617593adbd2c084d27",
+    "evidence/accepted-a145931/archive-refresh-comparison.log": "a70517668e68040b90c2325b65bc8d53889dd844e5938f5ef86b6d88ba497b5c",
+    "evidence/accepted-a145931/candidate-build-sandbox-blocked.log": "d2d3b5fa0e5d27b8665a205edc9d818f5d4c1d9fbd6bf200b51918152f5bc11a",
+    "evidence/accepted-a145931/candidate-build.log": "38a31cc4aaf6f3b0f0f6ce9510bd0a03cb5adbdb0b878df1a5f690b11fa13b3e",
+    "evidence/accepted-a145931/candidate-install-sandbox-blocked.log": "657cf09f8829ad7bccaabae48a10e81faf39eb16a5b5effc04a07559c6b819cb",
+    "evidence/accepted-a145931/candidate-install.log": "8ddddbec8ed354cb934b0733500e8da5baf1753fd03dd96c845e850e8bdf3232",
+    "evidence/accepted-a145931/candidate-pack-assembly.log": "bb3be8b2817cfa1ba12013628616a5d0b0755b10225b2039883d1b4f9e6e1107",
+    "evidence/accepted-a145931/candidate-pack-conformance.log": "7c491d5c07e5f8e02b13ddec3aae4342cf61cbe5fb4b30b472c2d8d9dbd7ecb3",
+    "evidence/accepted-a145931/candidate-pack-core.log": "dcc40090992bee72abec929167de0f9332cf8895fccc4c1709f3c74da653af0b",
+    "evidence/accepted-a145931/candidate-pack-observation.log": "e4780f3464771ade7629261c8803b618d22fb76edffde2a674f46cb497a32405",
+    "evidence/accepted-a145931/candidate-pack-resources.log": "956033b7bd4576f9b97e33b8c08446e9b594598cb31898cd26283ed86cb57358",
+    "evidence/accepted-a145931/check.log": "a02b3313f9f86e50b4bd0c384de55e49999bec9017eb0250919defe1f7e366cc",
+    "evidence/accepted-a145931/consumer-compiler-identity.log": "77295c4302768efac0a0bd9586ddfdacd1c1884d115eb7a1599d72dec89c2b9f",
+    "evidence/accepted-a145931/consumer-prepare.log": "6dfdd00f0f8708943ea42f0fe1c7bce15759df264e1173ad0a6cd7dcd7508456",
+    "evidence/accepted-a145931/consumer-strict-peers.log": "5ecf82a3fc1f9007eeea79ce3bf0d9c587150219ef245bb5a5a23609cdb562fb",
+    "evidence/accepted-a145931/custody-audit.log": "3301864e25b2f57e8bfef9565ac3dc7497df7173dc33dd98561bc1877f44d7a2",
+    "evidence/accepted-a145931/emit.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-a145931/frozen-install.log": "af5d104717b2775677cae5ba4d76fd85f9c1554988152bbdb64d7420450d60f4",
+    "evidence/accepted-a145931/input-lock-refresh.log": "e4b772d9db100c528017ffd9d759ae400882e4a21a80c92615daacf086fe8cab",
+    "evidence/accepted-a145931/offline-install.log": "ce6a00ec51f37da945b7d63c46b17052f04a94a9c66e41ebff21e5a792738ec7",
+    "evidence/accepted-a145931/result.json": "fe38ccbfb3dcf10e07a9cad8a4cc4971714ab3e2d5daea217fe7e47c8f950473",
+    "evidence/accepted-a145931/runtime-node24.log": "800403fbe281dece7ab24ba084e84669fc0b19e692b0f2f09c5802551f635be6",
+    "evidence/accepted-a145931/runtime-node26.log": "540a21fe5a873ae303c7c0260c1f9f3bdcf3f752d7985f9bc53cd87cb8002281",
+    "evidence/accepted-a145931/smoke.log": "94c9f79fa211762f26dce82af7fbdd8893cf8ab452dcd7daf23e5312a77c4e2c",
+    "evidence/accepted-a145931/stale-file-custody.log": "d9c128f2c69f6f119b63cd410f2e04fb0fe5b0a2b39dc59f634e38d84ae4b169",
+    "evidence/accepted-a145931/types-7.0.2-Bundler.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-a145931/types-7.0.2-NodeNext.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-a145931/version-v24.21.0.log": "f2ec568164f99546161909b0189b57bb5be3e80f8e2ccd8a51a4aed8c4055a04",
+    "evidence/accepted-a145931/version-v26.11.1.log": "ff9f714664f5d87ac6548bb3700b0c18bd57add52ac986b01d4aec21543ccfda",
+    "evidence/accepted-a145931/writer-harness.patch": "3967150d9bfa8d4b4924ff034caeea7caa97ae546c3d79ec298aae68fafd459a",
+    "evidence/accepted-a145931/writers-node24.log": "39b696d50e876ed1853ed0681d873c4e6e49cd84ae4cd584127d896faf444895",
+    "evidence/accepted-a145931/writers-node26.log": "7da201fde9700ce6bd28b13ada57dfbf353ec31c280c1d205af2374a4e3a5504",
+    "evidence/accepted-dbb708e/RECORD.md": "fddd9b8ed9f7561163bd76c0e9b8fc8067abaa19f2a665ea8db17d51ad92c0e9",
+    "evidence/accepted-dbb708e/build.log": "ba3f6571662e81faa0a01ec86dbdfc86d26fc9dca6769444a460365017d10ed5",
+    "evidence/accepted-dbb708e/check.log": "a02b3313f9f86e50b4bd0c384de55e49999bec9017eb0250919defe1f7e366cc",
+    "evidence/accepted-dbb708e/consumer-prepare-sandbox-blocked.log": "d6e5a3ee166f2f1d55b9827058c739a7e6ddb4b1f23f0a9a88b335a6453df5f9",
+    "evidence/accepted-dbb708e/consumer-prepare.log": "5b16e688501ff347d91a82491a56294bf43da96968da6a22d38498f411766344",
+    "evidence/accepted-dbb708e/consumer-strict-peers.log": "5ecf82a3fc1f9007eeea79ce3bf0d9c587150219ef245bb5a5a23609cdb562fb",
+    "evidence/accepted-dbb708e/emit.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-dbb708e/frozen-install.log": "1df13ec3978c3132080e0420ae2090ea52a38fe381e7f824eb95c019ad3f20c2",
+    "evidence/accepted-dbb708e/offline-install.log": "96183e0bb0cee9b192a63a3d5e624a197e1b9c53efeb5eb876fa3f454128a905",
+    "evidence/accepted-dbb708e/pack.log": "c15ad09f66cc2cb4de26dbcd07ed10a8720102d904480499c2c117a834eef2d7",
+    "evidence/accepted-dbb708e/result.json": "255b27e4216a1bbb77f45e449bc55ca664e5ae7ccb1037d9bd07399fec87dc30",
+    "evidence/accepted-dbb708e/runtime-node24.log": "595f19f83ffec49f438e38c10fb6385a04d84976f354ac71011f22c698a4e38c",
+    "evidence/accepted-dbb708e/runtime-node26.log": "153c8c1cb33c8f0930c669592708c46fedeac09d20ee92da4ef83f4975a52ffc",
+    "evidence/accepted-dbb708e/runtime-preflight.log": "83aca8742da12e70eed5f4615fac2a72fc705e5f5d902d02044f5bf0c3d287bb",
+    "evidence/accepted-dbb708e/smoke.log": "32746982775a749c41771238c0cbb60e2e172e406c36002b7df0ea0ba2c5ea44",
+    "evidence/accepted-dbb708e/strict-peers.log": "f60513c66723f1bd6c63abd04cc422715c3d93bda513d615395cbba603e1ee2d",
+    "evidence/accepted-dbb708e/types-7.0.2-Bundler.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-dbb708e/types-7.0.2-NodeNext.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/accepted-dbb708e/version-v24.21.0.log": "f2ec568164f99546161909b0189b57bb5be3e80f8e2ccd8a51a4aed8c4055a04",
+    "evidence/accepted-dbb708e/version-v26.11.1.log": "ff9f714664f5d87ac6548bb3700b0c18bd57add52ac986b01d4aec21543ccfda",
+    "evidence/accepted-dbb708e/writer-harness.patch": "3967150d9bfa8d4b4924ff034caeea7caa97ae546c3d79ec298aae68fafd459a",
+    "evidence/accepted-dbb708e/writers-node24.log": "95ff09756c018fabf9b22fdd04ab9035a661289dda964b61addeee9ce8c06c4b",
+    "evidence/accepted-dbb708e/writers-node26.log": "9227b8a30b8461fc1ad0400987e36fdb400bcb8f887e078250913e57592cacbe"
+  },
+  "runtimeTestsPerNode": 5,
+  "writerOutcomes": {
+    "node24": [
+      {
+        "subject": "reference/a-logger",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/b-catalog",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/c-pricing-context",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/d-greeter",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/e-async-factory",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/e-sessions",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/f-watch-and-load",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/g-hierarchy",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/h-requests",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/i-errors",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "alternative/h-requests",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "negative-b-behaviour-1/a-logger",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/b-catalog",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/c-pricing-context",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/d-greeter",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/e-async-factory",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/e-sessions",
+        "outcome": "FAIL (rules, behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/f-watch-and-load",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/g-hierarchy",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/h-requests",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/i-errors",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-2/e-async-factory",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-2/g-hierarchy",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-2/h-requests",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-2/i-errors",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-3/h-requests",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-4/h-requests",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-5/e-async-factory",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-6/e-async-factory",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-7/h-requests",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-rules-compile/a-logger",
+        "outcome": "FAIL (compile)"
+      },
+      {
+        "subject": "negative-rules-compile/b-catalog",
+        "outcome": "FAIL (rules, compile)"
+      },
+      {
+        "subject": "negative-rules-compile/d-greeter",
+        "outcome": "FAIL (rules, compile)"
+      }
+    ],
+    "node26": [
+      {
+        "subject": "reference/a-logger",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/b-catalog",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/c-pricing-context",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/d-greeter",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/e-async-factory",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/e-sessions",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/f-watch-and-load",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/g-hierarchy",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/h-requests",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "reference/i-errors",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "alternative/h-requests",
+        "outcome": "PASS"
+      },
+      {
+        "subject": "negative-b-behaviour-1/a-logger",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/b-catalog",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/c-pricing-context",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/d-greeter",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/e-async-factory",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/e-sessions",
+        "outcome": "FAIL (rules, behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/f-watch-and-load",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/g-hierarchy",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/h-requests",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-1/i-errors",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-2/e-async-factory",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-2/g-hierarchy",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-2/h-requests",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-2/i-errors",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-3/h-requests",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-4/h-requests",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-5/e-async-factory",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-6/e-async-factory",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-b-behaviour-7/h-requests",
+        "outcome": "FAIL (behaviour)"
+      },
+      {
+        "subject": "negative-rules-compile/a-logger",
+        "outcome": "FAIL (compile)"
+      },
+      {
+        "subject": "negative-rules-compile/b-catalog",
+        "outcome": "FAIL (rules, compile)"
+      },
+      {
+        "subject": "negative-rules-compile/d-greeter",
+        "outcome": "FAIL (rules, compile)"
+      }
+    ]
+  },
+  "singleSmokeRows": [
+    {
+      "inject": "none",
+      "outcome": "succeeded",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    },
+    {
+      "inject": "fail",
+      "at": "observation-test/settings/default",
+      "outcome": "failed",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    },
+    {
+      "inject": "abort",
+      "at": "observation-test/settings/default",
+      "outcome": "cancelled",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    },
+    {
+      "inject": "fail",
+      "at": "observation-test/catalog/reference",
+      "outcome": "failed",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    },
+    {
+      "inject": "abort",
+      "at": "observation-test/catalog/reference",
+      "outcome": "cancelled",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    },
+    {
+      "inject": "fail",
+      "at": "observation-test/logger/reference",
+      "outcome": "failed",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    },
+    {
+      "inject": "abort",
+      "at": "observation-test/logger/reference",
+      "outcome": "cancelled",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    },
+    {
+      "inject": "fail",
+      "at": "observation-test/projection/default",
+      "outcome": "failed",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    },
+    {
+      "inject": "abort",
+      "at": "observation-test/projection/default",
+      "outcome": "failed",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    },
+    {
+      "inject": "fail",
+      "at": "observation-test/root/default",
+      "outcome": "failed",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    },
+    {
+      "inject": "abort",
+      "at": "observation-test/root/default",
+      "outcome": "cancelled",
+      "report": {
+        "complete": true,
+        "settled": true,
+        "debts": []
+      }
+    }
+  ],
+  "scope": "Candidate Linux TEST evidence; no whole-source architecture, release CI, publication, or product adoption claim."
+}
