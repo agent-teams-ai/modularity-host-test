@@ -1,0 +1,7 @@
+// Runtime fakes for the declarations in a-logger.types.ts (behaviour scenarios only).
+export const sinks = [];
+export function createConsoleSink(threshold) {
+  const sink = { threshold, written: [], setThreshold: (level) => { sink.threshold = level; }, write: (level, message) => { sink.written.push([level, message]); } };
+  sinks.push(sink);
+  return sink;
+}

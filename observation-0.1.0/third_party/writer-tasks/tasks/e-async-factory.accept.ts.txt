@@ -1,0 +1,12 @@
+// Acceptance for task (e): the signature, and a Host that passes a facet of a wider store.
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore, type ListenerError } from "@get-modular/observation";
+import { createAuditModule } from "./e-async-factory.js";
+import type { AuditDeps, AuditProduct } from "./e-async-factory.types.js";
+
+const signature: (deps: AuditDeps, context: ModuleContext) => Promise<AuditProduct> = createAuditModule;
+type HostSettings = { readonly retentionDays: number; readonly theme: string };
+declare const context: ModuleContext;
+declare const reportError: (report: ListenerError) => undefined;
+const host = createStore<HostSettings>({ retentionDays: 7, theme: "light" }, { name: "settings", resources: context.resources, reportError });
+void signature({ settings: host.readonly() }, context);

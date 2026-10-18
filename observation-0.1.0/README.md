@@ -6,10 +6,11 @@ qualification archives are separate inputs and are not used by this fixture.
 
 ## Current checkpoint
 
-The independent consumer, tests and runner are authored. JavaScript syntax checks passed. The first installed
-consumer typecheck and runtime execution are pending the five archives from one committed prepared release head.
-`third_party/pins.json` is deliberately absent until those real inputs are available. The schema specifies its
-shape; no placeholder hash or version is an accepted pin.
+The exact inputs are prepared from Get Modular commit `b2815314182221baac6b08750f86ef2644d2cdb8`: Core and Assembly
+0.6.0, resources 0.2.0, conformance 0.4.0 and observation 0.1.0. Observation's actual resources peer is `^0.2.0`.
+The five archive hashes, copied writer inputs and isolated lockfile are retained here. Offline installation and
+frozen-lockfile reproduction passed with strict engine and peer checks. The first installed consumer typecheck and
+runtime qualification are pending at this source checkpoint.
 
 The final accepted run will retain its exact input pins, lockfile, copied writer inputs, consumer source and result
 record in this directory. A source or fixture correction requires recording the affected evidence again.

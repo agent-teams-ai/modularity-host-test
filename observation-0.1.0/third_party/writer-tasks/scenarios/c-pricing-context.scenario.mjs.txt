@@ -1,0 +1,34 @@
+import { harness } from "./harness.mjs";
+const h = await harness("c-pricing-context");
+const { createPricingContextModule } = await import("./c-pricing-context.ts");
+const settings = h.createStore({ currency: "EUR", region: "de", theme: "light" });
+const m = h.module("pricing");
+let context;
+await h.step("the factory", async () => {
+  const product = await createPricingContextModule({ settings: settings.readonly(), errors: h.errorsPort }, m.context);
+  context = product.capabilities["acme/pricing/context"];
+});
+if (context !== undefined) {
+  const value = () => context.read(["currency", "vatRate"]).values;
+  h.check(value().currency === "EUR" && value().vatRate === 0.19, "the first value is not derived from the settings");
+  h.check(typeof context.set !== "function", "children can write the derived store");
+  settings.set({ currency: "USD" }); // right after the factory returned
+  await h.settle();
+  h.check(value().currency === "USD", "a change made right after the factory returned was lost");
+  const commitsBeforeRegion = h.stats(context).commits;
+  settings.set({ region: "fr" });
+  await h.settle();
+  h.check(h.stats(context).commits - commitsBeforeRegion <= 1, "one settings change caused more than one commit (does the module write to a store it watches?)");
+  h.check(value().vatRate === 0.2 && value().currency === "USD", "a region change did not update vatRate the same way as the first value");
+  const child = h.module("child");
+  h.follow(context, child.scope.resources, ["vatRate"], "child/throws", () => { throw new Error("child failed"); });
+  settings.set({ region: "us" });
+  await h.settle();
+  h.check(h.hostErrors.some((r) => r.subscription === "child/throws"), "a failure of a child's handler did not reach deps.errors.report");
+  await child.scope.control.close();
+  const report = await m.scope.control.close();
+  h.check(report.complete, "closing the module scope did not complete");
+  h.check(h.stats(settings).live === 0, "a subscription is still registered after the module closed");
+  h.check(h.stats(settings).commits === 3, "something other than the Host wrote to the settings store");
+}
+await h.finish();

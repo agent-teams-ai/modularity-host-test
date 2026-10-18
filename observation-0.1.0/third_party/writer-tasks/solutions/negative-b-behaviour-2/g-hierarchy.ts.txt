@@ -1,0 +1,37 @@
+// Wrong on purpose: the parent writes to the store it watches, and the child never follows the parent.
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore } from "@get-modular/observation";
+import {
+  createTotalDisplay, discountFor, grossTotal, vatRateFor,
+  type CheckoutDeps, type CheckoutProduct, type PricingContext, type PricingOwnerDeps, type PricingOwnerProduct,
+} from "./g-hierarchy.types.js";
+
+export async function createPricingOwnerModule(deps: PricingOwnerDeps, { resources }: ModuleContext): Promise<PricingOwnerProduct> {
+  const settings = deps.settings.read(["currency", "region"]);
+  const context = createStore<PricingContext>({ currency: settings.values.currency, vatRate: vatRateFor(settings.values.region), discountPercent: 0 },
+    { name: "pricing/context", resources, reportError: deps.errors.report });
+  deps.settings.watch(settings, { resources, name: "pricing/settings", onChange: ({ values }) => { context.set({ currency: values.currency }); } });
+  const self = context.readonly();
+  self.watch(self.read(["currency"]), { resources, name: "pricing/self", onChange: () => { context.set({ vatRate: vatRateFor(deps.settings.read(["region"]).values.region) }); } });
+  const requestDiscount = (code: string): "accepted" | "rejected" => {
+    const percent = discountFor(code);
+    if (percent === undefined) return "rejected";
+    context.set({ discountPercent: percent });
+    return "accepted";
+  };
+  return { instance: undefined, capabilities: { "acme/pricing/context": self, "acme/pricing/discounts": { requestDiscount } } };
+}
+
+export async function createCheckoutModule(deps: CheckoutDeps, { resources }: ModuleContext): Promise<CheckoutProduct> {
+  const display = createTotalDisplay();
+  let net = 0;
+  let discount = 0;
+  const { vatRate } = deps.pricing.read(["vatRate"]).values;
+  const show = (): void => { display.show(grossTotal(net, vatRate, discount)); };
+  show();
+  deps.pricing.watch(deps.pricing.read(["discountPercent"]), { resources, name: "checkout/discount", onChange: () => undefined });
+  return { instance: display, capabilities: { "acme/checkout": {
+    setNet: (amount) => { net = amount; show(); return undefined; },
+    applyCode: (code) => { const answer = deps.discounts.requestDiscount(code); if (answer === "accepted") { discount = 10; show(); } return answer; },
+  } } };
+}

@@ -1,0 +1,30 @@
+// Fixed types for task (i). Do not edit; check.sh uses its own copy.
+import type { ListenerError, ReadonlyStore } from "@get-modular/observation";
+
+/** The notifications module's own slice of the settings. Quiet hours are written as "<from>-<to>", for example "22-7". */
+export type NotificationSettings = { readonly quietHours: string };
+export type QuietHours = { readonly from: number; readonly to: number };
+/** Throws a RangeError for text that is not "<from>-<to>" with hours from 0 to 23. */
+export declare function parseQuietHours(text: string): QuietHours;
+
+/** An existing adapter. */
+export type Notifier = {
+  readonly setQuietHours: (hours: QuietHours) => void;
+  readonly quietHours: () => QuietHours;
+};
+export declare function createNotifier(hours: QuietHours): Notifier;
+
+/** What the module publishes to other modules. */
+export type NotificationStatus = { readonly muted: boolean };
+/** The Host's error sink. */
+export type ErrorsPort = { readonly report: (report: ListenerError) => undefined };
+export type NotificationsDeps = { readonly settings: ReadonlyStore<NotificationSettings>; readonly errors: ErrorsPort };
+export type NotificationsPort = { readonly mute: (muted: boolean) => undefined };
+
+export type NotificationsProduct = {
+  readonly instance: Notifier;
+  readonly capabilities: {
+    readonly "acme/notifications": NotificationsPort;
+    readonly "acme/notifications/status": ReadonlyStore<NotificationStatus>;
+  };
+};

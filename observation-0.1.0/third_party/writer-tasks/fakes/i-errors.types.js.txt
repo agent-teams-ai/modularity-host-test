@@ -1,0 +1,10 @@
+// Runtime fakes for i-errors.types.ts.
+export function parseQuietHours(text) {
+  const match = /^(\d{1,2})-(\d{1,2})$/.exec(text);
+  if (match === null || Number(match[1]) > 23 || Number(match[2]) > 23) throw new RangeError(`invalid quiet hours: ${text}`);
+  return Object.freeze({ from: Number(match[1]), to: Number(match[2]) });
+}
+export function createNotifier(hours) {
+  let current = hours;
+  return { setQuietHours: (next) => { current = next; }, quietHours: () => current };
+}

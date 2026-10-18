@@ -1,0 +1,16 @@
+import { harness } from "./harness.mjs";
+const h = await harness("d-greeter");
+const { createGreeterModule } = await import("./d-greeter.ts");
+const settings = h.createStore({ locale: "en", theme: "light" });
+const m = h.module("greeter");
+let greeter;
+await h.step("the factory", async () => { greeter = (await createGreeterModule({ settings: settings.readonly() }, m.context)).capabilities["acme/greeter"]; });
+if (greeter !== undefined) {
+  h.check(greeter.greet("Ann") === "en:Ann", "the greeter does not use the locale at creation");
+  h.check(h.stats(settings).live === 0, "the module subscribed although it only needs the value at creation");
+  settings.set({ locale: "de" });
+  await h.settle();
+  h.check(greeter.greet("Ann") === "en:Ann", "the greeter followed a later change");
+  h.check((await m.scope.control.close()).complete, "closing the module scope did not complete");
+}
+await h.finish();

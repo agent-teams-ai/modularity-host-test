@@ -1,2 +1,9 @@
 packages:
   - .
+
+overrides:
+  '@get-modular/core': file:third_party/archives/get-modular-core-0.6.0.tgz
+  '@get-modular/assembly': file:third_party/archives/get-modular-assembly-0.6.0.tgz
+  '@get-modular/resources': file:third_party/archives/get-modular-resources-0.2.0.tgz
+  '@get-modular/conformance': file:third_party/archives/get-modular-conformance-0.4.0.tgz
+  '@get-modular/observation': file:third_party/archives/get-modular-observation-0.1.0.tgz

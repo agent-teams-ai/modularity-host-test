@@ -1,0 +1,13 @@
+// Wrong on purpose: follows a second snapshot read after the await, so a change made during the await is lost.
+import type { ModuleContext } from "@get-modular/resources";
+import { openAuditLog, type AuditDeps, type AuditProduct } from "./e-async-factory.types.js";
+
+export async function createAuditModule(deps: AuditDeps, { resources }: ModuleContext): Promise<AuditProduct> {
+  const log = await resources.setup({
+    name: "audit/log",
+    setup: ({ signal }) => openAuditLog(deps.settings.read(["retentionDays"]).values.retentionDays, { signal }),
+    cleanup: (opened) => opened.close(),
+  });
+  deps.settings.watch(deps.settings.read(["retentionDays"]), { resources, name: "audit/retention", onChange: ({ values }) => { log.setRetention(values.retentionDays); } });
+  return { instance: log, capabilities: { "acme/audit": { record: (entry) => { log.append(entry); return undefined; } } } };
+}

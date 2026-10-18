@@ -1,0 +1,16 @@
+// Runtime fakes for e-async-factory.types.ts. Opening waits until the scenario calls finish(); abort rejects it.
+export const opened = [];
+export function openAuditLog(retentionDays, { signal }) {
+  return new Promise((resolve, reject) => {
+    const log = {
+      retention: retentionDays, entries: [], handedOut: false, closed: false,
+      setRetention: (days) => { log.retention = days; },
+      append: (entry) => { log.entries.push(entry); },
+      close: async () => { log.closed = true; },
+    };
+    const call = { retentionDays, log, settled: false };
+    call.finish = () => { if (call.settled) return; call.settled = true; log.handedOut = true; resolve(log); };
+    opened.push(call);
+    signal.addEventListener("abort", () => { if (call.settled) return; call.settled = true; reject(new DOMException("aborted", "AbortError")); }, { once: true });
+  });
+}

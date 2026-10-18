@@ -1,0 +1,55 @@
+// Shared harness for the archived writer scenarios against the package build.
+// A scenario records failures as plain sentences about behaviour and never prints the expected code.
+import { createScope } from "@get-modular/resources";
+import { createStore } from "@get-modular/observation";
+import * as testing from "@get-modular/observation/testing";
+import { storeStats as stats } from "../node_modules/@get-modular/observation/dist/features/store/registry.js";
+
+export async function harness(name) {
+  const failures = [];
+  const hostErrors = []; // the Host's error port: every store in a scenario reports here
+  const host = createScope({ name: "host" });
+  const tick = () => new Promise((resolve) => { setImmediate(resolve); });
+  return {
+    /** A test subscriber follows exactly its starting snapshot. */
+    follow: (facet, resources, keys, name, onChange) => facet.watch(facet.read(keys), { resources, name, onChange }),
+    createStore: (initial, storeName = "settings") =>
+      createStore(initial, { name: storeName, resources: host.resources, reportError: (report) => { hostErrors.push(report); } }),
+    stats,
+    hostErrors,
+    errorsPort: { report: (report) => { hostErrors.push(report); return undefined; } },
+    /**
+     * A module scope and its ModuleContext. As in Assembly, `context.signal` is the run's cancellation signal, not the
+     * scope's: closing the scope aborts `resources.signal` only.
+     */
+    module: (scopeName) => {
+      const scope = host.resources.child({ name: scopeName });
+      const run = new AbortController();
+      return { scope, cancelRun: () => { run.abort(); }, context: Object.freeze({ signal: run.signal, resources: scope.resources }) };
+    },
+    tick,
+    /** Deterministic waits from the testing entry point; no tuned tick counts. */
+    settle: () => testing.delivered(),
+    settled: () => testing.settled(),
+    live: (facet, resources) => testing.liveSubscriptions(facet, resources),
+    /** Full garbage collection between tasks; `false` when the scenario runs without --expose-gc. */
+    collect: async () => {
+      if (typeof globalThis.gc !== "function") return false;
+      for (let i = 0; i < 6; i += 1) { await tick(); globalThis.gc(); }
+      return true;
+    },
+    /** Runs `observe` after each of `rounds` microtasks, before the next task: transient states become visible. */
+    microtasks: async (observe, rounds = 30) => { for (let i = 0; i < rounds; i += 1) { await Promise.resolve(); observe(); } },
+    check: (ok, message) => { if (!ok) failures.push(message); },
+    /** Runs one step; an exception thrown by the solution is a failure, not a crash of the scenario. */
+    step: async (label, run) => {
+      try { await run(); } catch (error) { failures.push(`${label}: threw ${error?.code ?? error?.name ?? "error"}: ${error?.message ?? String(error)}`); }
+    },
+    finish: async () => {
+      await host.control.close();
+      for (const message of failures) console.log(`  BEHAVIOUR ${name}: ${message}`);
+      console.log(`  ${name}: ${failures.length === 0 ? "behaviour OK" : `${failures.length} behaviour failure(s)`}`);
+      process.exit(failures.length === 0 ? 0 : 1);
+    },
+  };
+}

@@ -1,0 +1,141 @@
+{
+  "sets": [
+    {
+      "dir": "reference",
+      "expect": "pass",
+      "tasks": [
+        "a-logger",
+        "b-catalog",
+        "c-pricing-context",
+        "d-greeter",
+        "e-async-factory",
+        "e-sessions",
+        "f-watch-and-load",
+        "g-hierarchy",
+        "h-requests",
+        "i-errors"
+      ]
+    },
+    {
+      "dir": "alternative",
+      "expect": "pass",
+      "tasks": [
+        "h-requests"
+      ]
+    },
+    {
+      "dir": "negative-b-behaviour-1",
+      "expect": "fail",
+      "gates": {
+        "a-logger": [
+          "behaviour"
+        ],
+        "b-catalog": [
+          "behaviour"
+        ],
+        "c-pricing-context": [
+          "behaviour"
+        ],
+        "d-greeter": [
+          "behaviour"
+        ],
+        "e-async-factory": [
+          "behaviour"
+        ],
+        "e-sessions": null,
+        "f-watch-and-load": [
+          "behaviour"
+        ],
+        "g-hierarchy": [
+          "behaviour"
+        ],
+        "h-requests": [
+          "behaviour"
+        ],
+        "i-errors": [
+          "behaviour"
+        ]
+      }
+    },
+    {
+      "dir": "negative-b-behaviour-2",
+      "expect": "fail",
+      "gates": {
+        "e-async-factory": [
+          "behaviour"
+        ],
+        "g-hierarchy": [
+          "behaviour"
+        ],
+        "h-requests": [
+          "behaviour"
+        ],
+        "i-errors": [
+          "behaviour"
+        ]
+      }
+    },
+    {
+      "dir": "negative-b-behaviour-3",
+      "expect": "fail",
+      "gates": {
+        "h-requests": [
+          "behaviour"
+        ]
+      }
+    },
+    {
+      "dir": "negative-b-behaviour-4",
+      "expect": "fail",
+      "gates": {
+        "h-requests": [
+          "behaviour"
+        ]
+      }
+    },
+    {
+      "dir": "negative-b-behaviour-5",
+      "expect": "fail",
+      "gates": {
+        "e-async-factory": [
+          "behaviour"
+        ]
+      }
+    },
+    {
+      "dir": "negative-b-behaviour-6",
+      "expect": "fail",
+      "gates": {
+        "e-async-factory": [
+          "behaviour"
+        ]
+      }
+    },
+    {
+      "dir": "negative-b-behaviour-7",
+      "expect": "fail",
+      "gates": {
+        "h-requests": [
+          "behaviour"
+        ]
+      }
+    },
+    {
+      "dir": "negative-rules-compile",
+      "expect": "fail",
+      "gates": {
+        "a-logger": [
+          "compile"
+        ],
+        "b-catalog": [
+          "rules",
+          "compile"
+        ],
+        "d-greeter": [
+          "rules",
+          "compile"
+        ]
+      }
+    }
+  ]
+}

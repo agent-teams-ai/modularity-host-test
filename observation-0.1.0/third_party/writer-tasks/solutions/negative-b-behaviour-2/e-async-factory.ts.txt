@@ -1,0 +1,16 @@
+// Wrong on purpose: subscribes before the await and guards with `?.`, so a change during the await is dropped.
+import type { ModuleContext } from "@get-modular/resources";
+import { openAuditLog, type AuditDeps, type AuditLog, type AuditProduct } from "./e-async-factory.types.js";
+
+export async function createAuditModule(deps: AuditDeps, { resources }: ModuleContext): Promise<AuditProduct> {
+  let log: AuditLog | undefined;
+  const retention = deps.settings.read(["retentionDays"]);
+  deps.settings.watch(retention, { resources, name: "audit/retention", onChange: ({ values }) => { log?.setRetention(values.retentionDays); } });
+  const opened = await resources.setup({
+    name: "audit/log",
+    setup: ({ signal }) => openAuditLog(retention.values.retentionDays, { signal }),
+    cleanup: (value) => value.close(),
+  });
+  log = opened;
+  return { instance: opened, capabilities: { "acme/audit": { record: (entry) => { opened.append(entry); return undefined; } } } };
+}

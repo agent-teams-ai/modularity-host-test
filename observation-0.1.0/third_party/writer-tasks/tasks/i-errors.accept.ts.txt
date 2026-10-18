@@ -1,0 +1,12 @@
+// Acceptance for task (i): the signature, and a Host that passes a facet of a wider store.
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore, type ListenerError } from "@get-modular/observation";
+import { createNotificationsModule } from "./i-errors.js";
+import type { NotificationsDeps, NotificationsProduct } from "./i-errors.types.js";
+
+const signature: (deps: NotificationsDeps, context: ModuleContext) => Promise<NotificationsProduct> = createNotificationsModule;
+type HostSettings = { readonly quietHours: string; readonly theme: string };
+declare const context: ModuleContext;
+declare const reportError: (report: ListenerError) => undefined;
+const host = createStore<HostSettings>({ quietHours: "22-7", theme: "light" }, { name: "settings", resources: context.resources, reportError });
+void signature({ settings: host.readonly(), errors: { report: reportError } }, context);

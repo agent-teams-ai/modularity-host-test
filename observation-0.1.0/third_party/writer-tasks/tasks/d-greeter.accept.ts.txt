@@ -1,0 +1,12 @@
+// Acceptance for task (d): the signature, and a Host that passes a facet of a wider store.
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore, type ListenerError } from "@get-modular/observation";
+import { createGreeterModule } from "./d-greeter.js";
+import type { GreeterDeps, GreeterProduct } from "./d-greeter.types.js";
+
+const signature: (deps: GreeterDeps, context: ModuleContext) => Promise<GreeterProduct> = createGreeterModule;
+type HostSettings = { readonly locale: string; readonly theme: string };
+declare const context: ModuleContext;
+declare const reportError: (report: ListenerError) => undefined;
+const host = createStore<HostSettings>({ locale: "en", theme: "light" }, { name: "settings", resources: context.resources, reportError });
+void signature({ settings: host.readonly() }, context);

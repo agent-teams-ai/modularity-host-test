@@ -1,0 +1,101 @@
+// Tests the requirements of task (h), not one design: a child scope per ticker and one module-level subscription
+// that fans out to open screens both pass. Store-side registrations are compared with the module's own baseline.
+import { harness } from "./harness.mjs";
+const h = await harness("h-requests");
+const { createQuotesModule } = await import("./h-requests.ts");
+const settings = h.createStore({ eurUsd: 1.1, theme: "light" });
+const m = h.module("quotes");
+const brokenScreens = ["screen 1 broke", "screen 2 broke"];
+let quotes;
+await h.step("the factory", async () => { quotes = (await createQuotesModule({ settings: settings.readonly() }, m.context)).capabilities["acme/quotes"]; });
+/** A throwing screen's failure, raw or wrapped (an AggregateError or a cause chain that reaches it). */
+function isScreenError(cause, messages, depth = 0) {
+  return depth < 8 && cause !== null && typeof cause === "object" && (
+    messages.includes(cause.message)
+    || (Array.isArray(cause.errors) && cause.errors.some((inner) => isScreenError(inner, messages, depth + 1)))
+    || isScreenError(cause.cause, messages, depth + 1));
+}
+if (quotes !== undefined) {
+  const baseline = h.stats(settings).live; // a constant module-level subscription is allowed
+  const live = () => h.stats(settings).live;
+  const screen = () => { const s = { seen: [], show: (rate) => { s.seen.push(rate); } }; return s; };
+
+  // (c) convert() uses the current rate and never adds registrations.
+  let stale = 0;
+  await h.step("convert", () => {
+    for (let i = 1; i <= 2000; i += 1) {
+      const rate = 1 + i / 1000;
+      settings.set({ eurUsd: rate });
+      if (Math.abs(quotes.convert(1000) - 1000 * rate) > 1e-9) stale += 1;
+    }
+  });
+  h.check(stale === 0, `convert() used a rate that was no longer current in ${stale} of 2000 calls`);
+  h.check(live() === baseline, `convert() added registrations to the store (${live() - baseline} after 2000 calls)`);
+  await h.settle();
+
+  // Two screens that throw on one rate, opened first so that they are notified first in any fan-out order.
+  const broken = [];
+  await h.step("openTicker(two throwing screens)", () => {
+    for (const message of brokenScreens) broken.push(quotes.openTicker({ show: (rate) => { if (rate === 6) throw new Error(message); } }));
+  });
+
+  // Open tickers show the current rate at once and every change; (b) registrations stay within O(open tickers).
+  const screens = [];
+  const tickers = [];
+  await h.step("openTicker x200", () => {
+    for (let i = 0; i < 200; i += 1) { const s = screen(); screens.push(s); tickers.push(quotes.openTicker(s)); }
+  });
+  h.check(screens.length === 200 && screens.every((s) => s.seen[0] === 3), "a ticker did not show the current rate at once");
+  h.check(live() <= baseline + 202, `202 open tickers hold ${live() - baseline} registrations beyond the module's baseline`);
+  settings.set({ eurUsd: 4 });
+  await h.settle();
+  h.check(screens.every((s) => s.seen.at(-1) === 4), "an open ticker did not show a change");
+
+  // (d) closed screens get no further show; registrations shrink with the closed tickers.
+  let rejected = 0;
+  for (const ticker of tickers.slice(0, 100)) { try { await ticker.close(); } catch { rejected += 1; } }
+  h.check(rejected === 0, `${rejected} ticker close() calls rejected`);
+  h.check(live() <= baseline + 102, `after closing 100 of 202 tickers, ${live() - baseline} registrations beyond the baseline remain`);
+  settings.set({ eurUsd: 5 });
+  await h.settle();
+  h.check(screens.slice(0, 100).every((s) => s.seen.at(-1) === 4), "a closed ticker still shows changes");
+  h.check(screens.slice(100).every((s) => s.seen.at(-1) === 5), "an open ticker missed a change");
+
+  // (e) screens that throw do not stop the others, and every failure is reported (raw or wrapped).
+  const errorsBefore = h.hostErrors.length;
+  settings.set({ eurUsd: 6 });
+  await h.settle();
+  h.check(screens.slice(100).every((s) => s.seen.at(-1) === 6), "a screen that throws stopped other screens from showing a change");
+  const reported = (message) => h.hostErrors.slice(errorsBefore).some((r) => isScreenError(r.cause, [message]));
+  for (const message of brokenScreens) h.check(reported(message), `the failure "${message}" of a throwing screen was not reported`);
+  await h.step("close the throwing tickers", async () => { for (const ticker of broken) await ticker.close(); });
+
+  // (a) after all tickers close, registrations return to the baseline, also after 1100 open/close cycles.
+  for (const ticker of tickers.slice(100)) await ticker.close();
+  h.check(live() === baseline, `after all tickers closed, ${live() - baseline} registrations beyond the baseline remain`);
+  await h.step("open and close 1100 tickers one after another", async () => {
+    for (let i = 0; i < 1100; i += 1) await quotes.openTicker({ show: () => undefined }).close();
+  });
+  h.check(live() === baseline, `after 1100 open/close cycles, ${live() - baseline} registrations beyond the baseline remain`);
+
+  // Nothing about a closed ticker stays reachable: its screen can be garbage-collected.
+  const refs = [];
+  await h.step("open and close 50 tickers, then drop the screens", async () => {
+    for (let i = 0; i < 50; i += 1) {
+      const s = { show: () => undefined };
+      refs.push(new WeakRef(s));
+      await quotes.openTicker(s).close();
+    }
+  });
+  if (await h.collect()) {
+    const alive = refs.filter((ref) => ref.deref() !== undefined).length;
+    h.check(alive === 0, `${alive} of 50 closed tickers' screens are still referenced after close`);
+  }
+
+  const report = await m.scope.control.close();
+  h.check(report.complete, "closing the module scope did not complete");
+  h.check(live() === 0, "a subscription is still registered after the module closed");
+  const unexpected = h.hostErrors.filter((r) => !isScreenError(r.cause, brokenScreens));
+  h.check(unexpected.length === 0, `a handler failed: ${unexpected.map((r) => String(r.cause)).join("; ")}`);
+}
+await h.finish();

@@ -1,0 +1,12 @@
+// Runtime fakes for g-hierarchy.types.ts.
+const rates = { de: 0.19, fr: 0.2 };
+const codes = { SAVE10: 10, SAVE20: 20 };
+export function vatRateFor(region) { return rates[region] ?? 0.1; }
+export function discountFor(code) { return Object.hasOwn(codes, code) ? codes[code] : undefined; }
+export function grossTotal(net, vatRate, discountPercent) { return Math.round(net * (1 + vatRate) * (1 - discountPercent / 100) * 100) / 100; }
+export const displays = [];
+export function createTotalDisplay() {
+  const display = { shown: [], show: (total) => { display.shown.push(total); } };
+  displays.push(display);
+  return display;
+}

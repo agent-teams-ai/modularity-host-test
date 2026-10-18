@@ -1,0 +1,17 @@
+// Fixed types for task (c). Do not edit; check.sh uses its own copy.
+import type { ListenerError, ReadonlyStore } from "@get-modular/observation";
+
+/** This module's own slice of the settings. */
+export type PricingSettings = { readonly currency: string; readonly region: string };
+/** What child features read: a derived value, not the raw settings. */
+export type PricingContext = { readonly currency: string; readonly vatRate: number };
+export declare function vatRateFor(region: string): number;
+
+/** The Host's error sink for subscriber failures. */
+export type ErrorsPort = { readonly report: (report: ListenerError) => undefined };
+export type PricingContextDeps = { readonly settings: ReadonlyStore<PricingSettings>; readonly errors: ErrorsPort };
+
+export type PricingContextProduct = {
+  readonly instance: undefined;
+  readonly capabilities: { readonly "acme/pricing/context": ReadonlyStore<PricingContext> };
+};

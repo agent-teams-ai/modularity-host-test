@@ -1,0 +1,3 @@
+// Runtime fakes for c-pricing-context.types.ts.
+const rates = { de: 0.19, fr: 0.2, us: 0 };
+export function vatRateFor(region) { return rates[region] ?? 0.1; }

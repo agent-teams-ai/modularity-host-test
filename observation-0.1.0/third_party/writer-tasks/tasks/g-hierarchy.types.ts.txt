@@ -1,0 +1,40 @@
+// Fixed types for task (g). Do not edit; check.sh uses its own copy.
+import type { ListenerError, ReadonlyStore } from "@get-modular/observation";
+
+/** The pricing owner's own slice of the settings. */
+export type PricingSettings = { readonly currency: string; readonly region: string };
+/** What the pricing owner publishes to its children. */
+export type PricingContext = { readonly currency: string; readonly vatRate: number; readonly discountPercent: number };
+export declare function vatRateFor(region: string): number;
+/** The percent a discount code is worth, or `undefined` for an unknown code. */
+export declare function discountFor(code: string): number | undefined;
+/** The gross total every module must use: net with VAT, minus the discount, rounded to cents. */
+export declare function grossTotal(net: number, vatRate: number, discountPercent: number): number;
+
+/** The Host's error sink for subscriber failures. */
+export type ErrorsPort = { readonly report: (report: ListenerError) => undefined };
+/** The command port the child uses to ask the owner for a change. */
+export type DiscountRequests = { readonly requestDiscount: (code: string) => "accepted" | "rejected" };
+
+// Parent: the pricing owner.
+export type PricingOwnerDeps = { readonly settings: ReadonlyStore<PricingSettings>; readonly errors: ErrorsPort };
+export type PricingOwnerProduct = {
+  readonly instance: undefined;
+  readonly capabilities: {
+    readonly "acme/pricing/context": ReadonlyStore<PricingContext>;
+    readonly "acme/pricing/discounts": DiscountRequests;
+  };
+};
+
+// Child: the checkout. It depends only on the part of the context it uses.
+export type TotalDisplay = { readonly show: (total: number) => void };
+export declare function createTotalDisplay(): TotalDisplay;
+export type CheckoutDeps = {
+  readonly pricing: ReadonlyStore<Pick<PricingContext, "vatRate" | "discountPercent">>;
+  readonly discounts: DiscountRequests;
+};
+export type CheckoutPort = {
+  readonly setNet: (net: number) => undefined;
+  readonly applyCode: (code: string) => "accepted" | "rejected";
+};
+export type CheckoutProduct = { readonly instance: TotalDisplay; readonly capabilities: { readonly "acme/checkout": CheckoutPort } };

@@ -1,0 +1,68 @@
+import { harness } from "./harness.mjs";
+const h = await harness("b-catalog");
+const { createCatalogModule } = await import("./b-catalog.ts");
+const { calls } = await import("./b-catalog.types.js");
+const settings = h.createStore({ region: "eu", theme: "light" });
+const m = h.module("catalog");
+let current;
+await h.step("the factory", async () => {
+  const pending = createCatalogModule({ settings: settings.readonly() }, m.context);
+  const first = await Promise.race([pending, h.settle().then(() => "still pending")]);
+  if (first === "still pending") {
+    h.check(false, "the factory waits for the first fetch");
+    calls[0]?.resolve();
+    current = (await pending).capabilities["acme/catalog"].current;
+  } else {
+    current = first.capabilities["acme/catalog"].current;
+  }
+});
+if (current !== undefined) {
+  const shown = [];
+  const look = () => {
+    const state = current();
+    shown.push(state.status === "ready" ? `ready ${state.region}` : state.status === "failed" ? `failed ${state.region}` : "loading");
+    return state;
+  };
+  const regions = () => calls.map((call) => call.region).join(",");
+  await h.settle();
+  h.check(look().status === "loading", "current() is not loading before the first result");
+  h.check(regions() === "eu", `expected one fetch for eu at start, saw: ${regions() || "none"}`);
+  calls[0]?.resolve();
+  await h.settle();
+  h.check(look().status === "ready" && current().region === "eu", "the eu result was not shown");
+  settings.set({ region: "us" });
+  await h.settle();
+  h.check(look().status === "loading", "while us is loading, current() is not loading (it still shows eu)");
+  calls[1]?.resolve();
+  await h.settle();
+  h.check(look().status === "ready" && current().region === "us", "the us result was not shown");
+  settings.set({ region: "jp" });
+  await h.settle();
+  settings.set({ region: "br" });
+  calls[2]?.resolve(); // jp lands after br was chosen, before br is delivered
+  await h.microtasks(look);
+  await h.settle();
+  h.check(!shown.includes("ready jp"), "models of jp were shown after br was chosen");
+  h.check(look().status === "loading", "while br is loading, current() is not loading");
+  calls[3]?.resolve();
+  await h.settle();
+  h.check(look().status === "ready" && current().region === "br", "the br result was not shown");
+  settings.set({ region: "ca" });
+  await h.settle();
+  settings.set({ region: "mx" });
+  await h.settle();
+  h.check(calls[4]?.region === "ca" && calls[4].signal.aborted, "the outdated ca fetch was not aborted");
+  await h.settle();
+  calls[5]?.reject(new Error("mx is down"));
+  await h.settle();
+  h.check(look().status === "failed" && current().region === "mx", "a failed fetch of the current region was not shown as failed");
+  h.check(regions() === "eu,us,jp,br,ca,mx", `unexpected fetches: ${regions()}`);
+  const report = await m.scope.control.close();
+  h.check(report.complete, "closing the module scope did not complete");
+  h.check(h.stats(settings).live === 0, "a subscription is still registered after the module closed");
+  settings.set({ region: "nz" });
+  await h.settle();
+  h.check(calls.length === 6, "a fetch started after the module closed");
+  h.check(h.hostErrors.length === 0, `a handler failed: ${h.hostErrors.map((r) => String(r.cause)).join("; ")}`);
+}
+await h.finish();

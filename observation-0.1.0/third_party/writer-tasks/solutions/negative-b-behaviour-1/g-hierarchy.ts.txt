@@ -1,0 +1,32 @@
+// Wrong on purpose: the owner rebuilds the whole context from the settings and drops the accepted discount.
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore } from "@get-modular/observation";
+import {
+  createTotalDisplay, discountFor, grossTotal, vatRateFor,
+  type CheckoutDeps, type CheckoutProduct, type PricingContext, type PricingOwnerDeps, type PricingOwnerProduct,
+} from "./g-hierarchy.types.js";
+
+export async function createPricingOwnerModule(deps: PricingOwnerDeps, { resources }: ModuleContext): Promise<PricingOwnerProduct> {
+  const derive = (values: { readonly currency: string; readonly region: string }): PricingContext =>
+    ({ currency: values.currency, vatRate: vatRateFor(values.region), discountPercent: 0 });
+  const settings = deps.settings.read(["currency", "region"]);
+  const context = createStore<PricingContext>(derive(settings.values), { name: "pricing/context", resources, reportError: deps.errors.report });
+  deps.settings.watch(settings, { resources, name: "pricing/settings", onChange: ({ values }) => { context.set(derive(values)); } });
+  const requestDiscount = (code: string): "accepted" | "rejected" => {
+    const percent = discountFor(code);
+    if (percent === undefined) return "rejected";
+    context.set({ discountPercent: percent });
+    return "accepted";
+  };
+  return { instance: undefined, capabilities: { "acme/pricing/context": context.readonly(), "acme/pricing/discounts": { requestDiscount } } };
+}
+
+export async function createCheckoutModule(deps: CheckoutDeps, { resources }: ModuleContext): Promise<CheckoutProduct> {
+  const display = createTotalDisplay();
+  let net = 0;
+  let pricing = deps.pricing.read(["vatRate", "discountPercent"]);
+  const show = (): void => { display.show(grossTotal(net, pricing.values.vatRate, pricing.values.discountPercent)); };
+  show();
+  deps.pricing.watch(pricing, { resources, name: "checkout/pricing", onChange: (next) => { pricing = next; show(); } });
+  return { instance: display, capabilities: { "acme/checkout": { setNet: (amount) => { net = amount; show(); return undefined; }, applyCode: (code) => deps.discounts.requestDiscount(code) } } };
+}

@@ -1,0 +1,21 @@
+import type { ModuleContext } from "@get-modular/resources";
+import type { Screen, Session, SessionsDeps, SessionsProduct } from "./e-sessions.types.js";
+
+export async function createSessionsModule(deps: SessionsDeps, { resources }: ModuleContext): Promise<SessionsProduct> {
+  const open = (user: string, screen: Screen): Session => {
+    const session = resources.child({ name: `session:${user}` }); // the subscription ends with the session
+    const banner = deps.settings.read(["banner"]);
+    screen.show(banner.values.banner);
+    deps.settings.watch(banner, {
+      resources: session.resources, name: "sessions/banner",
+      onChange: ({ values }) => { screen.show(values.banner); },
+    });
+    return {
+      end: async () => {
+        const report = await session.control.close();
+        if (!report.complete) throw new Error(`session ${user} did not release everything`);
+      },
+    };
+  };
+  return { instance: undefined, capabilities: { "acme/sessions": { open } } };
+}

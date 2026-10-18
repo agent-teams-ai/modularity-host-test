@@ -1,0 +1,14 @@
+// Wrong on purpose: two mappings that drift (the update forgets vatRate) and a reportError that drops failures.
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore } from "@get-modular/observation";
+import { vatRateFor, type PricingContext, type PricingContextDeps, type PricingContextProduct } from "./c-pricing-context.types.js";
+
+export async function createPricingContextModule(deps: PricingContextDeps, { resources }: ModuleContext): Promise<PricingContextProduct> {
+  const settings = deps.settings.read(["currency", "region"]);
+  const context = createStore<PricingContext>({ currency: settings.values.currency, vatRate: vatRateFor(settings.values.region) }, {
+    name: "pricing-context", resources, reportError: () => undefined,
+  });
+  deps.settings.watch(settings, { resources, name: "pricing-context/settings", onChange: ({ values }) => { context.set({ currency: values.currency }); } });
+  void deps.errors;
+  return { instance: undefined, capabilities: { "acme/pricing/context": context.readonly() } };
+}

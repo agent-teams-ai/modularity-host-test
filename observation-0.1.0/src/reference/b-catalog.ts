@@ -1,0 +1,14 @@
+import type { ModuleContext } from "@get-modular/resources";
+import { fetchModels, type CatalogDeps, type CatalogProduct, type CatalogState } from "./b-catalog.types.js";
+
+export async function createCatalogModule(deps: CatalogDeps, { resources }: ModuleContext): Promise<CatalogProduct> {
+  let state: CatalogState = { status: "loading" };
+  deps.settings.load(deps.settings.read(["region"]), {
+    resources, name: "catalog/models",
+    loader: ({ values }, { signal }) => fetchModels(values.region, { signal }),
+    onLoading: () => { state = { status: "loading" }; },
+    onResult: (models, { values }) => { state = { status: "ready", region: values.region, models }; },
+    onError: (cause, { values }) => { state = { status: "failed", region: values.region, cause }; },
+  });
+  return { instance: undefined, capabilities: { "acme/catalog": { current: () => state } } };
+}

@@ -1,0 +1,28 @@
+import { harness } from "./harness.mjs";
+const h = await harness("a-logger");
+const { createLoggerModule } = await import("./a-logger.ts");
+const settings = h.createStore({ logLevel: "info", theme: "light" });
+const m = h.module("logger");
+let product;
+await h.step("the factory", async () => { product = await createLoggerModule({ settings: settings.readonly() }, m.context); });
+if (product !== undefined) {
+  const sink = product.instance;
+  h.check(sink.threshold === "info", "the sink does not start at the current level");
+  settings.set({ logLevel: "error" }); // right after the factory returned, before any delivery
+  await h.settle();
+  h.check(sink.threshold === "error", "a change made right after the factory returned was lost");
+  settings.set({ logLevel: "debug" });
+  await h.settle();
+  h.check(sink.threshold === "debug", "a later change was not applied");
+  await h.step("log()", () => { product.capabilities["acme/logger"].log("warn", "hello"); });
+  h.check(sink.written.length === 1, "log() did not write through the sink");
+  const report = await m.scope.control.close();
+  h.check(report.complete, "closing the module scope did not complete");
+  h.check(h.stats(settings).live === 0, "a subscription is still registered after the module closed");
+  settings.set({ logLevel: "warn" });
+  await h.settle();
+  h.check(sink.threshold === "debug", "the sink still follows the level after the module closed");
+  h.check(h.stats(settings).commits === 3, "something other than the Host wrote to the settings store");
+  h.check(h.hostErrors.length === 0, `a handler failed: ${h.hostErrors.map((r) => String(r.cause)).join("; ")}`);
+}
+await h.finish();

@@ -1,0 +1,11 @@
+// Wrong on purpose: subscribes in its own root scope, which the module's close never reaches.
+import { createScope, type ModuleContext } from "@get-modular/resources";
+import { createConsoleSink, type LoggerDeps, type LoggerProduct } from "./a-logger.types.js";
+
+export async function createLoggerModule(deps: LoggerDeps, _context: ModuleContext): Promise<LoggerProduct> {
+  const own = createScope({ name: "logger-own" });
+  const level = deps.settings.read(["logLevel"]);
+  const sink = createConsoleSink(level.values.logLevel);
+  deps.settings.watch(level, { resources: own.resources, name: "logger/level", onChange: ({ values }) => { sink.setThreshold(values.logLevel); } });
+  return { instance: sink, capabilities: { "acme/logger": { log: (l, m) => { sink.write(l, m); return undefined; } } } };
+}

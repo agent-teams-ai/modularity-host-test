@@ -1,0 +1,2 @@
+// h-requests.types.ts declares types only; nothing to fake.
+export {};

@@ -1,0 +1,12 @@
+// Runtime fakes for b-catalog.types.ts. Every fetch waits until the scenario resolves or rejects it; abort rejects it.
+export const calls = [];
+export function fetchModels(region, { signal }) {
+  return new Promise((resolve, reject) => {
+    calls.push({
+      region, signal,
+      resolve: () => { resolve(Object.freeze([Object.freeze({ id: `${region}-1`, label: region })])); },
+      reject: (cause) => { reject(cause); },
+    });
+    signal.addEventListener("abort", () => { reject(new DOMException("aborted", "AbortError")); }, { once: true });
+  });
+}
