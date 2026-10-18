@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "sourceCommit": "106e3b0adca10e83d7a87ba57cb73baa9ee7ca6d",
+  "sourceCommit": "34bb4fae3d6a613f13cdbab9ca50b0bfdf4054e7",
   "cmsSha256": "c2fe582a14ff6e79620b232ca7ffc914afb0474ec21fd43f208251dd7252f4a3",
   "packages": [
     {
@@ -31,7 +31,7 @@
       "name": "@get-modular/observation",
       "version": "0.1.0",
       "file": "archives/get-modular-observation-0.1.0.tgz",
-      "sha256": "2a72ad3080ecf72277ab707581633391b6af28cbed36a98f8eff2306563f5c91"
+      "sha256": "a0685247e9e00ec02c2abaeab1d4aceb2041468e5317d8bf5e786edf99ec02e5"
     }
   ]
 }

@@ -66,7 +66,7 @@ packages:
     engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
 
   '@get-modular/observation@file:third_party/archives/get-modular-observation-0.1.0.tgz':
-    resolution: {integrity: sha512-nNh6/2yCC/VURvX2x+y5vvt9epZCfYor4B91ncmQtbXNSxFLc6uZLO74Tn4JdeIIoMo8RFmgNqKXlsD1GQbGvA==, tarball: file:third_party/archives/get-modular-observation-0.1.0.tgz}
+    resolution: {integrity: sha512-twjSVs4oRRq/j2jPx2p7nul1DxkVxJT2tomjHxZbzsHahANE/+sUTMDVHOIEeyFBtBqD6vNPJzHkI0t01dv7mA==, tarball: file:third_party/archives/get-modular-observation-0.1.0.tgz}
     version: 0.1.0
     engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
     peerDependencies:
