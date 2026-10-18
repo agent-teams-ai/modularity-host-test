@@ -6,19 +6,23 @@ qualification archives are separate inputs and are not used by this fixture.
 
 ## Current checkpoint
 
-The exact inputs are prepared from Get Modular commit `d345e14970eca4ed1c69831d2a59f4754da0b0e9`: Core and Assembly
+The exact inputs are prepared from Get Modular commit `106e3b0adca10e83d7a87ba57cb73baa9ee7ca6d`: Core and Assembly
 0.6.0, resources 0.2.0, conformance 0.4.0 and observation 0.1.0. Observation's actual resources peer is `^0.2.0`.
 The five archive hashes, copied writer inputs and isolated lockfile are retained here. A fresh offline lock install
 and frozen-lockfile reproduction passed with strict engine and peer checks. Full qualification passed on committed
-consumer source `dbb708e97a9cb20afe959d06dd85460fa0bf1349`, on Linux x64 with Node 24.21.0 and 26.11.1 and TypeScript
+consumer source `4d10a1fb7041e44c61766400d6f1262e84c397e7`, on Linux x64 with Node 24.21.0 and 26.11.1 and TypeScript
 7.0.2 in NodeNext and Bundler modes. Each Node executed five runtime predicates and all 33 writer tasks with their
 unchanged expected gates; the single smoke passed all 11 construction/injection rows. See the
-[accepted execution record](evidence/accepted-dbb708e/RECORD.md) and its
-[machine-readable result](evidence/accepted-dbb708e/result.json).
+[accepted execution record](evidence/accepted-4d10a1f/RECORD.md) and its
+[machine-readable result](evidence/accepted-4d10a1f/result.json).
 
-This candidate includes the independently verified loader-await context correction. Four archive hashes are
-unchanged from the preceding set; observation has new bytes. All five archives were packed from the same new
-candidate, and the existing consumer executable source and semantic oracles were unchanged for this execution.
+This candidate retains the independently verified loader-await context correction and adds the typed test-tooling
+route and Windows diagnostic-path correction. Four archive hashes are unchanged from the preceding set;
+observation differs only in its packed manifest's development scripts. All five archives were packed from the
+same new candidate, and the consumer executable source and semantic oracles were unchanged for this execution.
+The preceding result on consumer `dbb708e97a9cb20afe959d06dd85460fa0bf1349` and candidate
+`d345e14970eca4ed1c69831d2a59f4754da0b0e9` remains byte-identical under
+[evidence/accepted-dbb708e](evidence/accepted-dbb708e/RECORD.md).
 
 The prior result on consumer `972dc2b9dfe9470a5e34ed4f28d75ecfc0fbec73` and candidate
 `b2815314182221baac6b08750f86ef2644d2cdb8` remains byte-identical under

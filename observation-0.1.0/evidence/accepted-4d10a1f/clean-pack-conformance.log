@@ -1,0 +1,44 @@
+package: @get-modular/conformance@0.4.0
+Tarball Contents
+CHANGELOG.md
+dist/composition/root.d.ts
+dist/composition/root.js
+dist/features/errors/errors.d.ts
+dist/features/errors/errors.js
+dist/features/handles/guard.d.ts
+dist/features/handles/guard.js
+dist/features/harness/isolate.d.ts
+dist/features/harness/isolate.js
+dist/features/harness/smoke.d.ts
+dist/features/harness/smoke.js
+dist/features/harness/types.d.ts
+dist/features/harness/types.js
+dist/features/layout/check.d.ts
+dist/features/layout/check.js
+dist/features/layout/types.d.ts
+dist/features/layout/types.js
+dist/features/namespaces/check.d.ts
+dist/features/namespaces/check.js
+dist/features/ports/own-members.d.ts
+dist/features/ports/own-members.js
+dist/features/records/declarations.d.ts
+dist/features/records/declarations.js
+dist/features/records/own.d.ts
+dist/features/records/own.js
+dist/features/suites/suite.d.ts
+dist/features/suites/suite.js
+dist/features/suites/types.d.ts
+dist/features/suites/types.js
+dist/features/wiring/check.d.ts
+dist/features/wiring/check.js
+dist/features/wiring/describe.d.ts
+dist/features/wiring/describe.js
+dist/features/wiring/types.d.ts
+dist/features/wiring/types.js
+dist/index.d.ts
+dist/index.js
+LICENSE
+package.json
+README.md
+Tarball Details
+/tmp/observation-ts-policy-clean-pack/get-modular-conformance-0.4.0.tgz
