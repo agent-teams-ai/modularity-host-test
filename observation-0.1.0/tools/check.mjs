@@ -5,14 +5,14 @@ import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
 import os from "node:os";
 import { root, sha256, verifyPins } from "./pins.mjs";
-import { materializeHarness } from "./public-stats.mjs";
 const require = createRequire(join(root, "package.json"));
-const pins = await verifyPins();
 const [node24, node26] = process.argv.slice(2);
 assert.ok(node24 && node26, "Pass exact Node 24.21.0 and 26.11.1 executable paths.");
 const evidence = join(root, "evidence/current");
 await rm(evidence, { recursive: true, force: true }); await mkdir(evidence, { recursive: true });
 await mkdir(join(root, ".work"), { recursive: true });
+const pins = await verifyPins();
+const { materializeHarness } = await import("./public-stats.mjs");
 const stages = [];
 function run(name, executable, args) {
   const { NODE_OPTIONS: _options, NODE_TEST_CONTEXT: _context, ...environment } = process.env;
