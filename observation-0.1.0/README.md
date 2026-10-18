@@ -9,11 +9,14 @@ qualification archives are separate inputs and are not used by this fixture.
 The exact inputs are prepared from Get Modular commit `b2815314182221baac6b08750f86ef2644d2cdb8`: Core and Assembly
 0.6.0, resources 0.2.0, conformance 0.4.0 and observation 0.1.0. Observation's actual resources peer is `^0.2.0`.
 The five archive hashes, copied writer inputs and isolated lockfile are retained here. Offline installation and
-frozen-lockfile reproduction passed with strict engine and peer checks. The first installed consumer typecheck and
-runtime qualification are pending at this source checkpoint.
+frozen-lockfile reproduction passed with strict engine and peer checks. Full qualification passed on committed
+consumer source `972dc2b9dfe9470a5e34ed4f28d75ecfc0fbec73`, on Linux x64 with Node 24.21.0 and 26.11.1 and TypeScript
+7.0.2 in NodeNext and Bundler modes. Both runtime rows and all 33 writer tasks passed their exact gates; the single
+smoke passed all 11 construction/injection rows. See the [accepted execution record](evidence/accepted-972dc2b/RECORD.md)
+and its [machine-readable result](evidence/accepted-972dc2b/result.json).
 
-The final accepted run will retain its exact input pins, lockfile, copied writer inputs, consumer source and result
-record in this directory. A source or fixture correction requires recording the affected evidence again.
+The accepted run retains its exact input pins, lockfile, copied writer inputs, consumer source and result record in
+this directory. A source or fixture correction requires recording the affected evidence again.
 
 ## Inputs and commands
 
