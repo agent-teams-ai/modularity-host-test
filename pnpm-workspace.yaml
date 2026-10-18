@@ -2,6 +2,6 @@ packages:
   - .
 
 overrides:
-  '@get-modular/core': file:third_party/archives/train-0.4/get-modular-core-0.4.0.tgz
-  '@get-modular/assembly': file:third_party/archives/train-0.4/get-modular-assembly-0.4.0.tgz
-  '@get-modular/resources': file:third_party/archives/train-0.4/get-modular-resources-0.1.0.tgz
+  '@get-modular/core': file:third_party/archives/train-0.5/get-modular-core-0.5.0.tgz
+  '@get-modular/assembly': file:third_party/archives/train-0.5/get-modular-assembly-0.5.0.tgz
+  '@get-modular/resources': file:third_party/archives/train-0.5/get-modular-resources-0.1.0.tgz

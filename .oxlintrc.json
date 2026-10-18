@@ -1,0 +1,62 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript"],
+  "rules": {
+    "typescript/method-signature-style": ["error", "property"]
+  },
+  "overrides": [
+    {
+      "files": ["src/features/**/*.ts"],
+      "excludeFiles": ["**/*.test.ts"],
+      "rules": {
+        "max-lines": ["error", { "max": 300, "skipBlankLines": true, "skipComments": true }],
+        "max-lines-per-function": ["error", { "max": 60, "skipBlankLines": true, "skipComments": true }],
+        "max-params": ["error", { "max": 4 }]
+      }
+    },
+    {
+      "files": ["src/features/**/composition/*.module.ts"],
+      "rules": {
+        "max-lines": ["error", { "max": 80, "skipBlankLines": true, "skipComments": true }]
+      }
+    },
+    {
+      "files": [
+        "src/features/**/contracts/**",
+        "src/features/**/domain/**",
+        "src/features/**/application/**",
+        "src/features/**/adapters/**"
+      ],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            { "group": ["@get-modular/*"], "message": "Get Modular is imported only in composition/ and tests" }
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/features/**/composition/*.declaration.ts"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            {
+              "group": ["*", "!@get-modular/assembly", "!@get-modular/core", "!*.contracts.js", "!*.contracts.ts"],
+              "message": "a declaration imports only declareModule, cardinality helpers and contract descriptors"
+            }
+          ],
+          "paths": [
+            { "name": "@get-modular/assembly", "allowImportNames": ["declareModule"] },
+            { "name": "@get-modular/core", "allowImportNames": ["required", "optional", "many"] }
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/features/**/contracts/**", "src/features/**/application/ports/**"],
+      "rules": {
+        "typescript/method-signature-style": ["error", "property"]
+      }
+    }
+  ]
+}

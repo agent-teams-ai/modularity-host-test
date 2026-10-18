@@ -1,12 +1,12 @@
 {
-  "getModularSourceCommit": "81063add7de50ffe2b91cc74bf7271b298624c21",
+  "getModularSourceCommit": "99816e452630715558306db2370baa2af49575e6",
   "consumerModuleStandard": {
     "repository": "agent-teams-ai/get-modular",
     "path": "third_party/standards/common-assembly.md",
     "sourcePath": "docs/architecture/common-assembly.md",
     "anchor": "consumer-module-standard",
     "acceptingDecision": "ADR-0026",
-    "sha256": "49d08b6d1762e94308157fb59b3aa82ac1630c91f529f6efcd4915dfffee7ba7"
+    "sha256": "e5cb510c5ea83e54a6833cc40b6ad31fc5cf8c70d9838e4e0c6923edc6f70919"
   },
   "lifecycleKernel": {
     "version": "0.1.0",
@@ -18,32 +18,32 @@
   },
   "trainSet": {
     "origin": "retained-release-archives",
-    "sourceCommit": "269f02c67aa0091d12c3f47a3cec4cb52bb2720d",
-    "sourceTree": "0db42a5187f2d228cc71e714c6dc610fb12ad9d5",
+    "sourceCommit": "74ce8cf14695660926fdc5575d8f4d957535213a",
+    "sourceTree": "8fbcefe9b8a39f20c76876be04a1e9d3c21dd55b",
     "packages": {
       "core": {
-        "version": "0.4.0",
-        "path": "third_party/archives/train-0.4/get-modular-core-0.4.0.tgz",
-        "sha256": "b986c8f1e8b7e08da695e6991016a6eda8587dfff6835a96da8af26aa86bc358",
-        "sri": "sha512-AzQWfqj/lHZz7C391hQo5ruM/1B8m7YnW+VQ6V4cAsnTANhw2VDKvHz4oLRcptT12LyMsvEY29OJbJqkrc3YGg=="
+        "version": "0.5.0",
+        "path": "third_party/archives/train-0.5/get-modular-core-0.5.0.tgz",
+        "sha256": "7943f054427282b68cd57e3f790acca62e14cbae67ea62b227f363a8d2614328",
+        "sri": "sha512-B7DuUnplex2C67g5OUj5e/AbgrVndH+cEPb74foNMaVWw4qdMmUt8c9pcvlrHVpcTvHBMraA0JIXYO2NI2Q+wA=="
       },
       "assembly": {
-        "version": "0.4.0",
-        "path": "third_party/archives/train-0.4/get-modular-assembly-0.4.0.tgz",
-        "sha256": "8aaa5810a2a5ac11b6f63bcd1d81c38c8f1cb06a3b58379ca1471ccdf985b3dd",
-        "sri": "sha512-8gCPsPPy1uv3fngKTMmy5BEDDW2S9Afn1hzBs8ICtEOn8Oc1bJ9XTQiuSopH23TGN1W369ez9396jEa+KXaLzw=="
+        "version": "0.5.0",
+        "path": "third_party/archives/train-0.5/get-modular-assembly-0.5.0.tgz",
+        "sha256": "6112f57755ff9cf3f7b3379b8f932421499cf5db3320b7e4c3aefd998ec36862",
+        "sri": "sha512-9huRWsDE7TZAWA4AV5D2kbC3eWjoyQrKGi0DTum9LcmuFrjDd4XR9hOYEDaq4H/9OCcOByyiJCmxCtd4DTqM5w=="
       },
       "resources": {
         "version": "0.1.0",
-        "path": "third_party/archives/train-0.4/get-modular-resources-0.1.0.tgz",
+        "path": "third_party/archives/train-0.5/get-modular-resources-0.1.0.tgz",
         "sha256": "1172c89d9f863d0e1763293eb6153d0835c609fc01ea730004fcee293872cc7a",
         "sri": "sha512-sIC+ZYI196qK11Dmz9s9U/Va4UAOU5G8m9beCp3zIIbEK0fKLAWGssd4l72aS0ycRBi5AhsbKFysKS9EVVax8g=="
       },
       "conformance": {
-        "version": "0.2.0",
-        "path": "third_party/archives/train-0.4/get-modular-conformance-0.2.0.tgz",
-        "sha256": "0708bc299d1015d9c6d2c14ca827b2fd27f47cc749e11cbb847c0190780eda61",
-        "sri": "sha512-2DFUfAVsNc/VlDKeAt7iTtkQZopDeu5eiKl9EESr35nvfduIwwd0bdmKuOm3u3Iodeiv74kOv69InrEbfmQ9FA=="
+        "version": "0.3.0",
+        "path": "third_party/archives/train-0.5/get-modular-conformance-0.3.0.tgz",
+        "sha256": "6063497db4d4aabdae82e94bd689140ff080d96b5ff13c817f8385900c3249bf",
+        "sri": "sha512-IyWvkkIhIbWtDyiL4OIHcO3hSEh4Uz2SVnI3vaeEeh46dM9bFYhwyIa1B0MxIwC5Jkm01FDB1MgGGUnLqv5UuQ=="
       }
     }
   }

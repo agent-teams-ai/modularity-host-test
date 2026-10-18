@@ -13,17 +13,31 @@ mkdirSync(out, { recursive: true });
 const scratch = realpathSync(mkdtempSync(join(tmpdir(), 'modularity-host-test-evidence-')));
 // node --test-name-pattern is a regular expression; suite names end with " [subject]".
 const exactName = name => `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`;
-const trainFile = name => name.startsWith('close-within: ') ? 'tests/sessions/close-within.test.mjs'
-  : name.startsWith('process-group: ') ? 'tests/sessions/process-group.test.mjs'
-    : name.startsWith('prepare: ') ? 'tests/sessions/prepare-profile.test.mjs'
-      : 'tests/sessions/template.test.mjs';
+const trainFile = name => name.startsWith('close-within: ') ? 'tests/module/close-within.test.mjs'
+  : name.startsWith('process-group: ') ? 'tests/module/process-group.test.mjs'
+    : name.startsWith('prepare: ') ? 'tests/module/prepare-profile.test.mjs'
+      : name.startsWith('layout: ') || name.startsWith('lint: ') ? 'tests/module/layout-rules.test.ts'
+        : name.startsWith('LEGO: sessions') || name.startsWith('LEGO: storage') ? 'tests/module/lego.test.ts'
+          : name.startsWith('LEGO:') ? 'tests/module/wiring.test.ts'
+            : name.startsWith('namespaces: ') ? 'tests/module/namespaces.test.ts'
+              : name.startsWith('prototype-method: ') ? 'tests/module/prototype-member.test.ts'
+                : name.startsWith('wiring: ') ? 'tests/module/wiring.test.ts'
+                  : name.startsWith('test/counter/') ? 'tests/features/counter/counter.test.ts'
+                    : name.startsWith('test/sessions/session') ? 'tests/features/sessions/session-contract.test.ts'
+                      : name.startsWith('test/sessions/store') ? 'tests/features/sessions/features/storage/store-contract.test.ts'
+                      : name.startsWith('sessions: isolate') ? 'tests/features/sessions/features/storage/isolate.test.ts'
+                        : name.startsWith('sessions: 1000') ? 'tests/features/sessions/template.test.mjs'
+                          : name.startsWith('sessions: the template') ? 'tests/features/sessions/template.test.mjs'
+                            : name.startsWith('sessions:') ? 'tests/module/smoke.test.ts'
+                              : 'tests/features/sessions/template.test.mjs';
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const sri = bytes => 'sha512-' + createHash('sha512').update(bytes).digest('base64');
 const read = path => readFileSync(path);
 const git = (...args) => execFileSync('git', args, { cwd: source, encoding: 'utf8' }).trim();
 const files = [];
-const sourcePaths = ['src', 'tests', 'scripts/evidence',
+const sourcePaths = ['.oxlintrc.json', 'src', 'tests', 'scripts',
   '.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'third_party',
+  'AGENTS.md', 'README.md', 'docs/train-050-01.md',
   'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
   'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md', 'docs/lifecycle-kernel-l2c0.md',
   'docs/lifecycle-kernel-l2c1.md',
@@ -36,13 +50,13 @@ function scan(path) {
     else if (entry.isFile()) files.push({ path: name, sha256: sha256(read(join(source, name))) });
   }
 }
-for (const path of ['src', 'tests', 'scripts/evidence']) scan(path);
-for (const path of ['.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json',
+for (const path of ['src', 'tests', 'scripts']) scan(path);
+for (const path of ['.oxlintrc.json', '.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json',
   'third_party/pins.json', pins.consumerModuleStandard.path, pins.lifecycleKernel.path,
   'docs/lifecycle-kernel-l2a.md', 'docs/lifecycle-kernel-l2b.md', 'docs/lifecycle-kernel-h04.md',
   'docs/lifecycle-kernel-h06-cohort.md', 'docs/lifecycle-kernel-h13-recovery.md', 'docs/lifecycle-kernel-l2c0.md',
   'docs/lifecycle-kernel-l2c1.md',
-  'docs/evidence-replay.md', 'docs/train-030-01.md'])
+  'docs/evidence-replay.md', 'docs/train-030-01.md', 'docs/train-050-01.md'])
   files.push({ path, sha256: sha256(read(join(source, path))) });
 files.sort((a, b) => a.path.localeCompare(b.path));
 const report = {
@@ -60,7 +74,7 @@ const report = {
   limits: [
     'Synthetic fixed TEST Host only; no Agent Runtime, Extension Foundation, OpenClaw, or production conformance.',
     'No arbitrary JavaScript sandbox, physical effect cancellation, crash recovery, Windows, or Node support beyond the exact recorded replay binary.',
-    'Core/Assembly 0.4.0, resources 0.1.0 and conformance 0.2.0 are retained release archives packed before npm publication; this run is not publication evidence.',
+    'Core/Assembly 0.5.0, resources 0.1.0 and conformance 0.3.0 are retained release archives packed before npm publication; this run is not publication evidence.',
     'The lifecycle-kernel 0.1.0 archive is a separately packed private candidate.',
     'The process-group recipe is proven only for a cooperative two-level POSIX tree that stays in its group.',
     'Archive-only diagnostic replay is not an accepted frozen-lock installation or typecheck gate.',
@@ -159,7 +173,7 @@ function checkKernelPin() {
 }
 function copyTestRoot(destination) {
   mkdirSync(destination, { recursive: true });
-  for (const path of ['src', 'tests', 'scripts/evidence', 'third_party'])
+  for (const path of ['.oxlintrc.json', 'src', 'tests', 'scripts', 'third_party'])
     cpSync(join(source, path), join(destination, path), { recursive: true,
       filter: name => !name.includes('/.scenarios') });
   cpSync(join(source, 'tsconfig.json'), join(destination, 'tsconfig.json'));
@@ -370,7 +384,7 @@ try {
   const pnpmVersion = command(source, 'pnpm-version', 'pnpm', ['--version']);
   report.environment.pnpm = pnpmVersion.text.trim();
   if (pnpmVersion.exitCode !== 0 || report.environment.pnpm !== '11.20.0') failed('pnpm 11.20.0 unavailable');
-  for (const [, label] of [['trainSet', 'train-0.4']]) {
+  for (const [, label] of [['trainSet', 'train-0.5']]) {
     const root = join(temp, label);
     const pair = report.pairs[label] = { origin: pins.trainSet.origin,
       sourceCommit: pins.trainSet.sourceCommit, sourceTree: pins.trainSet.sourceTree, pins: checkTrainSet(),
@@ -415,6 +429,12 @@ try {
       pair.typecheck = command(root, `${label}.typecheck`, 'pnpm', ['typecheck']);
       delete pair.typecheck.text;
       if (pair.typecheck.exitCode !== 0) failed(`${label}: typecheck failed`);
+      pair.lint = command(root, `${label}.lint`, 'pnpm', ['lint']);
+      delete pair.lint.text;
+      if (pair.lint.exitCode !== 0) failed(`${label}: lint failed`);
+      pair.layout = command(root, `${label}.layout`, 'pnpm', ['layout']);
+      delete pair.layout.text;
+      if (pair.layout.exitCode !== 0) failed(`${label}: layout failed`);
       pair.compiler = command(root, `${label}.compiler-version`, join(root, 'node_modules/.bin/tsc'), ['--version']);
       report.environment.typescript = pair.compiler.text.trim();
       if (report.environment.typescript !== 'Version 7.0.2') failed(`${label}: wrong compiler`);

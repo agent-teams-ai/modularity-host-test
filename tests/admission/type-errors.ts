@@ -1,4 +1,4 @@
-import { assemblyFor } from '@get-modular/assembly';
+import { assemblyFor, implement } from '@get-modular/assembly';
 import { defineModule, required } from '@get-modular/core';
 import { writer, type Contracts } from '../../src/fixtures/graph.ts';
 const api = assemblyFor<Contracts>();
@@ -13,14 +13,14 @@ const wrongSlot = defineModule({ ...writer, slots: [{ slotId: 'resource', capabi
 const action = { resourceId: 'r', resourceIdentity: Symbol('r'), run: () => 'x' };
 const product = async () => ({ instance: {}, capabilities: { 'test/action': action } });
 // Positive control: the product and asynchronous factory satisfy the valid declaration.
-api.bindFactory(writer, product);
+implement<Contracts>()(writer, product);
 // Regression: exact token, capability ID, and slot capability escape typed binding.
 // @ts-expect-error an unlisted exact token is rejected
-api.bindFactory(wrongToken, product);
+implement<Contracts>()(wrongToken, product);
 // @ts-expect-error an unknown provided capability is rejected
-api.bindFactory(wrongCapability, product);
+implement<Contracts>()(wrongCapability, product);
 // @ts-expect-error an unknown slot capability is rejected
-api.bindFactory(wrongSlot, product);
+implement<Contracts>()(wrongSlot, product);
 // Regression: synchronous constructors are accepted despite Assembly's Promise contract.
 // @ts-expect-error factory must return a Promise
-api.bindFactory(writer, () => ({ instance: {}, capabilities: { 'test/action': action } }));
+implement<Contracts>()(writer, () => ({ instance: {}, capabilities: { 'test/action': action } }));
