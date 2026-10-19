@@ -87,7 +87,7 @@ await copyFile(join(root, "third_party/writer-tasks/fakes/a-logger.types.js.txt"
 await copyFile(join(root, "tests/reference-catalog.mjs"), join(root, "out/src/reference/b-catalog.types.js"));
 for (const [binary, label] of [[node24, "node24"], [node26, "node26"]]) {
   await run(`runtime-${label}`, binary, ["--test", "out/tests/connected.test.js", "tests/public-stats.test.mjs", "tests/environment.test.mjs"]).accept();
-  await run(`writers-${label}`, binary, ["--test", "tests/writer-gate.test.mjs"]).accept();
+  await run(`writers-${label}`, binary, ["--test", "tests/writer-gate.test.ts"]).accept();
 }
 // One unchanged-root smoke, separate from the compiler/resolver and two-runtime behavior rows.
 await run("smoke", node26, ["--test", "out/tests/smoke.test.js"]).accept();
