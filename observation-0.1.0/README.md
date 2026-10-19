@@ -6,12 +6,33 @@ qualification archives are separate inputs and are not used by this fixture.
 
 ## Current checkpoint
 
-The latest exact-input successor is Get Modular candidate `3b42d2641055c36c13ff0e2b7fae6cc02a945514`,
+The current exact retained-archive input set is genuine REL PR [#199](https://github.com/agent-teams-ai/get-modular/pull/199),
+Get Modular `2cd561688bb223f944425718cc093e55ff4bc20d`, tree `f04c469d8070a16a6b81c787eab72f2fd483c56b`. Its reviewed source,
+actual required local route and all 43 hosted jobs passed before the five archives were packed once.
+Core/Assembly are 0.6.0, Resources 0.2.0, Conformance 0.4.0 and Observation 0.1.0; the actual Resources peer is `^0.2.0`.
+
+Consumer input commit `44ccd45d952367c9d57a8060f28a65d543dc5f90` existed before the unchanged ten-stage runner passed once on
+2026-10-19. Fresh offline/frozen installation kept strict engines/peers and ignored lifecycle scripts. Actual Node
+24.21.0/26.11.1 each passed five runtime predicates and all 33 writer outcomes (11 positives, 22 intended negatives),
+with the two existing infrastructure controls. Native TypeScript 7.0.2 passed NodeNext/Bundler separately with
+`skipLibCheck:false`; one unchanged-root smoke retained all 11 rows. All 176 installed archive files and related
+physical peer identities matched the pinned tarballs.
+
+See the [current accepted execution record](evidence/accepted-44ccd45/RECORD.md),
+[machine-readable result](evidence/accepted-44ccd45/result.json) and
+[custody audit](evidence/accepted-44ccd45/custody-audit.json). All 139 pre-existing evidence files remain
+unchanged; all 78 current copied inputs match this REL commit. The older results below retain their own dated
+subjects. This is pre-publication exact-archive TEST evidence; REL/record merges and post-merge comparison are
+separately recorded, and publication remains the owner STOP. It is not registry read-back or product adoption.
+
+### Preceding close-report checkpoint (historical)
+
+The dated preceding exact-input successor was Get Modular candidate `3b42d2641055c36c13ff0e2b7fae6cc02a945514`,
 containing the reviewed close-report correction from implementation `3f5f3b303e99e4b8f919486d91d954f7f78e204d`.
 Consumer input commit `a32f628a11a8cd9e871d985ab09bcfbcaa708b1b` passed the unchanged ten-stage route:
 both named Node runtime rows, both TypeScript 7.0.2 resolver checks, all 33 writer outcomes on each Node,
 and one 11-row unchanged-root smoke. Four archives retain their prior exact hashes; observation changes only
-its emitted store engine. See the [latest execution record](evidence/accepted-a32f628/RECORD.md) and
+its emitted store engine. See the [preceding execution record](evidence/accepted-a32f628/RECORD.md) and
 [machine-readable result](evidence/accepted-a32f628/result.json).
 The prior records below retain their own exact subjects and bytes. This successor is candidate TEST evidence;
 main admission, final source gates, release CI, post-merge comparison and publication remain separate steps.

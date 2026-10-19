@@ -1,0 +1,64 @@
+{
+  "environment": {
+    "platform": "linux",
+    "arch": "x64",
+    "release": "6.18.55"
+  },
+  "nodeExecutables": [
+    {
+      "path": "/tmp/observation-toolchain/node-v24.21.0-linux-x64/bin/node",
+      "observedVersion": "24.21.0",
+      "sha256": "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+      "versionLog": "version-v24.21.0.log"
+    },
+    {
+      "path": "/tmp/observation-toolchain/node-v26.11.1-linux-x64/bin/node",
+      "observedVersion": "26.11.1",
+      "sha256": "5a7b8a3cf5ccb57d297519754fd73238f64cf560afd0ef19a2f9bf7384cbb657",
+      "versionLog": "version-v26.11.1.log"
+    }
+  ],
+  "pnpm": {
+    "version": "11.20.0",
+    "entry": "/tmp/observation-toolchain/pnpm/package/bin/pnpm.cjs",
+    "entrySha256": "67b035e322203961795e8e34ca63a08c37a4386eda94107fb3d28f3246d882ad"
+  },
+  "compilerAliases": [
+    {
+      "alias": "typescript",
+      "manifestPath": "/var/tmp/observation-external-final-61.g6r11wmm/consumer/observation-0.1.0/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/package.json",
+      "manifestSha256": "3722b30210616a13a3213ded11575ba6b2dbab10c32a5ef67afca8513e27017e",
+      "name": "typescript",
+      "version": "7.0.2",
+      "bin": {
+        "tsc": "./bin/tsc"
+      }
+    },
+    {
+      "alias": "typescript-minimum",
+      "manifestPath": "/var/tmp/observation-external-final-61.g6r11wmm/consumer/observation-0.1.0/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/package.json",
+      "manifestSha256": "3722b30210616a13a3213ded11575ba6b2dbab10c32a5ef67afca8513e27017e",
+      "name": "typescript",
+      "version": "7.0.2",
+      "bin": {
+        "tsc": "./bin/tsc"
+      }
+    }
+  ],
+  "installedNativePlatformPackages": [
+    {
+      "manifestPath": "/var/tmp/observation-external-final-61.g6r11wmm/consumer/observation-0.1.0/node_modules/.pnpm/@typescript+typescript-linux-x64@7.0.2/node_modules/@typescript/typescript-linux-x64/package.json",
+      "manifestSha256": "d229521d1ab1d09e60eeb887c8be8e9454a1ea184fe801dcbfa276da3c569cf7",
+      "name": "@typescript/typescript-linux-x64",
+      "version": "7.0.2",
+      "bin": null
+    }
+  ],
+  "ownNpmrc": {
+    "sha256": "b279561568522de21909aa8d55448db7fa9728a95915807bde9a051aad01b05b",
+    "content": "engine-strict=true\nstrict-peer-dependencies=true\nignore-scripts=true\n"
+  },
+  "consumerManifestSha256": "a26afd943e4039a2d3d69f4380bc5513464cfaccf7c4b13812feb7c285d12cfb",
+  "noFoundationOrApiExtractorConsumerDependency": true,
+  "claims": "Alias metadata and actual Node version stages are recorded; nativeTypeScript7.0.2 executes in the unchanged route. No historical Foundation/old compiler is initialized."
+}

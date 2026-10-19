@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "kind": "getmod-retained-archive-build-pack-log-index",
+  "observedAt": "2026-10-19T21:57:20.362972+00:00",
+  "sourceCommit": "2cd561688bb223f944425718cc093e55ff4bc20d",
+  "handoff": "/tmp/getmod-observation-retained-2cd5616-61-handoff.json",
+  "handoffSha256": "acc8686122ce4561e5034f16604cca64241807939937405133562858e1feff4a",
+  "packLogs": [
+    {
+      "package": "@get-modular/core",
+      "packLog": "/tmp/getmod-observation-retained-2cd5616-61-pack-core.log",
+      "sha256": "6e8ada3990ce8ab11f9de07f925fa7258c8ea31d70259ebec7e1ac736f867e38",
+      "exitCodeFile": "/tmp/getmod-observation-retained-2cd5616-61-pack-core.log.exit-code",
+      "exitCodeSha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "packInvocations": 1
+    },
+    {
+      "package": "@get-modular/assembly",
+      "packLog": "/tmp/getmod-observation-retained-2cd5616-61-pack-assembly.log",
+      "sha256": "bb8f9388d5349ff38ef481e5d2285d724eecc1b9e4686a8faf2569c562f1ba81",
+      "exitCodeFile": "/tmp/getmod-observation-retained-2cd5616-61-pack-assembly.log.exit-code",
+      "exitCodeSha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "packInvocations": 1
+    },
+    {
+      "package": "@get-modular/resources",
+      "packLog": "/tmp/getmod-observation-retained-2cd5616-61-pack-resources.log",
+      "sha256": "9b18f56f69f3f46cba52373273239d806ff4f9f41e54e1c0011bc358cc782b95",
+      "exitCodeFile": "/tmp/getmod-observation-retained-2cd5616-61-pack-resources.log.exit-code",
+      "exitCodeSha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "packInvocations": 1
+    },
+    {
+      "package": "@get-modular/conformance",
+      "packLog": "/tmp/getmod-observation-retained-2cd5616-61-pack-conformance.log",
+      "sha256": "370aa9a80f489317afbc7f8c194f272f01a2618a4b8f164de38350229703e521",
+      "exitCodeFile": "/tmp/getmod-observation-retained-2cd5616-61-pack-conformance.log.exit-code",
+      "exitCodeSha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "packInvocations": 1
+    },
+    {
+      "package": "@get-modular/observation",
+      "packLog": "/tmp/getmod-observation-retained-2cd5616-61-pack-observation.log",
+      "sha256": "8ef61e7bdaec868214686e240e91668ee221d7ed63e8e4e068d898d2f4d60609",
+      "exitCodeFile": "/tmp/getmod-observation-retained-2cd5616-61-pack-observation.log.exit-code",
+      "exitCodeSha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "packInvocations": 1
+    }
+  ],
+  "buildAndVerificationEvidence": [
+    {
+      "path": "/tmp/getmod-observation-rel-2cd5616-61-changed-fast.log",
+      "bytes": 133465,
+      "sha256": "2134fa0439fccbfb0ad0c95f28d0ef65ce2563cea32927f180091510bf0ddac1",
+      "meaning": "Actual exact-head required changed-selected fast command log, exit0; includes all normal build owners as passed sequential prerequisites. Adapter bounds captured stdout tail."
+    },
+    {
+      "path": "/tmp/getmod-observation-rel-61-assembly-build.log",
+      "bytes": 306,
+      "sha256": "0983249b0b270b2de21b004cea9071cfb595ba01f9d3d1ec8482db0db1189c3f",
+      "meaning": "Original genuine versioned-tree assembly:build log including Core, before native promotion. Actual exit0; historical build evidence, not relabelled as a committed2cd run."
+    },
+    {
+      "path": "/tmp/getmod-observation-rel-61-remaining-builds.log",
+      "bytes": 63,
+      "sha256": "6ef1ce1e46523d96caff92f071bc90857a0132887509a256b7e87859edd6d37f",
+      "meaning": "Original standalone Observation build stdout log, exit0. This file does not contain resources/conformance stdout; those appeared directly in tool transcript. No build was repeated to manufacture logs."
+    },
+    {
+      "path": "/tmp/getmod-rel199-2cd5616-official-log-proof-61.json",
+      "bytes": 128319,
+      "sha256": "ff8ec83227c8277b56f213695ebb294326eab37748c284c596c554782d993444",
+      "meaning": "Root-verified official current-head CI ZIP/member/checkouts/build-and-test proof for43successful jobs. Full hosted raw build logs retained through this proof."
+    },
+    {
+      "path": "/tmp/getmod-observation-retained-2cd5616-61-checksums.log",
+      "bytes": 178,
+      "sha256": "45f1438e7f057c43f79fba00dcf766598592b66c06748caab130c676d0d58818",
+      "meaning": "Standard sha256sum --check SHA256SUMS verification of retained bytes, exit0."
+    }
+  ],
+  "noExtraBuildOrPackExecuted": true,
+  "launcherFailure": "Initial restricted-PATH Python lookup failed before any interpreter/pack invocation; actual absolute-interpreter operation packed each package once. Distinct from archive/test failure."
+}

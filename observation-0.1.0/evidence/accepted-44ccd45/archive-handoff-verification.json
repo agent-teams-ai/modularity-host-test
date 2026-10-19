@@ -1,0 +1,88 @@
+{
+  "role": "External consumer independent read-only handoff verification; no archive/code execution or repacking.",
+  "observedAtUTC": "2026-10-19T21:57:19.006618+00:00",
+  "handoff": {
+    "path": "/tmp/getmod-observation-retained-2cd5616-61-handoff.json",
+    "sha256": "acc8686122ce4561e5034f16604cca64241807939937405133562858e1feff4a"
+  },
+  "sourceCommit": "2cd561688bb223f944425718cc093e55ff4bc20d",
+  "sourceTree": "f04c469d8070a16a6b81c787eab72f2fd483c56b",
+  "cmsSha256": "c2fe582a14ff6e79620b232ca7ffc914afb0474ec21fd43f208251dd7252f4a3",
+  "archiveCount": 5,
+  "archives": [
+    {
+      "package": "@get-modular/core",
+      "version": "0.6.0",
+      "path": "/var/tmp/getmod-native-qualification-61/observation-0.1.0-retained-2cd5616-61/get-modular-core-0.6.0.tgz",
+      "bytes": 50852,
+      "sha256": "a1a64aeaadf5ae0f9143cf26038853cf42d90b060e083f5ff2f4acf7e2e8d1b0",
+      "integrity": "sha512-s7HmZAkQtioOAbUxBbeVgLCpmplDB7J36GdugMU0XkGWOEmNvUeSaLhKZWJ0uB49QDqCPPiXjcDf6EGlSFSXDA==",
+      "manifestSha256": "af4cd3fbc7ec264047be099d29f69cf909406ca875190e6477ed40b93bf13371",
+      "packageTree": "07c13c9fdd7b69282f5b46aabc7c7f410894c70b",
+      "peers": {},
+      "dependencies": {}
+    },
+    {
+      "package": "@get-modular/assembly",
+      "version": "0.6.0",
+      "path": "/var/tmp/getmod-native-qualification-61/observation-0.1.0-retained-2cd5616-61/get-modular-assembly-0.6.0.tgz",
+      "bytes": 28893,
+      "sha256": "3330afe53ab9615a1dc81273cf9c45b8b9fb68b1d95571af060971e58a9be606",
+      "integrity": "sha512-y7H5RQpwQnKPXoqj/SnUIiOnWMbg/CI4USIUIlL+arkl3+eJncDyLUSikBG0k85vNuv9QuKt3XztpUJK1GvF9Q==",
+      "manifestSha256": "bd683e6df43cc0cc2ef987ed2840cc9e43dd2e293532d0e00d818113cab7a674",
+      "packageTree": "cd42707e48907a231c46895d247d243579dbc3f6",
+      "peers": {},
+      "dependencies": {
+        "@get-modular/core": "0.6.0"
+      }
+    },
+    {
+      "package": "@get-modular/resources",
+      "version": "0.2.0",
+      "path": "/var/tmp/getmod-native-qualification-61/observation-0.1.0-retained-2cd5616-61/get-modular-resources-0.2.0.tgz",
+      "bytes": 14662,
+      "sha256": "2d1aaab67b0002a426fda69b01bda9f7697662ea9685a990b33a12d18658f46b",
+      "integrity": "sha512-G8PYU8o/DJTFBQcs9N12CgwxC9PJ+gOqFjariwYCbw+w7vGE+11lU2JiX2QrHBog6VpchKIenIinb7mBJtu/4g==",
+      "manifestSha256": "a6dea24c3a7f0f9f0a2dcdc9b0374c0dea40a039d26a3c6af1dbad514403c4bd",
+      "packageTree": "44aab0974d2f88e30d362f609a5095bd4bbc78bb",
+      "peers": {},
+      "dependencies": {}
+    },
+    {
+      "package": "@get-modular/conformance",
+      "version": "0.4.0",
+      "path": "/var/tmp/getmod-native-qualification-61/observation-0.1.0-retained-2cd5616-61/get-modular-conformance-0.4.0.tgz",
+      "bytes": 33467,
+      "sha256": "2182cf9702879b2ab78928646db59d91d8a7b128ee870c4b0a2283f51e0d352a",
+      "integrity": "sha512-Ienld3tq0+XASpCGnd3fwvZbNxLTrViYspGzYGyu9mJAKnvBQLLoopyj2uumDeo4SJVzTI8Sl2oSFotr+BDslg==",
+      "manifestSha256": "fd62271a49c5829bbc30227c9778c78ebaf69d2b7e4d258d9968a263365faade",
+      "packageTree": "8edceba6669c4202bdb796f7c77bc26c9d20201b",
+      "peers": {
+        "@get-modular/assembly": "^0.6.0",
+        "@get-modular/core": "^0.6.0",
+        "@get-modular/resources": "^0.2.0"
+      },
+      "dependencies": {}
+    },
+    {
+      "package": "@get-modular/observation",
+      "version": "0.1.0",
+      "path": "/var/tmp/getmod-native-qualification-61/observation-0.1.0-retained-2cd5616-61/get-modular-observation-0.1.0.tgz",
+      "bytes": 33611,
+      "sha256": "083bed3ca61e586d6ce91c272be4b4d07c3c68ae00aa9b414febee20e60f1915",
+      "integrity": "sha512-df9ki8A5Yi8rKR3SCpNeFwpnXLzSzEeawld8J24IYmxy98xVVr8a7xJCDyV37PBuOJJ10JltyVpmRJDJVsZhyg==",
+      "manifestSha256": "014320c9984c75ef8f13c58f388be85b4379848598486836ed149e25adaf18c7",
+      "packageTree": "2c5f9124db7d5f3874994a06d5d9aa883a987c42",
+      "peers": {
+        "@get-modular/resources": "^0.2.0"
+      },
+      "dependencies": {}
+    }
+  ],
+  "node26BinarySha256": "5a7b8a3cf5ccb57d297519754fd73238f64cf560afd0ef19a2f9bf7384cbb657",
+  "node24BinarySha256": "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+  "pnpmEntrySha256": "67b035e322203961795e8e34ca63a08c37a4386eda94107fb3d28f3246d882ad",
+  "downloadReceiptDigestsAreNotMislabelledAsBinaryDigests": true,
+  "qualificationReceiptsMatch": true,
+  "externalStagesExecuted": 0
+}
