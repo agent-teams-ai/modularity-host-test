@@ -1,0 +1,18 @@
+// Fixed types for task (e). Do not edit; check.sh uses its own copy.
+import type { ReadonlyStore } from "@get-modular/observation";
+
+/** The audit module's own slice of the settings. */
+export type AuditSettings = { readonly retentionDays: number };
+export type AuditDeps = { readonly settings: ReadonlyStore<AuditSettings> };
+
+/** An existing adapter. An open log holds a storage connection until `close` resolves. */
+export type AuditLog = {
+  readonly setRetention: (days: number) => void;
+  readonly append: (entry: string) => void;
+  readonly close: () => Promise<void>;
+};
+/** Opening connects to storage and takes a while. Honors `signal`: rejects with an AbortError once it is aborted. */
+export declare function openAuditLog(retentionDays: number, options: { readonly signal: AbortSignal }): Promise<AuditLog>;
+
+export type AuditPort = { readonly record: (entry: string) => undefined };
+export type AuditProduct = { readonly instance: AuditLog; readonly capabilities: { readonly "acme/audit": AuditPort } };

@@ -1,0 +1,51 @@
+import { harness } from "./harness.mjs";
+const h = await harness("f-watch-and-load");
+const { createRegionPanelModule } = await import("./f-watch-and-load.ts");
+const { calls } = await import("./f-watch-and-load.types.js");
+const settings = h.createStore({ region: "eu", theme: "light" });
+const m = h.module("panel");
+let view;
+await h.step("the factory", async () => {
+  const pending = createRegionPanelModule({ settings: settings.readonly() }, m.context);
+  const first = await Promise.race([pending, h.settle().then(() => "still pending")]);
+  if (first === "still pending") {
+    h.check(false, "the factory waits for a fetch");
+    calls[0]?.resolve();
+    view = (await pending).capabilities["acme/region-panel"].view;
+  } else {
+    view = first.capabilities["acme/region-panel"].view;
+  }
+});
+if (view !== undefined) {
+  const shown = [];
+  const look = () => {
+    const panel = view();
+    const holidays = panel.holidays.status === "loading" ? "loading" : `${panel.holidays.status} ${panel.holidays.region}`;
+    shown.push(`${panel.label} | ${holidays}`);
+    return panel;
+  };
+  h.check(look().label === "Region EU", "the label does not show the current region");
+  await h.settle();
+  h.check(look().holidays.status === "loading", "holidays are not loading before the first result");
+  calls[0]?.resolve();
+  await h.settle();
+  h.check(look().holidays.status === "ready" && view().holidays.region === "eu", "the eu holidays were not shown");
+  settings.set({ region: "us" });
+  await h.settle();
+  h.check(look().label === "Region US", "the label did not follow the region");
+  h.check(view().holidays.status === "loading", "while us is loading, holidays are not loading (they still show eu)");
+  settings.set({ region: "jp" });
+  calls[1]?.resolve(); // us lands after jp was chosen
+  await h.microtasks(look);
+  await h.settle();
+  h.check(!shown.some((line) => line.endsWith("ready us")), "holidays of us were shown after jp was chosen");
+  calls[2]?.resolve();
+  await h.settle();
+  h.check(look().label === "Region JP" && view().holidays.status === "ready" && view().holidays.region === "jp", "the jp panel is wrong");
+  h.check(calls.map((call) => call.region).join(",") === "eu,us,jp", `unexpected fetches: ${calls.map((call) => call.region).join(",")}`);
+  const report = await m.scope.control.close();
+  h.check(report.complete, "closing the module scope did not complete");
+  h.check(h.stats(settings).live === 0, "a subscription is still registered after the module closed");
+  h.check(h.hostErrors.length === 0, `a handler failed: ${h.hostErrors.map((r) => String(r.cause)).join("; ")}`);
+}
+await h.finish();

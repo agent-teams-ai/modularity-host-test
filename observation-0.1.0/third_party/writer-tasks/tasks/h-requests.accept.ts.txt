@@ -1,0 +1,12 @@
+// Acceptance for task (h): the signature, and a Host that passes a facet of a wider store.
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore, type ListenerError } from "@get-modular/observation";
+import { createQuotesModule } from "./h-requests.js";
+import type { QuotesDeps, QuotesProduct } from "./h-requests.types.js";
+
+const signature: (deps: QuotesDeps, context: ModuleContext) => Promise<QuotesProduct> = createQuotesModule;
+type HostSettings = { readonly eurUsd: number; readonly theme: string };
+declare const context: ModuleContext;
+declare const reportError: (report: ListenerError) => undefined;
+const host = createStore<HostSettings>({ eurUsd: 1.1, theme: "light" }, { name: "settings", resources: context.resources, reportError });
+void signature({ settings: host.readonly() }, context);

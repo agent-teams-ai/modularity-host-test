@@ -1,0 +1,11 @@
+version-v24.21.0: passed
+version-v26.11.1: passed
+types-7.0.2-NodeNext: passed
+types-7.0.2-Bundler: passed
+emit: passed
+runtime-node24: passed
+writers-node24: passed
+runtime-node26: passed
+writers-node26: passed
+smoke: passed
+Exact-archive observation TEST completed.

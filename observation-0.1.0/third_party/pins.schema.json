@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "sourceCommit",
+    "cmsSha256",
+    "packages"
+  ],
+  "properties": {
+    "format": {
+      "const": 1
+    },
+    "sourceCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "cmsSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "packages": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "version",
+          "file",
+          "sha256"
+        ],
+        "properties": {
+          "name": {
+            "enum": [
+              "@get-modular/core",
+              "@get-modular/assembly",
+              "@get-modular/resources",
+              "@get-modular/conformance",
+              "@get-modular/observation"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^0\\.[0-9]+\\.[0-9]+$"
+          },
+          "file": {
+            "type": "string",
+            "pattern": "^archives/[a-z0-9.-]+\\.tgz$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    }
+  }
+}

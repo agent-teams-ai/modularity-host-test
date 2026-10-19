@@ -1,0 +1,37 @@
+{
+  "format": 1,
+  "sourceCommit": "2cd561688bb223f944425718cc093e55ff4bc20d",
+  "cmsSha256": "c2fe582a14ff6e79620b232ca7ffc914afb0474ec21fd43f208251dd7252f4a3",
+  "packages": [
+    {
+      "name": "@get-modular/core",
+      "version": "0.6.0",
+      "file": "archives/get-modular-core-0.6.0.tgz",
+      "sha256": "a1a64aeaadf5ae0f9143cf26038853cf42d90b060e083f5ff2f4acf7e2e8d1b0"
+    },
+    {
+      "name": "@get-modular/assembly",
+      "version": "0.6.0",
+      "file": "archives/get-modular-assembly-0.6.0.tgz",
+      "sha256": "3330afe53ab9615a1dc81273cf9c45b8b9fb68b1d95571af060971e58a9be606"
+    },
+    {
+      "name": "@get-modular/resources",
+      "version": "0.2.0",
+      "file": "archives/get-modular-resources-0.2.0.tgz",
+      "sha256": "2d1aaab67b0002a426fda69b01bda9f7697662ea9685a990b33a12d18658f46b"
+    },
+    {
+      "name": "@get-modular/conformance",
+      "version": "0.4.0",
+      "file": "archives/get-modular-conformance-0.4.0.tgz",
+      "sha256": "2182cf9702879b2ab78928646db59d91d8a7b128ee870c4b0a2283f51e0d352a"
+    },
+    {
+      "name": "@get-modular/observation",
+      "version": "0.1.0",
+      "file": "archives/get-modular-observation-0.1.0.tgz",
+      "sha256": "083bed3ca61e586d6ce91c272be4b4d07c3c68ae00aa9b414febee20e60f1915"
+    }
+  ]
+}

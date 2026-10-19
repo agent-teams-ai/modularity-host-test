@@ -1,0 +1,17 @@
+// Wrong on purpose: tickers are right, but convert() uses a rate cached by a watch.
+import type { ModuleContext } from "@get-modular/resources";
+import type { QuotesDeps, QuotesProduct, Screen, Ticker } from "./h-requests.types.js";
+
+export async function createQuotesModule(deps: QuotesDeps, { resources }: ModuleContext): Promise<QuotesProduct> {
+  const first = deps.settings.read(["eurUsd"]);
+  let rate = first.values.eurUsd;
+  deps.settings.watch(first, { resources, name: "quotes/rate", onChange: ({ values }) => { rate = values.eurUsd; } });
+  const openTicker = (screen: Screen): Ticker => {
+    const ticker = resources.child({ name: "ticker" });
+    const now = deps.settings.read(["eurUsd"]);
+    screen.show(now.values.eurUsd);
+    deps.settings.watch(now, { resources: ticker.resources, name: "quotes/ticker", onChange: ({ values }) => { screen.show(values.eurUsd); } });
+    return { close: async () => { const report = await ticker.control.close(); if (!report.complete) throw new Error("not released"); } };
+  };
+  return { instance: undefined, capabilities: { "acme/quotes": { convert: (eur) => eur * rate, openTicker } } };
+}

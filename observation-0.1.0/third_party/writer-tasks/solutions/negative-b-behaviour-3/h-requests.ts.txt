@@ -1,0 +1,17 @@
+// Wrong on purpose: one fan-out subscription without per-screen isolation; one throwing screen stops the rest.
+import type { ModuleContext } from "@get-modular/resources";
+import type { QuotesDeps, QuotesProduct, Screen, Ticker } from "./h-requests.types.js";
+
+export async function createQuotesModule(deps: QuotesDeps, { resources }: ModuleContext): Promise<QuotesProduct> {
+  const screens = new Set<Screen>();
+  deps.settings.watch(deps.settings.read(["eurUsd"]), {
+    resources, name: "quotes/rate",
+    onChange: ({ values }) => { for (const screen of screens) screen.show(values.eurUsd); },
+  });
+  const openTicker = (screen: Screen): Ticker => {
+    screen.show(deps.settings.read(["eurUsd"]).values.eurUsd);
+    screens.add(screen);
+    return { close: async () => { screens.delete(screen); } };
+  };
+  return { instance: undefined, capabilities: { "acme/quotes": { convert: (eur) => eur * deps.settings.read(["eurUsd"]).values.eurUsd, openTicker } } };
+}

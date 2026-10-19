@@ -1,0 +1,10 @@
+✔ O-06 one complete smoke of the unchanged selected root (51.692639ms)
+ℹ [{"inject":"none","outcome":"succeeded","report":{"complete":true,"settled":true,"debts":[]}},{"inject":"fail","at":"observation-test/settings/default","outcome":"failed","report":{"complete":true,"settled":true,"debts":[]}},{"inject":"abort","at":"observation-test/settings/default","outcome":"cancelled","report":{"complete":true,"settled":true,"debts":[]}},{"inject":"fail","at":"observation-test/catalog/reference","outcome":"failed","report":{"complete":true,"settled":true,"debts":[]}},{"inject":"abort","at":"observation-test/catalog/reference","outcome":"cancelled","report":{"complete":true,"settled":true,"debts":[]}},{"inject":"fail","at":"observation-test/logger/reference","outcome":"failed","report":{"complete":true,"settled":true,"debts":[]}},{"inject":"abort","at":"observation-test/logger/reference","outcome":"cancelled","report":{"complete":true,"settled":true,"debts":[]}},{"inject":"fail","at":"observation-test/projection/default","outcome":"failed","report":{"complete":true,"settled":true,"debts":[]}},{"inject":"abort","at":"observation-test/projection/default","outcome":"failed","report":{"complete":true,"settled":true,"debts":[]}},{"inject":"fail","at":"observation-test/root/default","outcome":"failed","report":{"complete":true,"settled":true,"debts":[]}},{"inject":"abort","at":"observation-test/root/default","outcome":"cancelled","report":{"complete":true,"settled":true,"debts":[]}}]
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 159.622409

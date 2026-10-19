@@ -1,0 +1,28 @@
+{
+  "name": "observation-0.1.0-test",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=24.21.0 <25 || >=26.11.1 <27",
+    "pnpm": "11.20.0"
+  },
+  "scripts": {
+    "prepare:archives": "node tools/prepare.mjs",
+    "check": "node tools/check.mjs"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "typescript-minimum": "npm:typescript@7.0.2",
+    "@types/node": "24.19.1",
+    "oxlint": "1.83.0"
+  },
+  "dependencies": {
+    "@get-modular/core": "file:third_party/archives/get-modular-core-0.6.0.tgz",
+    "@get-modular/assembly": "file:third_party/archives/get-modular-assembly-0.6.0.tgz",
+    "@get-modular/resources": "file:third_party/archives/get-modular-resources-0.2.0.tgz",
+    "@get-modular/conformance": "file:third_party/archives/get-modular-conformance-0.4.0.tgz",
+    "@get-modular/observation": "file:third_party/archives/get-modular-observation-0.1.0.tgz"
+  }
+}

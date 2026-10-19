@@ -1,0 +1,14 @@
+✔ O-01 independent provider/input/root pins qualify the exact selected declarations (1.955724ms)
+✔ O-02 through O-05 await catch-up, physical supersession, attributed failure and sibling close independence (19.822947ms)
+ℹ O-02 catch-up: before-left/before-right; O-03 supersession: opaque-left-result; O-04 close: left0/right0, sibling-still-works; O-05 reports: one exact sentinel
+✔ O-09 an installed-archive fire-and-forget echo exits after one report (68.612652ms)
+✔ O-10 the pinned CMS lint policy rejects non-test testing imports and accepts the test file (152.722877ms)
+✔ O-07 writer statistics adapter preserves public full-record revisions and post-close live counts (4.927301ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 291.878235

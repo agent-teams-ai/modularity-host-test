@@ -1,0 +1,41 @@
+// Alternative correct design for task (h), taken from round 3 run r3-b-snapshot-small-1: one module-level
+// subscription fans out to a Set, isolates each screen, and rethrows the failures as one AggregateError so the
+// store reports them. The h gate must pass it.
+import type { ModuleContext } from "@get-modular/resources";
+import type { QuotesDeps, QuotesProduct, Screen } from "./h-requests.types.js";
+
+export async function createQuotesModule(deps: QuotesDeps, { resources }: ModuleContext): Promise<QuotesProduct> {
+  // One subscription for all tickers: a watch per ticker would count against the store's watcher limit.
+  const eurUsd = deps.settings.read(["eurUsd"]);
+  const screens = new Set<Screen>();
+  deps.settings.watch(eurUsd, {
+    resources, name: "quotes/rate",
+    onChange: ({ values }) => {
+      const failures: unknown[] = [];
+      for (const screen of screens) {
+        try {
+          screen.show(values.eurUsd);
+        } catch (cause) {
+          failures.push(cause);
+        }
+      }
+      // Every screen is notified first; the failures are rethrown so the store reports them.
+      if (failures.length > 0) { throw new AggregateError(failures, "quotes: a ticker screen failed to show the rate"); }
+    },
+  });
+  return {
+    instance: undefined,
+    capabilities: {
+      "acme/quotes": {
+        convert: (eur) => eur * deps.settings.read(["eurUsd"]).values.eurUsd,
+        openTicker: (screen) => {
+          // A new object per ticker, so two tickers on the same screen stay separate entries.
+          const receiver: Screen = { show: (rate) => { screen.show(rate); } };
+          receiver.show(deps.settings.read(["eurUsd"]).values.eurUsd);
+          screens.add(receiver);
+          return { close: async () => { screens.delete(receiver); } };
+        },
+      },
+    },
+  };
+}

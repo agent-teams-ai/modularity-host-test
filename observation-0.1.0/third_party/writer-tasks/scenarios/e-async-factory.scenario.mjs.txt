@@ -1,0 +1,52 @@
+import { harness } from "./harness.mjs";
+const h = await harness("e-async-factory");
+const { createAuditModule } = await import("./e-async-factory.ts");
+const { opened } = await import("./e-async-factory.types.js");
+const settings = h.createStore({ retentionDays: 7, theme: "light" });
+const m = h.module("audit");
+let product;
+await h.step("the factory", async () => {
+  const pending = createAuditModule({ settings: settings.readonly() }, m.context);
+  await h.settle();
+  h.check(opened.length === 1 && opened[0].retentionDays === 7, "the log was not opened once with the current retention");
+  settings.set({ retentionDays: 30 }); // while the log is still opening
+  await h.settle();
+  opened[0]?.finish();
+  product = await pending;
+});
+if (product !== undefined) {
+  await h.settle();
+  h.check(product.instance.retention === 30, "a change made while the log was opening was lost");
+  settings.set({ retentionDays: 90 });
+  await h.settle();
+  h.check(product.instance.retention === 90, "a later change was not applied");
+  await h.step("record()", () => { product.capabilities["acme/audit"].record("login"); });
+  h.check(product.instance.entries.includes("login"), "record() did not append to the log");
+  h.check(opened.length === 1, "the log was opened more than once");
+  const report = await m.scope.control.close();
+  h.check(report.complete, "closing the module scope did not complete");
+  h.check(product.instance.closed, "the log was not closed when the module closed");
+  h.check(h.stats(settings).live === 0, "a subscription is still registered after the module closed");
+  settings.set({ retentionDays: 1 });
+  await h.settle();
+  h.check(product.instance.retention === 90, "the log still follows retention after the module closed");
+}
+
+// The scope starts closing while the log is still opening.
+const late = h.module("audit-closing");
+const lateFactory = createAuditModule({ settings: settings.readonly() }, late.context);
+let factoryFailed = false;
+const lateOutcome = lateFactory.then(() => undefined, () => { factoryFailed = true; });
+await h.settle();
+const lateOpen = opened.at(-1);
+const closing = late.scope.control.close();
+lateOpen?.finish(); // an adapter that finishes opening anyway
+await lateOutcome;
+const lateReport = await closing;
+await h.settle();
+h.check(factoryFailed, "the factory returned a module although its scope closed while the log was opening");
+h.check(lateReport.complete, "closing the scope while the log was opening did not complete");
+h.check(opened.every((call) => !call.log.handedOut || call.log.closed), "a log that was opened while its module was closing was never closed");
+h.check(h.stats(settings).live === 0, "a subscription is registered by a module whose scope closed during construction");
+h.check(h.hostErrors.length === 0, `a handler failed: ${h.hostErrors.map((r) => String(r.cause)).join("; ")}`);
+await h.finish();

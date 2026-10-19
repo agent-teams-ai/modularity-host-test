@@ -1,0 +1,8 @@
+import type { ModuleContext } from "@get-modular/resources";
+import { createGreeter, type GreeterDeps, type GreeterProduct } from "./d-greeter.types.js";
+
+export async function createGreeterModule(deps: GreeterDeps, { resources }: ModuleContext): Promise<GreeterProduct> {
+  const locale = deps.settings.read(["locale"]);
+  deps.settings.watch(locale, { resources, name: "greeter", onChange: async () => { await Promise.resolve(); } });
+  return { instance: undefined, capabilities: { "acme/greeter": createGreeter(locale.values.locale) } };
+}

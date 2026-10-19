@@ -1,0 +1,43 @@
+// Wrong on purpose (F11): the fan-out rethrows only the first screen failure, so later failures are lost.
+import type { ModuleContext } from "@get-modular/resources";
+import type { QuotesDeps, QuotesProduct, Screen, Ticker } from "./h-requests.types.js";
+
+export async function createQuotesModule(deps: QuotesDeps, { resources }: ModuleContext): Promise<QuotesProduct> {
+  // One subscription for all tickers: each open ticker is a Set entry, not a watcher of the settings store.
+  const screens = new Set<Screen>();
+  const current = deps.settings.read(["eurUsd"]);
+  deps.settings.watch(current, {
+    resources,
+    name: "quotes/rate",
+    onChange: ({ values }) => {
+      let failure: { readonly cause: unknown } | undefined;
+      for (const screen of screens) {
+        try {
+          screen.show(values.eurUsd);
+        } catch (cause) {
+          failure ??= { cause };
+        }
+      }
+      if (failure !== undefined) {
+        throw failure.cause;
+      }
+    },
+  });
+  return {
+    instance: undefined,
+    capabilities: {
+      "acme/quotes": {
+        convert: (eur) => eur * deps.settings.read(["eurUsd"]).values.eurUsd,
+        openTicker: (screen): Ticker => {
+          screen.show(deps.settings.read(["eurUsd"]).values.eurUsd);
+          screens.add(screen);
+          return {
+            close: async () => {
+              screens.delete(screen);
+            },
+          };
+        },
+      },
+    },
+  };
+}

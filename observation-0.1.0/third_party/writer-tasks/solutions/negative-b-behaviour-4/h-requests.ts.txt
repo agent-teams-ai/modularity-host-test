@@ -1,0 +1,23 @@
+// Wrong on purpose: close() only marks a ticker closed; every screen ever opened stays referenced.
+import type { ModuleContext } from "@get-modular/resources";
+import type { QuotesDeps, QuotesProduct, Screen, Ticker } from "./h-requests.types.js";
+
+export async function createQuotesModule(deps: QuotesDeps, { resources }: ModuleContext): Promise<QuotesProduct> {
+  const entries: { readonly screen: Screen; open: boolean }[] = [];
+  deps.settings.watch(deps.settings.read(["eurUsd"]), {
+    resources, name: "quotes/rate",
+    onChange: ({ values }) => {
+      for (const entry of entries) {
+        if (!entry.open) continue;
+        try { entry.screen.show(values.eurUsd); } catch (cause) { void cause; }
+      }
+    },
+  });
+  const openTicker = (screen: Screen): Ticker => {
+    screen.show(deps.settings.read(["eurUsd"]).values.eurUsd);
+    const entry = { screen, open: true };
+    entries.push(entry);
+    return { close: async () => { entry.open = false; } };
+  };
+  return { instance: undefined, capabilities: { "acme/quotes": { convert: (eur) => eur * deps.settings.read(["eurUsd"]).values.eurUsd, openTicker } } };
+}

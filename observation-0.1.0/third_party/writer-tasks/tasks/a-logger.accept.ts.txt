@@ -1,0 +1,12 @@
+// Acceptance for task (a): the signature, and a Host that passes a facet of a wider store.
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore, type ListenerError } from "@get-modular/observation";
+import { createLoggerModule } from "./a-logger.js";
+import type { LogLevel, LoggerDeps, LoggerProduct } from "./a-logger.types.js";
+
+const signature: (deps: LoggerDeps, context: ModuleContext) => Promise<LoggerProduct> = createLoggerModule;
+type HostSettings = { readonly logLevel: LogLevel; readonly theme: string; readonly region: string };
+declare const context: ModuleContext;
+declare const reportError: (report: ListenerError) => undefined;
+const host = createStore<HostSettings>({ logLevel: "info", theme: "light", region: "eu" }, { name: "settings", resources: context.resources, reportError });
+void signature({ settings: host.readonly() }, context);

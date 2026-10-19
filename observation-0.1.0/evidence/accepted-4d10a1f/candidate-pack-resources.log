@@ -1,0 +1,20 @@
+package: @get-modular/resources@0.2.0
+Tarball Contents
+CHANGELOG.md
+dist/composition/root.d.ts
+dist/composition/root.js
+dist/features/scope/arguments.d.ts
+dist/features/scope/arguments.js
+dist/features/scope/errors.d.ts
+dist/features/scope/errors.js
+dist/features/scope/scope.d.ts
+dist/features/scope/scope.js
+dist/features/scope/types.d.ts
+dist/features/scope/types.js
+dist/index.d.ts
+dist/index.js
+LICENSE
+package.json
+README.md
+Tarball Details
+/tmp/observation-ts-policy-archives/get-modular-resources-0.2.0.tgz

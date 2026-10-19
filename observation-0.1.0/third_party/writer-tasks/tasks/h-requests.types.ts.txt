@@ -1,0 +1,22 @@
+// Fixed types for task (h). Do not edit; check.sh uses its own copy.
+import type { ReadonlyStore } from "@get-modular/observation";
+
+/** The quotes module's own slice of the settings. */
+export type RateSettings = { readonly eurUsd: number };
+export type QuotesDeps = { readonly settings: ReadonlyStore<RateSettings> };
+
+/** Where one ticker shows the rate; supplied by the caller of `openTicker`. */
+export type Screen = { readonly show: (rate: number) => void };
+/**
+ * One open ticker. `close` resolves when it no longer follows anything. It rejects if releasing was incomplete,
+ * for example when a scope's close report has `complete: false` (a scope's `control.close()` itself never rejects).
+ */
+export type Ticker = { readonly close: () => Promise<void> };
+export type QuotesPort = {
+  /** Converts with the rate that is current at the moment of the call. */
+  readonly convert: (eur: number) => number;
+  /** Shows the current rate at once, then every change, until the ticker is closed. */
+  readonly openTicker: (screen: Screen) => Ticker;
+};
+
+export type QuotesProduct = { readonly instance: undefined; readonly capabilities: { readonly "acme/quotes": QuotesPort } };

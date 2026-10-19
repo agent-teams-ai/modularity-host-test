@@ -1,0 +1,2 @@
+// Runtime fakes for d-greeter.types.ts.
+export function createGreeter(locale) { return { greet: (name) => `${locale}:${name}` }; }

@@ -1,0 +1,413 @@
+{
+  "format": 1,
+  "status": "passed",
+  "subject": {
+    "format": 1,
+    "sourceCommit": "34bb4fae3d6a613f13cdbab9ca50b0bfdf4054e7",
+    "cmsSha256": "c2fe582a14ff6e79620b232ca7ffc914afb0474ec21fd43f208251dd7252f4a3",
+    "packages": [
+      {
+        "name": "@get-modular/core",
+        "version": "0.6.0",
+        "file": "archives/get-modular-core-0.6.0.tgz",
+        "sha256": "bac6f9e899b235124faf9d8eea9842eaaba5bb1ba543adb626fe21d6e3a5870f"
+      },
+      {
+        "name": "@get-modular/assembly",
+        "version": "0.6.0",
+        "file": "archives/get-modular-assembly-0.6.0.tgz",
+        "sha256": "ac96072e21d7a6a4264685c25e8c5ee487cbe0302ede58ec384d34ad4ddf8f63"
+      },
+      {
+        "name": "@get-modular/resources",
+        "version": "0.2.0",
+        "file": "archives/get-modular-resources-0.2.0.tgz",
+        "sha256": "d9f6363d9c848be90c15e5d20acf07226e3b29ed55ae8af3d6ee0274e5a123d5"
+      },
+      {
+        "name": "@get-modular/conformance",
+        "version": "0.4.0",
+        "file": "archives/get-modular-conformance-0.4.0.tgz",
+        "sha256": "9b0b7c3bd1f64ebed48ddf6ac51782aab0cf70d72a1fb9fac99b591b3ade888b"
+      },
+      {
+        "name": "@get-modular/observation",
+        "version": "0.1.0",
+        "file": "archives/get-modular-observation-0.1.0.tgz",
+        "sha256": "a0685247e9e00ec02c2abaeab1d4aceb2041468e5317d8bf5e786edf99ec02e5"
+      }
+    ]
+  },
+  "installed": {
+    "@get-modular/core": {
+      "version": "0.6.0",
+      "entry": "/workspace/scratch/e04865d5cacb/modularity-host-test/observation-0.1.0/node_modules/.pnpm/@get-modular+core@file+third_party+archives+get-modular-core-0.6.0.tgz/node_modules/@get-modular/core/dist/index.js",
+      "content": {
+        "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "dist/features/composition-semantics/binding-record.js": "470a0e1cda123b2b2dc661b31c0ca399bf39ef7105901a554a0da582d744ea14",
+        "dist/features/input-admission/byte-carrier.js": "b8e1d535e9929d37036c6d7c3a06b1bf6e1bb74555f6805e6090bf5c08358939",
+        "dist/features/diagnostics/collector.js": "41978b95031a1fbbbd1073b3ed0b8d85485504070b2a65ff3e126333731c318a",
+        "dist/features/composition-semantics/declaration-census.js": "6bfcacce517fa618ecff802b4f2555fe148d1a1843a2861fe37acb4e12ea3f3a",
+        "dist/features/input-admission/document-path.js": "cf2700de8d8dc30673d273b931326b0dcda443e5028f5af64f348bdfe00f7f81",
+        "dist/features/input-admission/document-reader.js": "a95fccb3df8c8552b4a157bc113567e69ba7dcbe51975938ae0c17ea57577e91",
+        "dist/features/input-admission/document-shape.js": "e056fcf0b827be84881a648228c0aa1d08f8f5eb675333cd8234601962088e8a",
+        "dist/features/input-admission/document-snapshot.js": "3fc8e2716cbab465bb67358ec9b9faee857e73190d509afe8c2c717fe2d59033",
+        "dist/features/canonicalization/owned-jcs/factory.js": "5cb9930012fe1725ed6536b04c3904fdd19dca9cde9091de54a3f1e7160235f4",
+        "dist/features/compiler-facade/factory.js": "5ea642dec0cd41912a914517c14f2b4f8efdb93d727ebc19121092345276a722",
+        "dist/features/composition-semantics/factory.js": "e4eb248ea00b816633f717c6c922ec77a6e40f80f3994fd52a5ce2da72814137",
+        "dist/features/input-admission/factory.js": "836fb80958ee220efe298f871b2cd0bb68be7f6287728a52c2d9ab5555189892",
+        "dist/features/plan-output/factory.js": "5658f205a56a3c8e7af6c7829103bce4caa14c53b46cd22f8397139e8c03b1d1",
+        "dist/features/raw-scanner/owned-iterative/factory.js": "2f3afffade284e74755dbd48de83adebf8f255123b48baa8d689c33177896dcc",
+        "dist/features/composition-semantics/graph-components.js": "8c837a350658d9bf338a4875563175cfcf635cf49234f957faf24b40bf1af365",
+        "dist/features/composition-semantics/graph-diagnostics.js": "0bb05766cb569e4059146e8419404afefd5d4053998b4a70556b64dce092e9b7",
+        "dist/features/composition-semantics/graph-resources.js": "7eadefef394da4a0f5ff83c563836cabca019d55043177a213b522ec80c3f7c3",
+        "dist/features/authoring/helpers.js": "1666d3c3e3c0f27a6913bbed9312aaf4d23f64204793ba411987f7cab4798b8d",
+        "dist/features/input-admission/identity-format.js": "03a658fcaf1699bf2d7cd8cbfe9a3b23fd2254922dd2fcf2b82bec6a202bd25e",
+        "dist/index.js": "957b0b510435788f66a2112805aedc194f5e4619a10cac0e5bf2bd06ea1b95ef",
+        "dist/features/authoring/internal.js": "96f46375995642039c328db515d1b29709b71ad82e58ae70defb046cda95785d",
+        "dist/features/diagnostics/internal.js": "0cc86260aa2e8fd803d7399afeb167c1a70ae1719ea88d321335457d6763ec30",
+        "dist/features/input-admission/invocation-wrapper.js": "b73dca7f0c4d33ebe867aa61aa68b9053f820c1a11bdb82f3009da798e583245",
+        "dist/features/input-admission/object-admission.js": "2b329329b9f80bc3175d163ef82e45e93d5227bd75bbf5cf031c5684f5bc61fd",
+        "dist/features/input-admission/object-resource-meter.js": "fe359245b45a4475662724c10abdda9031aa2ab57f7c174f428413f43256de96",
+        "dist/features/diagnostics/order.js": "93e4f391a43d278a2e2f2180c0223e69f8642547db7f73d0d94e8718133b563f",
+        "dist/features/composition-semantics/profile-census.js": "ba170e771da3902ff0ec732f65bb6e076021fb900caef91b6f076a190f8da010",
+        "dist/features/input-admission/profile-resource-facts.js": "c94ca494fafaec7d598a167f937b3bf441d05bcd59465d0f5045a46f6825e226",
+        "dist/features/input-admission/raw-admission.js": "2826e8bab569b1381983e25b2db9654a42f79286e4f4a90d2921266296316326",
+        "dist/features/input-admission/raw-byte-input.js": "dcf3f05ef743bd986f176e519dc5c6377ab2fad29be6cbfe5860146ceec0aa96",
+        "dist/features/input-admission/raw-document.js": "92071b62b8dfc380384354b3b5ae7edf3e6a8358f8e98273b506f5d0ea3b9ee8",
+        "dist/features/input-admission/raw-duplicate-replay.js": "72510600ce716816cd88e96c5ca6a57b7657ea2991a80d9dc0a87a8a17337ff4",
+        "dist/features/input-admission/raw-integer.js": "07899e6e7db829d73663d10ccb4ce26779d82a0db2b1953bba0f7823d567dd7f",
+        "dist/features/input-admission/raw-numeric-admission.js": "00744d2263a89bb02ff9ad771052eacb0bd5cd61134bd4928ec22d4f32c39cf1",
+        "dist/features/composition-semantics/ready-queue.js": "7158c299289a108bdeba32349b4d46d5b2c44aa10875550cca1e05746648adbc",
+        "dist/features/input-admission/resource-diagnostic.js": "c05e310f8e2d1ea955fe52a9617a20fd05a9b74a3c36020e95a34373b8c402e2",
+        "dist/features/input-admission/resource-limits.js": "4da200cd97256a760fc248d0383ef3727b8e0ca3e1537345a8b7ded9ab3a1753",
+        "dist/features/raw-scanner/owned-iterative/scanner.js": "ed02b64d6b2ae5ac5b35d2fd69bf887ea1a9e5c1f58aca5aac2386cdc6c7e7a1",
+        "dist/features/input-admission/schema-diagnostic.js": "9dc271e2ba399ec6653ec66f7472404863259d380e761663d11f290ebf84cb17",
+        "dist/features/composition-semantics/selected-bindings.js": "44fe4f18cb92f0e1c7fa30fa69cd8dbe8f1fbea850ca0986d75e1910436328c8",
+        "dist/features/composition-semantics/selected-graph.js": "394f09827c2122b0970d6c08b5fef9c9af24dde5be308b93b688e1e495fa09e8",
+        "dist/features/composition-semantics/semantic-analysis.js": "69b7574ac7a0d96fb6704e8228dc24acade8c014f0a7d0ce4c8686b40845acb9",
+        "dist/composition/generated/stage1.js": "93438ec6c300bad642dde280070cabe1f4df2ea07d30176b368f2cee311acf54",
+        "package.json": "af4cd3fbc7ec264047be099d29f69cf909406ca875190e6477ed40b93bf13371",
+        "CHANGELOG.md": "be865d3f4cad31930476e92573b3533b2e20f1a472e75d189e98e9325b85c8c5",
+        "README.md": "40fe328908346f71d236dd3a04e75b7fe394e10d65a7a8801f2e68426b7db957",
+        "dist/features/authoring/diagnostic-types.d.ts": "e9e544a0474bedb324e0b66eaa2ceebb5b39aa5740bedc29bf769892b25cbdd4",
+        "dist/features/authoring/helpers.d.ts": "6134e01672cfd405fff9d64b0a9a4fd8e148c3bdd4f07f56d6a1b7a8ec36cddb",
+        "dist/index.d.ts": "399999340720e59b1d44cc98155edee9ac9b9cdd1ef1a33bf12811f3fe0cadfb",
+        "dist/features/authoring/internal.d.ts": "5dfc24594cf45101e0658d91da1473b4ae1b33ccc4421e7fe2703bd17d3bd77f",
+        "dist/features/authoring/wire-types.d.ts": "5c84c2bb72b4d195bb16f662e19332844049a2e6ab2c97ea9f29babb5b902b76"
+      }
+    },
+    "@get-modular/assembly": {
+      "version": "0.6.0",
+      "entry": "/workspace/scratch/e04865d5cacb/modularity-host-test/observation-0.1.0/node_modules/.pnpm/@get-modular+assembly@file+third_party+archives+get-modular-assembly-0.6.0.tgz/node_modules/@get-modular/assembly/dist/index.js",
+      "content": {
+        "LICENSE": "8ad24112b7943b64f35ce31623ddd9221de61b5cff49603095e921c4f1cd3ab7",
+        "dist/features/construction/contract.js": "66cb493729c21b8bb4de6303f6b8707b08fb1ace990876dc1d6f29534e4098d3",
+        "dist/features/construction/derive-profile.js": "facf78fce137e5d1435de811e6a7b0a8603172cd95a94c8def38a01eeffc8a24",
+        "dist/features/construction/entry.js": "7baf92d968a5d3b3422ab470fbf4eb89b90141642897f013119bc7f3c3987cc8",
+        "dist/features/construction/factory.js": "4023e45e07314f7ee35f8ac92ce32e805894324aff2640201e4d1d55b6dc3962",
+        "dist/features/construction/group.js": "5cd44b14d3056f65b5ffc399f72e75f40ba5308aca19944f09ad325862e546cc",
+        "dist/index.js": "8d5af4cf90eea93e0c5471ae1f743dbf8bf9033ddf85f1aa68512ff005339f82",
+        "dist/features/construction/ports.js": "1263f9ae01ae8ed7f310fb7f1b0044d5ffbc87c7a6ffd85572931bb871f840fb",
+        "dist/features/construction/prepare.js": "49816b380b034b990cea3cae457de1c0e0e627620e39d62c3d2c0b87e02dc847",
+        "dist/composition/root.js": "5264b8685798972447a62532fed70b882fe8cac672b0dc52a3045a7ebcc8e874",
+        "dist/features/construction/run.js": "e4e4da86a87614b959b5ecaf2618f1f0f6c57f37d6fe4a4653ce809fbe8d3a5d",
+        "dist/features/construction/snapshot.js": "b9321454e379f15a3e95895f88966e652020a9ae4c6328248e8f822ed6c4472d",
+        "dist/features/construction/types.js": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+        "package.json": "bd683e6df43cc0cc2ef987ed2840cc9e43dd2e293532d0e00d818113cab7a674",
+        "CHANGELOG.md": "0c1d4febabf614bed3ee593669204e70a2bff41aa6831172e7c5fed9a73a672f",
+        "README.md": "16a5cdbd8c7306f986e76ecbf11f29ca9d7c5da380d76d5572aaf870fb52bb5c",
+        "dist/features/construction/contract.d.ts": "020d140facfb367d49fef86b567e278c59e228b24f808edf553a78c5918f6171",
+        "dist/features/construction/derive-profile.d.ts": "8d3c4da00c2a6597580c3a784c00e308742fb78581947e249f45a8ab619eaf11",
+        "dist/features/construction/entry.d.ts": "066f18391dcd11131428fb6dd5a1e868d16c8d5f6dbc9e8cee568dcf6c1990dc",
+        "dist/features/construction/factory.d.ts": "6d00d4f7aeac50fbbdc77aa7f657528256f5072a342a5e2cdb308afd6084ea8e",
+        "dist/features/construction/group.d.ts": "5ab050787e2fba2246012b81c6167c2799bb60ffedc5cb92771f87c942b0ef47",
+        "dist/index.d.ts": "0ed0168d2254f4795f903bb6bb92bfb1cca4cc3260fd87af2312148e27edf64c",
+        "dist/features/construction/ports.d.ts": "28118bb69e04a6983711344929f6d9c770daa88265d90bb6586ed98e26702c66",
+        "dist/features/construction/prepare.d.ts": "30004ad94f3a28f67b6c087a38fc6f2b97d89b7974b10d5e2b7989c688c85d90",
+        "dist/composition/root.d.ts": "09f28da7a05d709dd242c62c8d07eee7711d9f9f8dbc3e89aa8d08a8700fb209",
+        "dist/features/construction/run.d.ts": "c5e5f1cd94f2dc7680aa0eef3018f44778ec9f71d1e971af963e1ef0e43d5f56",
+        "dist/features/construction/snapshot.d.ts": "8453dc5695ab8ba1b7de319f5389d41441e3a2b1f510f40e6bc64e7fddcfc4fd",
+        "dist/features/construction/types.d.ts": "d54d0874c5d1bf1005c5df60a58350d191d02a15523d2bc2bae695021c619d31"
+      }
+    },
+    "@get-modular/resources": {
+      "version": "0.2.0",
+      "entry": "/workspace/scratch/e04865d5cacb/modularity-host-test/observation-0.1.0/node_modules/.pnpm/@get-modular+resources@file+third_party+archives+get-modular-resources-0.2.0.tgz/node_modules/@get-modular/resources/dist/index.js",
+      "content": {
+        "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "dist/features/scope/arguments.js": "4f5ad7390c9880fb6195078c4e953b137060acc43cc777690d0e03cf8758ac6b",
+        "dist/features/scope/errors.js": "d65d33d6e8acfba3f303703e1c44e5d320f3a58bf9d516edc9ea91d9fd7809a8",
+        "dist/index.js": "b7f636c0944add3e5926e0eda6c48e2847a09bf460e879fc59a45ab6b31010bb",
+        "dist/composition/root.js": "ab1d4cdeeee23b119e9e23fb077f033991e225f3d3fe504d272efcc8d1720b47",
+        "dist/features/scope/scope.js": "be3371e7885ec4ae49da6ded0979d0ef16b0f28c68f63228fcc6caf0786d88c8",
+        "dist/features/scope/types.js": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+        "package.json": "a6dea24c3a7f0f9f0a2dcdc9b0374c0dea40a039d26a3c6af1dbad514403c4bd",
+        "CHANGELOG.md": "f01d1432c2f746680e47ff32ae0eda15d90ba2b7bf506a241a3322d60a9d5279",
+        "README.md": "47e6b208c3bd65f16d1add74598f449f93e31f2940b45daa39283a6a2abe2c76",
+        "dist/features/scope/arguments.d.ts": "59cca91c52a6f3f314f252a4553eacdc88213609d5afa5cfbd53e85bc3459f0d",
+        "dist/features/scope/errors.d.ts": "1a3239023a4f30bafe6a5363726752c326d01b2a5719823c4e85f691b143ba82",
+        "dist/index.d.ts": "73b2e6eb35dcdf88cb040715495b8160a96f099a03b6c096d4b25a5b37141afa",
+        "dist/composition/root.d.ts": "ab1d4cdeeee23b119e9e23fb077f033991e225f3d3fe504d272efcc8d1720b47",
+        "dist/features/scope/scope.d.ts": "1c4c939ebd5c7743ec864e1394efe34aa2f62072a5414f2ea448c39697de8788",
+        "dist/features/scope/types.d.ts": "14285bfa6cfd0403a720f55872be18f91b00f5b9e13f67a669cb23b3ba64d68e"
+      }
+    },
+    "@get-modular/conformance": {
+      "version": "0.4.0",
+      "entry": "/workspace/scratch/e04865d5cacb/modularity-host-test/observation-0.1.0/node_modules/.pnpm/@get-modular+conformance@file+third_party+archives+get-modular-conformance-0.4.0.tgz_@g_75d7bef18637390d76c2960fa7fae508/node_modules/@get-modular/conformance/dist/index.js",
+      "content": {
+        "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "dist/features/layout/check.js": "7f61c413fcab1aa15f54cd593901da25785b5eb4edda7839d01c9f192ae63967",
+        "dist/features/namespaces/check.js": "c7cadc01f433358034994cfd35db29cc1dfb1b2f683e3cdd147d1efda406758a",
+        "dist/features/wiring/check.js": "27892d5d8f517f78b2dafa47366d47abbfb79da2a3de603c1fa84e40fdda0402",
+        "dist/features/records/declarations.js": "3d96281480549fa023539049eb0ca0caefddd59dd8dd5353e872730319d51c56",
+        "dist/features/wiring/describe.js": "a64ca59477bd78ed4c318747cc62fd2983c3509b9d2729b05b7dd194a25468c5",
+        "dist/features/errors/errors.js": "ddb13ed2d06ddf03a1dc82ba557c99c09b54981f3278ccad1b12520146ed7591",
+        "dist/features/handles/guard.js": "6dcbe8b03bfa7c7f54fdf87ffca0441f99732ff01c43145547f9c78b67db4704",
+        "dist/index.js": "458ed4134f1bc663cc36a6a772e1c820fedfad363797c2ad29f07cded52c2891",
+        "dist/features/harness/isolate.js": "25a2fa7cd399c95994923d961567a828f7c27d0ba51e413add6887157f29a15c",
+        "dist/features/ports/own-members.js": "6dd5decf659f09c9f4e4d6951bf4f98a35b1775f8aacab308e24a623c869aa34",
+        "dist/features/records/own.js": "4d086d97c7249f75671411b800a5bb0b5823cb16ac3af7607b20affbaa93cbec",
+        "dist/composition/root.js": "48cc7f340894d6d9c172469dbedf36a2c5f1e7b7b0f623e2c0549bea78668f68",
+        "dist/features/harness/smoke.js": "063272febc415d8b660074f7c7af4950021135b0639164d23c7eb7160df5e0c1",
+        "dist/features/suites/suite.js": "98e741ff6acd141842d669daef22f2fbb274cf8d48bb2cd36fe8463a9b9d87a8",
+        "dist/features/harness/types.js": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+        "dist/features/layout/types.js": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+        "dist/features/suites/types.js": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+        "dist/features/wiring/types.js": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+        "package.json": "fd62271a49c5829bbc30227c9778c78ebaf69d2b7e4d258d9968a263365faade",
+        "CHANGELOG.md": "ae9a3cb34f2125f12776a73abad5d54f25de60306b482cb3e9e5eed2ba1e8db3",
+        "README.md": "7baef2a5b3cef919237409fb7b7f6459e5ea227bced33fd810358780447b3c00",
+        "dist/features/layout/check.d.ts": "3ed01ac32ac557eb9e382dbea6698106fe2292b5f513748a6337c0c445c6826f",
+        "dist/features/namespaces/check.d.ts": "d65c2a570b67e6db1ea48458c8ec7694f122ad940f634dce1d763e2b1d8ba8ce",
+        "dist/features/wiring/check.d.ts": "41c011d416143561f861cbe831735ec1ad0eaf9213c757c0cae67661e9166582",
+        "dist/features/records/declarations.d.ts": "7a1b0bf3bbc9a58a92343acaea98639897e0444e8630c8819720881abad8cc0a",
+        "dist/features/wiring/describe.d.ts": "4a73a0b0efcbecd2fa400d3efaee5409133cb4f7d085205110687d7d8b318587",
+        "dist/features/errors/errors.d.ts": "acfe97fc3335571f50ffb4ca7edda3d9a8233a057409e7495bfa7428232b71b7",
+        "dist/features/handles/guard.d.ts": "3222896e69e71e0a49bbf85f73cd57e33ce6770e374906c7f8da8cd5f82452ce",
+        "dist/index.d.ts": "e7ba8d9a3973ab59cba2c376c03da5247f7f23c5b75627c2f92e234c5491223c",
+        "dist/features/harness/isolate.d.ts": "f2fa6340d783db61bef6ad6acffd8d88db945007d298d5bbea252de253dec860",
+        "dist/features/ports/own-members.d.ts": "b2488eb9cbda1fa2b170a97b503f09c11c50dfcde2f76b2470f55691b465799e",
+        "dist/features/records/own.d.ts": "59339359ee41b3f5a395abc3ee09e67dbd45ff2fd9f6862d8b217f3d31167163",
+        "dist/composition/root.d.ts": "48cc7f340894d6d9c172469dbedf36a2c5f1e7b7b0f623e2c0549bea78668f68",
+        "dist/features/harness/smoke.d.ts": "9ea577266ff25e9f331247152338cbf9038aec40d9e6576c9bdebdb75fa25e51",
+        "dist/features/suites/suite.d.ts": "521fdaaf7a6cf55eb54a49b2a7a4d6ca0d792d196256de6ae74f769fd4040dfb",
+        "dist/features/harness/types.d.ts": "a69e8773359a845a536f85f767c22db40b9f2d51296821949f9ef804ba7b12c3",
+        "dist/features/layout/types.d.ts": "6f1bb550358d20986c87c3572ad1f28b6a9497552e1cb535e747d8e7f7391eab",
+        "dist/features/suites/types.d.ts": "281adc480f172509d4ed8ef4193c09d22d7394591247103b4cfb6e78615feb15",
+        "dist/features/wiring/types.d.ts": "a0fc9fb5edbbf13f857ddaa9ccef7128abc91b0bed886af4e5b279c42fd77ad6"
+      }
+    },
+    "@get-modular/observation": {
+      "version": "0.1.0",
+      "entry": "/workspace/scratch/e04865d5cacb/modularity-host-test/observation-0.1.0/node_modules/.pnpm/@get-modular+observation@file+third_party+archives+get-modular-observation-0.1.0.tgz_@g_433e3cdc278a694e3430ea5c57f1d294/node_modules/@get-modular/observation/dist/index.js",
+      "content": {
+        "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "dist/features/store/admission.js": "88f6cea68231c6fce9221db3598e9a2b4e1a28abc53f6d3bc2d0fc0eaafce15e",
+        "dist/features/store/arguments.js": "6d950751c858b1c5e465c2e50d956c4cafc18b1ac57b23e96985a85775703446",
+        "dist/features/delivery/context.js": "e983605d6f2fb44a1c912bf6ae7fab42c93550a78d38bc39d8f0f6cad7f6c88f",
+        "dist/features/store/engine.js": "6f80f8ace4a4f8097bcde8106b86084255dfb4e30159ae3a9bbab8cdfabc2baa",
+        "dist/features/errors/errors.js": "becd41e1c7f3f89bfee42c45ffdec2ff7a862776c9475542a47b870bdd82c8d8",
+        "dist/index.js": "41ed0de3425e2d60afbf8a6bdca3570b0471e01e2b178b53040afed3ee45b8c6",
+        "dist/features/store/load.js": "709eac02fba26ece151a6cfdd94fba3b25ce78d7b0c61ee23c6881c91469870b",
+        "dist/features/delivery/pending.js": "9dea66b2638f0291b776b5d00c0e99d41436cbb626665d3aba84599d30505397",
+        "dist/features/delivery/platform.js": "65673dd4422ee4ab7a271aa00f7cf09eba17809b900673767cbed33f2a383de4",
+        "dist/features/store/registry.js": "d65fab7ca9438c7405dfd932ac48f778fa01f6a3d63c7c5580d365b2e9d3ed31",
+        "dist/composition/root.js": "04b361d20a93f1752785c4a8791dcfee2f67eb23f0e3ccd38cf23104bac4fa46",
+        "dist/features/store/store.js": "7bddd2b604690d643f411df49448ef8be3f896fd0d25e854fd9150a76e1760d9",
+        "dist/composition/testing.js": "b38df9cdca22c6be0aae4bd215281b1c5edf9374b9e2ff5270b7ae9057add320",
+        "dist/testing.js": "b45f3a510fe9c036a34a915c1162c897a818caca1913cd9186c064d1e96dd1e5",
+        "dist/features/store/types.js": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+        "dist/features/store/values.js": "4558b20414cb6a024dba1dc762ec881b76faece40101bd2a54b44727a096224e",
+        "dist/features/testing/waits.js": "17029c851d20ba066573a982798cc5e24fab193de5dd95163259f8ed3d870a0f",
+        "dist/features/store/watch.js": "44fd1092de2b87b83f5ed10c29cdbc0292f54cc3c84df85cfbed395985a25923",
+        "package.json": "014320c9984c75ef8f13c58f388be85b4379848598486836ed149e25adaf18c7",
+        "CHANGELOG.md": "2613028360824b36d67d5b1131763bf94b3fedd763669243aadc7911a4c33138",
+        "README.md": "9c445194dc956283627f605d0bd86c70d28e30b06401f7116eac715ee45bbd46",
+        "dist/features/store/admission.d.ts": "09c392db93bb7296c1712863bf1e524122a83c5f075ed5f40aa8cab96323cb77",
+        "dist/features/store/arguments.d.ts": "ae20da81118ce3eb664464e1bf1f06261ac4c8ea87f84ddd63a85734b0845a4d",
+        "dist/features/delivery/context.d.ts": "96e28404fed7b59fff08c47e06de6b9bba47d01156faa8bf76ca2ffc9536f40f",
+        "dist/features/store/engine.d.ts": "dffff9105ff97f77d5c2541510018b838f25940f325887f9dc007d11ee1c8597",
+        "dist/features/errors/errors.d.ts": "3b26fae7e624a85655985ac7dfd48b15995f2fe0abb51cc84e51299bf3ac46db",
+        "dist/index.d.ts": "361fc5b4b73384358acd32ab4c9e31e1120de9c70194710092f89bda1f270ca6",
+        "dist/features/store/load.d.ts": "00bf3913bcf15abc6459263cbd3a2ccf454a80f9b5a0cd96fcd697c445506eef",
+        "dist/features/delivery/pending.d.ts": "4262093a1b1e9b8355f1ec5477798550789e8be929742b9c3b8e9bc7cab5f60f",
+        "dist/features/delivery/platform.d.ts": "a6f0e75257fb156e5fa9a181ccd73a7e50123d7bc1195bb0abe46ee3762b256f",
+        "dist/features/store/registry.d.ts": "031162874ed43c24b81cfa0ed7304d1e7737021a5334ba6e18c9a298b3339d70",
+        "dist/composition/root.d.ts": "04b361d20a93f1752785c4a8791dcfee2f67eb23f0e3ccd38cf23104bac4fa46",
+        "dist/features/store/store.d.ts": "370c27b813b2f5596734340c5c5fd9a1c35efa6b2dbbf5234ee13691858ada71",
+        "dist/composition/testing.d.ts": "b38df9cdca22c6be0aae4bd215281b1c5edf9374b9e2ff5270b7ae9057add320",
+        "dist/testing.d.ts": "5ffa720540f73c7b3f2cbc5af1b857cf2949b6e088fb93b658137445918db9fc",
+        "dist/features/store/types.d.ts": "ab14032d4d5b722eeb63a4cda601826e91fc9f36f886f2994432a72781d03187",
+        "dist/features/store/values.d.ts": "eba16111266e63aaffe869d744d8554fbde9f6eb36bd0112ad45b7982293d917",
+        "dist/features/testing/waits.d.ts": "54c6ad4a846d52fb975cb85d22e0a2be6cfeadfd21f1c7e785d65b37f639c8a1",
+        "dist/features/store/watch.d.ts": "65a593febf4253376be855ba32ecec990e28343816e8923363a991215a9ed6ce"
+      }
+    }
+  },
+  "compilerVersions": [
+    "7.0.2"
+  ],
+  "fixture": {
+    "commit": "a145931ec4522d3a4a5cd1e06a342814a876801e",
+    "sourceFiles": {
+      "src/composition/contracts.ts": "a5a044e7dc4051f7629f7425aec0f02c777cff759b5880cd118427f95f356569",
+      "src/composition/entries.ts": "918272bffa743b2c80e7b86901d898ef8716223304148ff63733cce9c315c1e7",
+      "src/composition/root.ts": "ec44b133f9d6ac4e2686d6a9f8f5322dc3a6d2396095707cf69d05db27c1b438",
+      "src/features/projection/composition/projection.module.ts": "e7401023b410ba6f4614c581367a96580f152d365e9177517e4ab50799b6dd05",
+      "src/reference/a-logger.ts": "a79cdcf9d00e99ecd15fa130bcacb8fee4c5b6209369a64397b2810e273f79ed",
+      "src/reference/a-logger.types.ts": "0d18ee8e3a49a4a6177cfe02afc5487be3790f36fdfe4448ad482d4f41fccb35",
+      "src/reference/b-catalog.ts": "c3a29c10af47d990a2880d4072051dc5e165af69db30dbca7670b2fea465b16b",
+      "src/reference/b-catalog.types.ts": "67b535d3ebb7c437a1e8ece594db32b07fdc96f116b2068df076bca7c16acce0",
+      "tests/connected.test.ts": "dedebb36ab0de5fad2e3d30ad16008ed9c30d7954ab9c2921f038d4d8dcda835",
+      "tests/controls.ts": "ff46130f75aab244e814657cfd2008668828083c17c5c7d14ec7eec26c5fb025",
+      "tests/environment.test.mjs": "1b40e9dd16d3adfba59e56ae6189e87a41c3e3acc5df87435540c500ea6282f6",
+      "tests/public-stats.test.mjs": "c012bb792f429021436fc4f85422695a7740f7b2857db101c45cad07db3c69b1",
+      "tests/reference-catalog.mjs": "e9dedd03350a20173cf03cd17fff75a908b7ae7febf8eb1cca703768eba5488c",
+      "tests/smoke.test.ts": "358777eadee6f04189db81620ae8a792d573d3b042334246b6b5671393cd9d31",
+      "tests/wiring.ts": "a95a4493ca8ed56c83175dc9a9feac8bb58d2853076bf550b098e275e008636e",
+      "tests/writer-gate.test.mjs": "94e00e68cf1a776043444d2570d00f057b578aadc622cbd3818797ef21a8aa5c",
+      "tools/check.mjs": "3006d75e79b503182b24525c2fa886f2576afc24664a8f36efd78e4c0aa7123c",
+      "tools/pins.mjs": "dbf610d425849f406b7f3ea14e6b1ce1a84f385d91aa661df843de867783036e",
+      "tools/prepare.mjs": "7bfd592d345a4d17494b27e60349df5e18f71fd0dcdbca444874c723854cf58d",
+      "tools/public-stats.mjs": "2aaafff985cfbe4101469a53f7e74839f18054e5e2ce4d83f6992912051cde5e",
+      "package.json": "a26afd943e4039a2d3d69f4380bc5513464cfaccf7c4b13812feb7c285d12cfb",
+      "pnpm-workspace.yaml": "5ead578ce8a2259103c433c38ee006083fc758338055cf877d7af111ed8de2d6",
+      "tsconfig.json": "db40579df03120cfcdf7c537c46bb1704dc749675245e402b8003f65e4551b5b",
+      "tsconfig.runtime.json": "c8e28af008b2f81a86f6831cc2ad4af44bbb5c4e31f0d26a032018890d25c014",
+      "third_party/writer-inputs.json": "9a35793d12863dbc0f1eee638ea1726af9e86195a02e5e1ee91e4d779ef9566e"
+    }
+  },
+  "environment": {
+    "platform": "linux",
+    "arch": "x64",
+    "release": "6.18.55"
+  },
+  "lockSha256": "850964806ea7a6dee6e0174261eeddb483c4e3aa9de901a04be33c125aec9b76",
+  "stages": [
+    {
+      "name": "version-v24.21.0",
+      "executable": "/tmp/observation-toolchain/node-v24.21.0-linux-x64/bin/node",
+      "args": [
+        "--version"
+      ],
+      "status": 0,
+      "signal": null
+    },
+    {
+      "name": "version-v26.11.1",
+      "executable": "/tmp/observation-toolchain/node-v26.11.1-linux-x64/bin/node",
+      "args": [
+        "--version"
+      ],
+      "status": 0,
+      "signal": null
+    },
+    {
+      "name": "types-7.0.2-NodeNext",
+      "executable": "/tmp/observation-toolchain/node-v26.11.1-linux-x64/bin/node",
+      "args": [
+        "/workspace/scratch/e04865d5cacb/modularity-host-test/observation-0.1.0/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.json",
+        "--module",
+        "NodeNext",
+        "--moduleResolution",
+        "NodeNext",
+        "--skipLibCheck",
+        "false"
+      ],
+      "status": 0,
+      "signal": null
+    },
+    {
+      "name": "types-7.0.2-Bundler",
+      "executable": "/tmp/observation-toolchain/node-v26.11.1-linux-x64/bin/node",
+      "args": [
+        "/workspace/scratch/e04865d5cacb/modularity-host-test/observation-0.1.0/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.json",
+        "--module",
+        "ESNext",
+        "--moduleResolution",
+        "Bundler",
+        "--skipLibCheck",
+        "false"
+      ],
+      "status": 0,
+      "signal": null
+    },
+    {
+      "name": "emit",
+      "executable": "/tmp/observation-toolchain/node-v26.11.1-linux-x64/bin/node",
+      "args": [
+        "/workspace/scratch/e04865d5cacb/modularity-host-test/observation-0.1.0/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.runtime.json"
+      ],
+      "status": 0,
+      "signal": null
+    },
+    {
+      "name": "runtime-node24",
+      "executable": "/tmp/observation-toolchain/node-v24.21.0-linux-x64/bin/node",
+      "args": [
+        "--test",
+        "out/tests/connected.test.js",
+        "tests/public-stats.test.mjs",
+        "tests/environment.test.mjs"
+      ],
+      "status": 0,
+      "signal": null
+    },
+    {
+      "name": "writers-node24",
+      "executable": "/tmp/observation-toolchain/node-v24.21.0-linux-x64/bin/node",
+      "args": [
+        "--test",
+        "tests/writer-gate.test.mjs"
+      ],
+      "status": 0,
+      "signal": null
+    },
+    {
+      "name": "runtime-node26",
+      "executable": "/tmp/observation-toolchain/node-v26.11.1-linux-x64/bin/node",
+      "args": [
+        "--test",
+        "out/tests/connected.test.js",
+        "tests/public-stats.test.mjs",
+        "tests/environment.test.mjs"
+      ],
+      "status": 0,
+      "signal": null
+    },
+    {
+      "name": "writers-node26",
+      "executable": "/tmp/observation-toolchain/node-v26.11.1-linux-x64/bin/node",
+      "args": [
+        "--test",
+        "tests/writer-gate.test.mjs"
+      ],
+      "status": 0,
+      "signal": null
+    },
+    {
+      "name": "smoke",
+      "executable": "/tmp/observation-toolchain/node-v26.11.1-linux-x64/bin/node",
+      "args": [
+        "--test",
+        "out/tests/smoke.test.js"
+      ],
+      "status": 0,
+      "signal": null
+    }
+  ],
+  "claims": {
+    "runtime": "O-01 through O-10 passed on the named archives and runtime rows; one smoke",
+    "packed": "exact pinned archive installation",
+    "source": "only the pinned CMS testing-import lint predicate; no full source-architecture claim",
+    "measurement": "not-selected"
+  }
+}

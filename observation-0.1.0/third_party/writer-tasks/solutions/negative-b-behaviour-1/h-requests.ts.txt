@@ -1,0 +1,18 @@
+// Wrong on purpose: convert() uses a cached rate, and tickers subscribe in the module scope and never release.
+import type { ModuleContext } from "@get-modular/resources";
+import type { QuotesDeps, QuotesProduct, Screen, Ticker } from "./h-requests.types.js";
+
+export async function createQuotesModule(deps: QuotesDeps, { resources }: ModuleContext): Promise<QuotesProduct> {
+  const first = deps.settings.read(["eurUsd"]);
+  let rate = first.values.eurUsd;
+  deps.settings.watch(first, { resources, name: "quotes/rate", onChange: ({ values }) => { rate = values.eurUsd; } });
+  let opened = 0;
+  const openTicker = (screen: Screen): Ticker => {
+    opened += 1;
+    const now = deps.settings.read(["eurUsd"]);
+    screen.show(now.values.eurUsd);
+    deps.settings.watch(now, { resources, name: `quotes/ticker-${opened}`, onChange: ({ values }) => { screen.show(values.eurUsd); } });
+    return { close: async () => undefined };
+  };
+  return { instance: undefined, capabilities: { "acme/quotes": { convert: (eur) => eur * rate, openTicker } } };
+}

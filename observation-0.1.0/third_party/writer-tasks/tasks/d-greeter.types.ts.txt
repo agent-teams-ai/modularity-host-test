@@ -1,0 +1,10 @@
+// Fixed types for task (d). Do not edit; check.sh uses its own copy.
+import type { ReadonlyStore } from "@get-modular/observation";
+
+/** The greeter's own slice of the settings. */
+export type GreetingSettings = { readonly locale: string };
+export type GreeterDeps = { readonly settings: ReadonlyStore<GreetingSettings> };
+export type GreeterPort = { readonly greet: (name: string) => string };
+export declare function createGreeter(locale: string): GreeterPort;
+
+export type GreeterProduct = { readonly instance: undefined; readonly capabilities: { readonly "acme/greeter": GreeterPort } };

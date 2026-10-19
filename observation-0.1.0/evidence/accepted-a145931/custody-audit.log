@@ -1,0 +1,12 @@
+Exact reviewed release candidate: 34bb4fae3d6a613f13cdbab9ca50b0bfdf4054e7
+Committed input-only consumer executed: a145931ec4522d3a4a5cd1e06a342814a876801e
+All ten unchanged runner stages passed; actual compiler version 7.0.2; NodeNext and Bundler distinct.
+All 176 installed file hashes retained; only observation/package.json differs from prior installed content.
+All 78 copied writer hashes unchanged. Of 25 consumer source/config hashes, only copied-input sourceCommit changed.
+Guarded public statistics harness patch is byte-identical to prior accepted execution.
+node24: five actual runtime tests, 11 positive writers and 22 intended negative writers; unchanged manifest expectations matched; zero skips/cancellations.
+node26: five actual runtime tests, 11 positive writers and 22 intended negative writers; unchanged manifest expectations matched; zero skips/cancellations.
+One smoke: 11 exact rows; baseline succeeded; five fail injections; four cancelled abort rows and existing projection abort failed row; every close complete/settled/debt-free.
+Lockfile SHA256: 850964806ea7a6dee6e0174261eeddb483c4e3aa9de901a04be33c125aec9b76
+Result SHA256: fe38ccbfb3dcf10e07a9cad8a4cc4971714ab3e2d5daea217fe7e47c8f950473
+Historical accepted evidence directories compare byte-identical by Git tree inventory; no source/oracle/expectation edits.

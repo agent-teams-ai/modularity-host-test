@@ -1,0 +1,55 @@
+{
+  "oldSourceCommit": "34bb4fae3d6a613f13cdbab9ca50b0bfdf4054e7",
+  "newSourceCommit": "3b42d2641055c36c13ff0e2b7fae6cc02a945514",
+  "packages": [
+    {
+      "package": "@get-modular/core",
+      "oldSha256": "bac6f9e899b235124faf9d8eea9842eaaba5bb1ba543adb626fe21d6e3a5870f",
+      "newSha256": "bac6f9e899b235124faf9d8eea9842eaaba5bb1ba543adb626fe21d6e3a5870f",
+      "files": 52,
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    {
+      "package": "@get-modular/assembly",
+      "oldSha256": "ac96072e21d7a6a4264685c25e8c5ee487cbe0302ede58ec384d34ad4ddf8f63",
+      "newSha256": "ac96072e21d7a6a4264685c25e8c5ee487cbe0302ede58ec384d34ad4ddf8f63",
+      "files": 28,
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    {
+      "package": "@get-modular/resources",
+      "oldSha256": "d9f6363d9c848be90c15e5d20acf07226e3b29ed55ae8af3d6ee0274e5a123d5",
+      "newSha256": "d9f6363d9c848be90c15e5d20acf07226e3b29ed55ae8af3d6ee0274e5a123d5",
+      "files": 16,
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    {
+      "package": "@get-modular/conformance",
+      "oldSha256": "9b0b7c3bd1f64ebed48ddf6ac51782aab0cf70d72a1fb9fac99b591b3ade888b",
+      "newSha256": "9b0b7c3bd1f64ebed48ddf6ac51782aab0cf70d72a1fb9fac99b591b3ade888b",
+      "files": 40,
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    {
+      "package": "@get-modular/observation",
+      "oldSha256": "a0685247e9e00ec02c2abaeab1d4aceb2041468e5317d8bf5e786edf99ec02e5",
+      "newSha256": "c06879bcaefcf1b6120f99347502ccd461bd2aa67e93d9c98995cb34fd81b9e1",
+      "files": 40,
+      "added": [],
+      "removed": [],
+      "changed": [
+        "package/dist/features/store/engine.js"
+      ]
+    }
+  ],
+  "historicalEvidenceFiles": 103,
+  "claim": "All five archives freshly packed from the new source checkpoint; four byte-identical, only observation engine.js changed."
+}

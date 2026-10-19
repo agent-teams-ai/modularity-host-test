@@ -1,0 +1,13 @@
+// Runtime fakes for f-watch-and-load.types.ts.
+export function regionLabel(region) { return `Region ${region.toUpperCase()}`; }
+export const calls = [];
+export function fetchHolidays(region, { signal }) {
+  return new Promise((resolve, reject) => {
+    calls.push({
+      region, signal,
+      resolve: () => { resolve(Object.freeze([`${region}-holiday`])); },
+      reject: (cause) => { reject(cause); },
+    });
+    signal.addEventListener("abort", () => { reject(new DOMException("aborted", "AbortError")); }, { once: true });
+  });
+}

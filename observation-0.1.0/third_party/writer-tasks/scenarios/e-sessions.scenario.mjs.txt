@@ -1,0 +1,39 @@
+import { harness } from "./harness.mjs";
+const h = await harness("e-sessions");
+const { createSessionsModule } = await import("./e-sessions.ts");
+const settings = h.createStore({ banner: "Welcome", theme: "light" });
+const m = h.module("sessions");
+let sessions;
+await h.step("the factory", async () => { sessions = (await createSessionsModule({ settings: settings.readonly() }, m.context)).capabilities["acme/sessions"]; });
+if (sessions !== undefined) {
+  const screens = [];
+  const open = [];
+  await h.step("open x50", () => {
+    for (let i = 0; i < 50; i += 1) {
+      const screen = { seen: [], show: (banner) => { screen.seen.push(banner); } };
+      screens.push(screen);
+      open.push(sessions.open(`user-${i}`, screen));
+    }
+  });
+  h.check(screens.length === 50 && screens.every((screen) => screen.seen[0] === "Welcome"), "a session did not show the current banner at once");
+  settings.set({ banner: "Sale" });
+  await h.settle();
+  h.check(screens.every((screen) => screen.seen.at(-1) === "Sale"), "an open session did not show a change");
+  let rejected = 0;
+  for (const session of open.slice(0, 25)) { try { await session.end(); } catch { rejected += 1; } }
+  h.check(rejected === 0, `${rejected} end() calls rejected`);
+  h.check(h.stats(settings).live === 25, `after ending 25 of 50 sessions, ${h.stats(settings).live} subscriptions remain (expected 25)`);
+  settings.set({ banner: "Closed" });
+  await h.settle();
+  h.check(screens.slice(0, 25).every((screen) => screen.seen.at(-1) === "Sale"), "an ended session still shows changes");
+  h.check(screens.slice(25).every((screen) => screen.seen.at(-1) === "Closed"), "an open session missed a change");
+  for (const session of open.slice(25)) await session.end();
+  await h.step("open and end 1100 sessions one after another", async () => {
+    for (let i = 0; i < 1100; i += 1) await sessions.open(`visitor-${i}`, { show: () => undefined }).end();
+  });
+  h.check(h.stats(settings).live === 0, "ended sessions left subscriptions behind");
+  const report = await m.scope.control.close();
+  h.check(report.complete, "closing the module scope did not complete");
+  h.check(h.hostErrors.length === 0, `a handler failed: ${h.hostErrors.map((r) => String(r.cause)).join("; ")}`);
+}
+await h.finish();

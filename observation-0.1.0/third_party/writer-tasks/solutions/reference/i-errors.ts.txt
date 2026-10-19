@@ -1,0 +1,25 @@
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore } from "@get-modular/observation";
+import {
+  createNotifier, parseQuietHours, type NotificationStatus, type NotificationsDeps, type NotificationsProduct,
+} from "./i-errors.types.js";
+
+export async function createNotificationsModule(deps: NotificationsDeps, { resources }: ModuleContext): Promise<NotificationsProduct> {
+  const quiet = deps.settings.read(["quietHours"]);
+  const notifier = createNotifier(parseQuietHours(quiet.values.quietHours));
+  deps.settings.watch(quiet, {
+    resources, name: "notifications/quiet-hours",
+    // parseQuietHours throws for invalid text before anything changes; the store reports the throw with this name.
+    onChange: ({ values }) => { notifier.setQuietHours(parseQuietHours(values.quietHours)); },
+  });
+  const status = createStore<NotificationStatus>({ muted: false }, {
+    name: "notifications/status", resources, reportError: deps.errors.report,
+  });
+  return {
+    instance: notifier,
+    capabilities: {
+      "acme/notifications": { mute: (muted) => { status.set({ muted }); return undefined; } },
+      "acme/notifications/status": status.readonly(),
+    },
+  };
+}

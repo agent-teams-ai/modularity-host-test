@@ -1,0 +1,14 @@
+import type { ModuleContext } from "@get-modular/resources";
+import type { Screen, Session, SessionsDeps, SessionsProduct } from "./e-sessions.types.js";
+
+// Wrong on purpose: every session subscribes in the long-lived module scope under a generated name,
+// so ended sessions stay registered (the pile-up the store limit and check.sh must catch).
+export async function createSessionsModule(deps: SessionsDeps, { resources }: ModuleContext): Promise<SessionsProduct> {
+  const open = (user: string, screen: Screen): Session => {
+    const banner = deps.settings.read(["banner"]);
+    screen.show(banner.values.banner);
+    deps.settings.watch(banner, { resources, name: `banner:${user}`, onChange: ({ values }) => { screen.show(values.banner); } });
+    return { end: async () => undefined };
+  };
+  return { instance: undefined, capabilities: { "acme/sessions": { open } } };
+}

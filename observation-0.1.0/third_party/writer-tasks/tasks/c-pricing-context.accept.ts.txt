@@ -1,0 +1,15 @@
+// Acceptance for task (c): the signature, a wider Host store, and a child that depends on a slice of the result.
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore, type ListenerError, type ReadonlyStore } from "@get-modular/observation";
+import { createPricingContextModule } from "./c-pricing-context.js";
+import type { PricingContextDeps, PricingContextProduct } from "./c-pricing-context.types.js";
+
+const signature: (deps: PricingContextDeps, context: ModuleContext) => Promise<PricingContextProduct> = createPricingContextModule;
+type HostSettings = { readonly currency: string; readonly region: string; readonly theme: string };
+declare const context: ModuleContext;
+declare const reportError: (report: ListenerError) => undefined;
+const host = createStore<HostSettings>({ currency: "EUR", region: "de", theme: "light" }, { name: "settings", resources: context.resources, reportError });
+export async function wire(): Promise<ReadonlyStore<{ readonly vatRate: number }>> {
+  const product = await signature({ settings: host.readonly(), errors: { report: reportError } }, context);
+  return product.capabilities["acme/pricing/context"];
+}

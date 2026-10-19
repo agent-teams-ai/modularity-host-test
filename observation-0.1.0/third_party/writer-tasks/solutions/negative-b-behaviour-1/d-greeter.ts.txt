@@ -1,0 +1,7 @@
+// Wrong on purpose: reads the locale on every call, so it follows later changes.
+import type { ModuleContext } from "@get-modular/resources";
+import { createGreeter, type GreeterDeps, type GreeterProduct } from "./d-greeter.types.js";
+
+export async function createGreeterModule(deps: GreeterDeps, _context: ModuleContext): Promise<GreeterProduct> {
+  return { instance: undefined, capabilities: { "acme/greeter": { greet: (name) => createGreeter(deps.settings.read(["locale"]).values.locale).greet(name) } } };
+}

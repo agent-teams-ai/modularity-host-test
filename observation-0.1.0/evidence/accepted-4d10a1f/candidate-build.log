@@ -1,0 +1,11 @@
+v26.11.1
+11.20.0
+$ node architecture/checks/node-version.mjs
+Node 26.11.1 satisfies tooling >=24.21.0 <25 || >=26.10.0 <27.
+$ pnpm peers check --lockfile-only
+No peer dependency issues found
+$ pnpm core:build && node architecture/tooling/build-assembly.mjs
+$ node architecture/tooling/build-core.mjs
+$ node architecture/tooling/build-leaf-package.mjs resources
+$ node architecture/tooling/build-leaf-package.mjs conformance
+$ node architecture/tooling/build-leaf-package.mjs observation

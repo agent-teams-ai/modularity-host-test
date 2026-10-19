@@ -1,0 +1,29 @@
+import type { ModuleContext } from "@get-modular/resources";
+import type { QuotesDeps, QuotesProduct, Screen, Ticker } from "./h-requests.types.js";
+
+export async function createQuotesModule(deps: QuotesDeps, { resources }: ModuleContext): Promise<QuotesProduct> {
+  // Per call: read the current value; nothing to follow, nothing to release.
+  const convert = (eur: number): number => eur * deps.settings.read(["eurUsd"]).values.eurUsd;
+  // Per ticker: a child scope that ends with the ticker, so its subscription cannot pile up in the module scope.
+  const openTicker = (screen: Screen): Ticker => {
+    const ticker = resources.child({ name: "ticker" });
+    try {
+      const rate = deps.settings.read(["eurUsd"]);
+      screen.show(rate.values.eurUsd);
+      deps.settings.watch(rate, {
+        resources: ticker.resources, name: "quotes/ticker",
+        onChange: ({ values }) => { screen.show(values.eurUsd); },
+      });
+    } catch (error) {
+      void ticker.control.close(); // release the child even though subscribing failed; close() never rejects
+      throw error;
+    }
+    return {
+      close: async () => {
+        const report = await ticker.control.close();
+        if (!report.complete) throw new Error(`the ticker was not fully released (${report.debts.length} debts)`);
+      },
+    };
+  };
+  return { instance: undefined, capabilities: { "acme/quotes": { convert, openTicker } } };
+}

@@ -1,0 +1,47 @@
+import { harness } from "./harness.mjs";
+const h = await harness("g-hierarchy");
+const { createPricingOwnerModule, createCheckoutModule } = await import("./g-hierarchy.ts");
+const settings = h.createStore({ currency: "EUR", region: "de", theme: "light" });
+const ownerModule = h.module("pricing");
+const childModule = h.module("checkout");
+let owner;
+let child;
+await h.step("the parent factory", async () => { owner = await createPricingOwnerModule({ settings: settings.readonly(), errors: h.errorsPort }, ownerModule.context); });
+await h.step("the child factory", async () => {
+  if (owner === undefined) return;
+  child = await createCheckoutModule({ pricing: owner.capabilities["acme/pricing/context"], discounts: owner.capabilities["acme/pricing/discounts"] }, childModule.context);
+});
+if (owner !== undefined && child !== undefined) {
+  const context = owner.capabilities["acme/pricing/context"];
+  const value = () => context.read(["currency", "vatRate", "discountPercent"]).values;
+  const display = child.instance;
+  const checkout = child.capabilities["acme/checkout"];
+  const lastShown = () => display.shown.at(-1);
+  h.check(value().currency === "EUR" && value().vatRate === 0.19 && value().discountPercent === 0, "the parent's first value is wrong");
+  h.check(typeof context.set !== "function", "children can write the parent's store");
+  await h.step("setNet", () => { checkout.setNet(100); });
+  h.check(lastShown() === 119, `setNet(100) did not show 119 at once (shown: ${lastShown()})`);
+  const commits = h.stats(context).commits;
+  let answer;
+  await h.step("applyCode(BOGUS)", () => { answer = checkout.applyCode("BOGUS"); });
+  await h.settle();
+  h.check(answer === "rejected" && h.stats(context).commits === commits, "an unknown code was not rejected without a change");
+  await h.step("applyCode(SAVE10)", () => { answer = checkout.applyCode("SAVE10"); });
+  await h.settle();
+  h.check(answer === "accepted" && value().discountPercent === 10, "an accepted code did not reach the parent's store");
+  h.check(lastShown() === 107.1, `the child did not show the discounted total (shown: ${lastShown()})`);
+  const commitsBeforeRegion = h.stats(context).commits;
+  settings.set({ region: "fr" });
+  await h.settle();
+  h.check(value().vatRate === 0.2, "the parent did not follow a region change");
+  h.check(h.stats(context).commits - commitsBeforeRegion <= 1, "one settings change caused more than one commit (does a module write to a store it watches?)");
+  h.check(value().discountPercent === 10, "the parent dropped the accepted discount when the settings changed");
+  h.check(lastShown() === 108, `the child did not follow the parent's change (shown: ${lastShown()})`);
+  h.check(h.stats(settings).commits === 1, "something other than the Host wrote to the settings store");
+  h.check((await childModule.scope.control.close()).complete, "closing the child scope did not complete");
+  h.check(h.stats(context).live === 0, "subscriptions on the parent's store remain after the child closed");
+  h.check((await ownerModule.scope.control.close()).complete, "closing the parent scope did not complete");
+  h.check(h.stats(settings).live === 0, "the parent is still subscribed after it closed");
+  h.check(h.hostErrors.length === 0, `a handler failed: ${h.hostErrors.map((r) => String(r.cause)).join("; ")}`);
+}
+await h.finish();

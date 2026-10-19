@@ -1,0 +1,16 @@
+// Acceptance for task (g): both signatures, and the child wired to the parent's capabilities by slice.
+import type { ModuleContext } from "@get-modular/resources";
+import { createStore, type ListenerError } from "@get-modular/observation";
+import { createCheckoutModule, createPricingOwnerModule } from "./g-hierarchy.js";
+import type { CheckoutDeps, CheckoutProduct, PricingOwnerDeps, PricingOwnerProduct } from "./g-hierarchy.types.js";
+
+const owner: (deps: PricingOwnerDeps, context: ModuleContext) => Promise<PricingOwnerProduct> = createPricingOwnerModule;
+const child: (deps: CheckoutDeps, context: ModuleContext) => Promise<CheckoutProduct> = createCheckoutModule;
+type HostSettings = { readonly currency: string; readonly region: string; readonly theme: string };
+declare const context: ModuleContext;
+declare const reportError: (report: ListenerError) => undefined;
+const host = createStore<HostSettings>({ currency: "EUR", region: "de", theme: "light" }, { name: "settings", resources: context.resources, reportError });
+export async function wire(): Promise<CheckoutProduct> {
+  const parent = await owner({ settings: host.readonly(), errors: { report: reportError } }, context);
+  return child({ pricing: parent.capabilities["acme/pricing/context"], discounts: parent.capabilities["acme/pricing/discounts"] }, context);
+}

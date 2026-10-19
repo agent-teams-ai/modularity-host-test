@@ -1,0 +1,15 @@
+// Fixed types for task (e). Do not edit; check.sh uses its own copy.
+import type { ReadonlyStore } from "@get-modular/observation";
+
+/** The sessions module's own slice of the settings. */
+export type BannerSettings = { readonly banner: string };
+export type SessionsDeps = { readonly settings: ReadonlyStore<BannerSettings> };
+
+/** Where one session renders; supplied by the caller of `open`. */
+export type Screen = { readonly show: (banner: string) => void };
+/** One open session. `end` resolves when the session no longer follows anything. */
+export type Session = { readonly end: () => Promise<void> };
+/** Many sessions may be open at once, and the module lives far longer than any of them. */
+export type SessionsPort = { readonly open: (user: string, screen: Screen) => Session };
+
+export type SessionsProduct = { readonly instance: undefined; readonly capabilities: { readonly "acme/sessions": SessionsPort } };
