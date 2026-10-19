@@ -14,8 +14,9 @@ export async function supportedCompilers() {
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     assert.equal(manifest.name, "typescript");
     if (compilerName === "typescript-minimum") assert.equal(manifest.version, "7.0.2");
-    const match = /^(\d+)\.(\d+)\.(\d+)$/u.exec(manifest.version);
-    assert.ok(match, `${compilerName} must be a pinned stable compiler: ${manifest.version}`);
+    const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u.exec(manifest.version);
+    assert.ok(match !== null && match[0] === manifest.version,
+      `${compilerName} must be a pinned stable compiler: ${manifest.version}`);
     const version = match.slice(1).map(Number);
     const [major, minor, patch] = version;
     assert.ok(version.every(Number.isSafeInteger)
@@ -44,9 +45,11 @@ export function parseDiagnostics(output, cwd) {
   return diagnostics;
 }
 
-export function compile(compiler, cwd, project = "tsconfig.json") {
+export function compile(compiler, cwd, project = "tsconfig.json", timeoutMs = 120_000) {
+  assert.ok(Number.isSafeInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= 120_000,
+    "compiler child deadline must retain the existing 120 s ceiling");
   const result = spawnSync(process.execPath, [compiler.path, "-p", project, "--pretty", "false"], {
-    cwd, encoding: "utf8", timeout: 120_000, maxBuffer: 8 * 1024 * 1024,
+    cwd, encoding: "utf8", timeout: timeoutMs, killSignal: "SIGKILL", maxBuffer: 8 * 1024 * 1024,
   });
   assert.equal(result.error, undefined, `compiler process failed: ${result.error?.message}`);
   assert.equal(result.signal, null, `compiler process terminated: ${result.signal}`);

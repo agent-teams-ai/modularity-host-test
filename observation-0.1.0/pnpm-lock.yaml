@@ -47,12 +47,12 @@ importers:
 packages:
 
   '@get-modular/assembly@file:third_party/archives/get-modular-assembly-0.6.0.tgz':
-    resolution: {integrity: sha512-5AplYi/c21aDOwEYCtepl0cd/0xcg2rgz4ALIv5oLtE7DGi0LRvukE3Kst90XDKRaTdhYPHUiS0WWJl0KAhSlA==, tarball: file:third_party/archives/get-modular-assembly-0.6.0.tgz}
+    resolution: {integrity: sha512-y7H5RQpwQnKPXoqj/SnUIiOnWMbg/CI4USIUIlL+arkl3+eJncDyLUSikBG0k85vNuv9QuKt3XztpUJK1GvF9Q==, tarball: file:third_party/archives/get-modular-assembly-0.6.0.tgz}
     version: 0.6.0
     engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
 
   '@get-modular/conformance@file:third_party/archives/get-modular-conformance-0.4.0.tgz':
-    resolution: {integrity: sha512-pmqpUCjX4CqOGYTNRnSD4LX4vAkMVvLw3P1lc1W45kNFIABpbkJa9XcsWgbUQX+JDMHzCryAlGN4ZMIZWd06xg==, tarball: file:third_party/archives/get-modular-conformance-0.4.0.tgz}
+    resolution: {integrity: sha512-Ienld3tq0+XASpCGnd3fwvZbNxLTrViYspGzYGyu9mJAKnvBQLLoopyj2uumDeo4SJVzTI8Sl2oSFotr+BDslg==, tarball: file:third_party/archives/get-modular-conformance-0.4.0.tgz}
     version: 0.4.0
     engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
     peerDependencies:
@@ -61,19 +61,19 @@ packages:
       '@get-modular/resources': ^0.2.0
 
   '@get-modular/core@file:third_party/archives/get-modular-core-0.6.0.tgz':
-    resolution: {integrity: sha512-vlctirmR707rIxvPwusOl2NbIQJAFuwOsP0pPnsKPpWgX5u4H3lcydiz2XXhrnnclhcmQDh3y62a4UzqynQ4cw==, tarball: file:third_party/archives/get-modular-core-0.6.0.tgz}
+    resolution: {integrity: sha512-s7HmZAkQtioOAbUxBbeVgLCpmplDB7J36GdugMU0XkGWOEmNvUeSaLhKZWJ0uB49QDqCPPiXjcDf6EGlSFSXDA==, tarball: file:third_party/archives/get-modular-core-0.6.0.tgz}
     version: 0.6.0
     engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
 
   '@get-modular/observation@file:third_party/archives/get-modular-observation-0.1.0.tgz':
-    resolution: {integrity: sha512-H3BCrXREaXnYE/MLj87XBuSobg/f8kA3N2sKtfo6NeWVSxIRkI7DA9y9/bTQF46uNzTMzVew6707yNHATRbv2A==, tarball: file:third_party/archives/get-modular-observation-0.1.0.tgz}
+    resolution: {integrity: sha512-df9ki8A5Yi8rKR3SCpNeFwpnXLzSzEeawld8J24IYmxy98xVVr8a7xJCDyV37PBuOJJ10JltyVpmRJDJVsZhyg==, tarball: file:third_party/archives/get-modular-observation-0.1.0.tgz}
     version: 0.1.0
     engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
     peerDependencies:
       '@get-modular/resources': ^0.2.0
 
   '@get-modular/resources@file:third_party/archives/get-modular-resources-0.2.0.tgz':
-    resolution: {integrity: sha512-kAxL3w1GFIJ3R/IQtlk+OPmDKIcimdB+wWPlntuMLi9XKGaT0hCWLMAvi+B8xbx5dRzFRkc7VhF7zzqKLRtn5Q==, tarball: file:third_party/archives/get-modular-resources-0.2.0.tgz}
+    resolution: {integrity: sha512-G8PYU8o/DJTFBQcs9N12CgwxC9PJ+gOqFjariwYCbw+w7vGE+11lU2JiX2QrHBog6VpchKIenIinb7mBJtu/4g==, tarball: file:third_party/archives/get-modular-resources-0.2.0.tgz}
     version: 0.2.0
     engines: {node: '>=24.18.0 <25 || >=26.10.0 <27'}
 

@@ -1,8 +1,8 @@
 {
-  "sourceCommit": "3b42d2641055c36c13ff0e2b7fae6cc02a945514",
+  "sourceCommit": "2cd561688bb223f944425718cc093e55ff4bc20d",
   "files": {
     "process-probe.mjs": "b24164aec14c8e8c0e90a34c5f0b292d48b1f07fde31348f9d1a28be8aa9f919",
-    "support/compilers.mjs": "06a6e5478dfec909dadc31e7d53d092fa7d194c34e56205ebb05a399a55dd4fd",
+    "support/compilers.mjs": "8b83f8b144a01bffd46449a793a907e3da88a82ad2bc20567266d4ff402b9059",
     "support/static-rules.mjs": "80f7c62af9684998f7b4dce313f39ff822c173ed9bbe2f6e4210e4d381306e43",
     "writer-tasks/fakes/a-logger.types.js.txt": "180adcfe866683fd0f363caf0b097d421e51e6bdd249c0968ed4a418484ad807",
     "writer-tasks/fakes/b-catalog.types.js.txt": "a7c31426c77fe0d42282570a41ced93dc0d674d9553a02bdc5fb2caa1fc82b0d",
